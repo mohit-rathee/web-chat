@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Let's start{% endblock %}
+{% block body %}
+<h1>Welcome {{name}}</h1><br><h3>
+<br>
+<form action="/user" method="post">
+    <input name="username" type="hidden" value={{session.name}}>
+    <input name="password" type="hidden" value={{session.password}}>
+    <input type="submit" value="TODO">
+    </form>
+<br>
+
+    <form action="/logout" method="post">
+        <input type="submit" value="logout">
+    </form>    
+{% endblock %}
