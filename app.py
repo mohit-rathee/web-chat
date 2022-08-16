@@ -1,6 +1,3 @@
-from ast import Try
-from crypt import methods
-from operator import indexOf
 from flask import Flask, render_template, request, redirect, session, url_for
 from flask_session import Session
 app = Flask(__name__)
@@ -70,7 +67,6 @@ def user():
     if not session.get("name"):
         return redirect("/login")
     name=session.get("name")
-    password=session.get("password")
     id=session.get("id")
     if request.form.get("note")==None:
         return render_template('user.html',name=name,data=database[id])
