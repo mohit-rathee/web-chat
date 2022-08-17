@@ -8,16 +8,23 @@ app.config["SESSION_TYPE"]="filesystem"
 Session(app)
 
 # Database
-namedata=["guest","mohit"]
-passdata=["123","rathee"]
+namedata=["heck","guest","mohit"]
+passdata=["heck","123","rathee"]
 database=[["first work","second work","third work"],["sdhgkhg","sdnkjjsdkg"]]
+balancedata=[]
+couponbase={
+    "JAIHO":100,
+    "HACKER":69
+}
 
 # Routes
 @app.route('/',methods=["GET","POST"])
 def index():
-    if not session.get("name"):
+    if not session.get("id"):
         return redirect("/login")
-    return render_template("home.html",name=session.get("name"))
+    id=session.get("id")
+    name=namedata[id]
+    return render_template("home.html",name=name)
     
 
 @app.route('/login',methods=["GET","POST"])
@@ -25,51 +32,46 @@ def login():
     if request.method=="GET":
         return render_template("login.html")
     if request.method=="POST":
-        item=request.form.get("username")
+        name=request.form.get("username")
         password=request.form.get("password")
         operation=request.form.get("operation")
         if operation == "login":
             try:
-                index=namedata.index(item)
+                id=namedata.index(name)
+                print(id)
             except ValueError:
                 return render_template("failure.html",error="Username doesn't exist")
-            if passdata[index] == password:
-                session["id"] = index
-                session["name"] = item
-                session["password"] = password
+            if passdata[id] == password:
+                session["id"]=id
                 return  redirect("/")
             return render_template("failure.html",error="incorrect password")
             
 
         if operation == "register":
             for i in namedata:
-                if item == i:
+                if name == i:
                     return render_template('failure.html',error="username already exists")
-            namedata.append(item)
+            namedata.append(name)
             passdata.append(password)  
             database.append([])
-            print(namedata)
-            session["name"] = item
-            session["password"] = password
             session["id"] =int(len(database))-1
             return  redirect("/")
         
             
 @app.route('/logout',methods=["POST"])    
 def logout():
-    session["name"]=None
-    session["password"]=None
     session["id"]=None
     return redirect("login")
     
 @app.route("/user",methods=["GET","POST"])
 def user():
-    if not session.get("name"):
+    if not session.get("id"):
         return redirect("/login")
-    name=session.get("name")
     id=session.get("id")
+    name=namedata[id]
     if request.form.get("note")==None:
         return render_template('user.html',name=name,data=database[id])
     note=request.form.get("note")
     database[id].append(note)
+    print(database[id])
     return render_template('user.html',name=name,data=database[id])
