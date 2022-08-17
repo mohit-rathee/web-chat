@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 from flask_session import Session
 app = Flask(__name__)
 
@@ -8,10 +8,11 @@ app.config["SESSION_TYPE"]="filesystem"
 Session(app)
 
 # Database
+superuser=[1]
 namedata=["heck","guest","mohit"]
 passdata=["heck","123","rathee"]
-database=[["first work","second work","third work"],["sdhgkhg","sdnkjjsdkg"]]
-balancedata=[]
+database=[["first work","second work","third work"],["First Create","Then Destroy"]]
+balancedata=[0.00,0.00,0.00]
 couponbase={
     "JAIHO":100,
     "HACKER":69
@@ -24,8 +25,15 @@ def index():
         return redirect("/login")
     id=session.get("id")
     name=namedata[id]
-    return render_template("home.html",name=name)
-    
+    balance=balancedata[id]
+    if id in superuser:
+        return render_template("home.html",name=name,balance=balance,superuser=True)
+    return render_template("home.html",name=name,balance=balance,superuser=False)
+
+def couponchecker(id,coupon):
+    for Coupon in couponbase:
+        if Coupon == coupon:
+            balancedata[id]+=couponbase[Coupon]
 
 @app.route('/login',methods=["GET","POST"])
 def login():
@@ -35,6 +43,7 @@ def login():
         name=request.form.get("username")
         password=request.form.get("password")
         operation=request.form.get("operation")
+        coupon=request.form.get("coupon")
         if operation == "login":
             try:
                 id=namedata.index(name)
@@ -43,6 +52,7 @@ def login():
                 return render_template("failure.html",error="Username doesn't exist")
             if passdata[id] == password:
                 session["id"]=id
+                couponchecker(id,coupon)
                 return  redirect("/")
             return render_template("failure.html",error="incorrect password")
             
@@ -54,7 +64,10 @@ def login():
             namedata.append(name)
             passdata.append(password)  
             database.append([])
-            session["id"] =int(len(database))-1
+            balancedata.append(0.00)
+            id=int(len(database))-1
+            session["id"] =id
+            couponchecker(id,coupon)
             return  redirect("/")
         
             
