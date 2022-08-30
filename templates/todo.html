@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{name}}{% endblock %}
+{% block body %}
+<h1>Yeah  {{name}} <br> We got SUCCESS!!! </h1>
+
+
+<ul>
+    {% for item in data: %}
+        <li>{{item}}</li>
+    {% endfor %}
+</ul>
+
+<form action="/user/to-do" method="post">
+    <input autofocus autocomplete="off" type="text" name="note"placeholder="add a note">    
+</form>
+<br>
+<form action="/user" method="post">
+    <input type="submit" value="Back">    
+</form>
+
+{% endblock %}

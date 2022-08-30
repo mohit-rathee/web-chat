@@ -1,2 +1,4 @@
-couponbase={"JAIHO":100,"HACKER":69}
-print(couponbase["JAIHO"])
+list =[0]
+id=None
+if id in list:
+    print("success")

@@ -8,11 +8,11 @@ app.config["SESSION_TYPE"]="filesystem"
 Session(app)
 
 # Database
-superuser=[1]
-namedata=["heck","guest","mohit"]
-passdata=["heck","123","rathee"]
-database=[["first work","second work","third work"],["First Create","Then Destroy"]]
-balancedata=[0.00,0.00,0.00]
+superuser=[0]
+namedata=[]
+passdata=[]
+database=[]
+balancedata=[]
 couponbase={
     "JAIHO":100,
     "HACKER":69
@@ -21,14 +21,10 @@ couponbase={
 # Routes
 @app.route('/',methods=["GET","POST"])
 def index():
-    if not session.get("id"):
+    if session.get("id")==None:
         return redirect("/login")
-    id=session.get("id")
-    name=namedata[id]
-    balance=balancedata[id]
-    if id in superuser:
-        return render_template("home.html",name=name,balance=balance,superuser=True)
-    return render_template("home.html",name=name,balance=balance,superuser=False)
+    return redirect("/user")
+
 
 def couponchecker(id,coupon):
     for Coupon in couponbase:
@@ -61,11 +57,12 @@ def login():
             for i in namedata:
                 if name == i:
                     return render_template('failure.html',error="username already exists")
+            id=int(len(namedata))
             namedata.append(name)
             passdata.append(password)  
             database.append([])
             balancedata.append(0.00)
-            id=int(len(database))-1
+            print(id)
             session["id"] =id
             couponchecker(id,coupon)
             return  redirect("/")
@@ -74,17 +71,38 @@ def login():
 @app.route('/logout',methods=["POST"])    
 def logout():
     session["id"]=None
+    print(session["id"])
     return redirect("login")
     
 @app.route("/user",methods=["GET","POST"])
 def user():
-    if not session.get("id"):
-        return redirect("/login")
+    if session.get("id")==None:
+        return redirect("/login")    
     id=session.get("id")
     name=namedata[id]
+    balance=balancedata[id]
+    if id in superuser:
+        if (request.form.get("new_coupon") and request.form.get("new_value")):
+            couponbase[str(request.form.get("new_coupon"))]=int(request.form.get("new_value"))
+            print(couponbase)
+            return render_template("user.html",name=name,balance=balance,superuser=True,coupons=couponbase)
+        if request.form.get("remove_coupon"):
+            couponbase.pop(str(request.form.get("remove_coupon")))
+        return render_template("user.html",name=name,balance=balance,superuser=True,coupons=couponbase)
+    return render_template("user.html",name=name,balance=balance,superuser=False)
+
+
+
+@app.route("/user/to-do",methods=["GET","POST"])
+def todo():
+    if session.get("id")==None:
+        return redirect("/login")
+    id=session.get("id")
     if request.form.get("note")==None:
-        return render_template('user.html',name=name,data=database[id])
+        return render_template('todo.html',name=namedata[id],data=database[id])
     note=request.form.get("note")
     database[id].append(note)
     print(database[id])
-    return render_template('user.html',name=name,data=database[id])
+    return render_template('todo.html',name=namedata[id],data=database[id])
+
+
