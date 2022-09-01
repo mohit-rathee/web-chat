@@ -7,13 +7,15 @@ Your balance: {{balance}}
 <br>
 <form action="/user/to-do" method="post">
     <input type="submit" value="TODO">
-    </form>
+</form>
 <br>
 
     <form action="/logout" method="post">
         <input type="submit" value="logout">
     </form>    
-
+    <form action="/shop" method="post">
+        <input type="submit" value="shop">
+    </form>
 {% if superuser : %}
     <form action="/user" method="post">
         <input autofocus autocomplete="off" type="text" name="new_coupon" placeholder="Name of coupon"> 
@@ -24,7 +26,7 @@ Your balance: {{balance}}
     
     <ul>
         {% for key, value in coupons.items(): %}
-        <li>{{key}} , {{value}}</li>
+        <li>{{key}} : {{value}}</li>
         {% endfor %}
     </ul>
 

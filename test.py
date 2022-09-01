@@ -1,4 +1,3 @@
-list =[0]
-id=None
-if id in list:
-    print("success")
+list =[]
+list.append("mohit")
+print(list)
