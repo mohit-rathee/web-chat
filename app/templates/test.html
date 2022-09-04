@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}shop{% endblock %}
+{% block body %}
+<h2>Welcome to "personal-things"/h2><br>
+<ol>
+{% for i in user: %}
+    <li>{{i}}</li>
+{% endfor %}
+
+</ol>
+{% endblock %}

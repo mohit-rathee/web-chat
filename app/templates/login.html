@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}login{% endblock %}
+{% block body %}
+<h3>Login</h3>
+    <form action="/login" method="post">
+        <input autocomplete="off" autofocus name="username" placeholder="user_name" type="text">
+        <input autocomplete="off"  name="password" placeholder="password" type="password">
+        <input type="hidden" name="operation" value="login">   
+
+        <input value="submit" type="submit">
+    </form>
+
+    <form action="/login" method="post">
+        <input type="hidden" name="send" value="register">   
+        <input type="submit" value="Register">
+    </form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Let's start{% endblock %}
+{% block body %}
+<h1>Welcome {{name}}</h1><br>
+Your balance: {{balance}}
+<h3>
+<br>
+<form action="/user/to-do" method="post">
+    <input type="submit" value="TODO">
+</form>
+<br>
+
+    <form action="/logout" method="post">
+        <input type="submit" value="logout">
+    </form>    
+    <form action="/shop" method="post">
+        <input type="submit" value="shop">
+    </form>
+{% if superuser : %}
+<h2>hello  Super user : {{sname}}</h2>
+{% endif %}
+
+{% endblock %}

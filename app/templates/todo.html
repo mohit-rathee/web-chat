@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{name}}{% endblock %}
+{% block body %}
+<h1>Yeah  {{name}} <br> We got SUCCESS!!! </h1>
+
+
+<ul>
+    {% for key, value in data.items(): %}
+        <li>{{key}}  {% if superuser : %}
+                        : {{value}}
+                        {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+
+<form action="/user/to-do" method="post">
+    <input autofocus autocomplete="off" type="text" name="item" placeholder="item">    
+    {% if superuser : %}
+        <input autofocus autocomplete="off" type="number" name="value" placeholder="value">    
+    {% endif %}
+    <input type="submit" value="ADD"> 
+</form>
+<br>
+<form action="/user" method="post">
+    <input type="submit" value="Back">    
+</form>
+
+{% endblock %}
