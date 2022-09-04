@@ -3,3 +3,4 @@ __pycache__
 password.txt
 flask_session
 test.py
+test.sqlite3
