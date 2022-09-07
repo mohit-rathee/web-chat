@@ -5,13 +5,16 @@
 Your balance: {{balance}}
 <h3>
 <br>
-<form action="/user/General_topic" method="post">
-    <input type="submit" value="Genral_Topic">
-</form>
-<br>
-
+{% for table in tables: %}
+    <form action="/user/{{table}}" method="post">
+        <input type="submit" value="{{table}}">
+    </form>
+    <br>
+{% endfor %}
 <form action="/user" method="post">
     <input autocomplete="off" name="topic_name" placeholder="topic_name" type="text">
+    <input type="submit" value="Add Topic">
+
 </form>  
 
 <br>

@@ -12,14 +12,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.sqlite3'
 db = SQLAlchemy(app)
 
 
-class Users(db.Model):
+class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)  #User ID
     username=db.Column(db.String(20), unique=True, nullable=False) #user name
     password=db.Column(db.String(30), nullable=False) #user password
     balance=db.Column(db.Integer, nullable=True, default=0) #user balance
-    post=db.relationship('General_topic',backref='user') #relation#
+    post=db.relationship('general_topic',backref='user') #relation#
 
-class General_topic(db.Model):
+class general_topic(db.Model):
     id=db.Column(db.Integer,primary_key=True) #msg/post ID
     data=db.Column(db.String, nullable=False) #actuall msg
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
@@ -29,6 +29,8 @@ class General_topic(db.Model):
 # SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 db.create_all()
+
+
 
 #Session
 app.config["SESSION_PERMANENT"]=False
@@ -50,8 +52,16 @@ reffral_code={
     "HACKER":69
 }
 
-
-
+def create_table(topic):
+    class topic1(db.Model):
+        id=db.Column(db.Integer,primary_key=True) #msg/post ID
+        data=db.Column(db.String, nullable=False) #actuall msg
+        sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
+        time = db.Column(db.DateTime, default=func.now()) #time
+    db.create_all()
+    table=db.engine.table_names()   
+    print("okay")
+    print(table)
 
 # Routes
 @app.route('/',methods=["GET","POST"])
@@ -76,7 +86,7 @@ def login():
         send=request.form.get("send")
         if operation == "login":
             try:
-                user = Users.query.filter_by(username=name).first()
+                user = users.query.filter_by(username=name).first()
                 if user.password == password:
                     session["id"]=user.id
                     return  redirect("/")
@@ -85,14 +95,14 @@ def login():
                 return render_template("message.html",msg="Username doesn't exist")
 
         if operation == "register":
-            user = Users.query.filter_by(username=name).first()
+            user = users.query.filter_by(username=name).first()
             if user!=None:
                 print(user)
                 return render_template("message.html",msg="Username exist")
-            user=Users(username=name,password=password)
+            user=users(username=name,password=password)
             db.session.add(user)
             db.session.commit()
-            user = Users.query.filter_by(username=name).first()
+            user = users.query.filter_by(username=name).first()
             session["id"] =user.id
             return  redirect("/")
         if send=="register":
@@ -110,7 +120,7 @@ def logout():
 @app.route('/reset',methods=["POST"])    
 def reset():
     try:
-        user = Users.query.order_by(Users.id.asc()).all()
+        user = users.query.order_by(users.id.asc()).all()
         for i in user:
             db.session.delete(i)
             db.session.commit()
@@ -129,11 +139,21 @@ def user():
     if session.get("id")==None:
         return redirect("/login")    
     id=session.get("id")
-    user=Users.query.filter_by(id=id).first()
+    user=users.query.filter_by(id=id).first()
     name=user.username
     balance=user.balance
-    return render_template("user.html",name=name,balance=balance)
+    table=db.engine.table_names()   
+    if request.form.get("topic_name") ==None:
+        return render_template("user.html",name=name,balance=balance,tables=table)
     
+    topic=request.form.get("topic_name")
+    try:
+        create_table(topic)
+    except:
+        return render_template("message.html",msg="can't create table")
+    table=db.engine.table_names()   
+    return render_template("user.html",name=name,balance=balance,tables=table)
+
 
 
 
@@ -144,19 +164,21 @@ def todo(topic):
         
     id=session.get("id")
     post_data=request.form.get("post")
-    user = Users.query.filter_by(id=id).first()
+    user = users.query.filter_by(id=id).first()
     name=user.username
-    if topic=="General_topic":  
+    if topic=="general_topic":  
         if post_data!=None:
             try:
-                post=General_topic(data=post_data,sender_id=user.id)
+                post=general_topic(data=post_data,sender_id=user.id)
                 db.session.add(post)
                 db.session.commit()
             except:
-                return render_template("messaage.html",msg="lol")
-        data=General_topic.query.order_by(General_topic.time.asc()).all()
-        user=Users.query.order_by(Users.id).all()
+                return render_template("message.html",msg="lol")
+        data=general_topic.query.order_by(general_topic.time.asc()).all()
+        user=users.query.order_by(users.id).all()
         return render_template("todo.html",name=name,mydata=data,user=user)
+    else:
+        return render_template("message.html",msg="not a good table")
 
 
 @app.route("/shop",methods=["GET","POST"])
@@ -167,7 +189,7 @@ def shop():
 
 @app.route("/test",methods=["GET","POST"])
 def test():
-    user = Users.query.all()
+    user = users.query.all()
     users=[]
     for i in user:
         users.append(i.username)

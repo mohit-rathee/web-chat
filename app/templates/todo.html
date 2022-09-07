@@ -31,8 +31,9 @@
 </div>
 </header>
 <br>
-<form action="/user/General_topic" method="post">
-    <input  autocomplete="off" type="text" name="post" placeholder="item">    
+<form action="/user/general_topic" method="post">
+    <input autofocus autocomplete="off" type="text" name="post" placeholder="post">    
+    <input type="hidden" name="topic_name" value="general_topic">
     <input type="submit" value="ADD"> 
 </form>
 <form action="/user" method="post">
