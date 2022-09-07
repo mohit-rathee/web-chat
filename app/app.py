@@ -13,18 +13,17 @@ db = SQLAlchemy(app)
 
 
 class Users(db.Model):
-    id=db.Column(db.Integer,primary_key=True)
-    username=db.Column(db.String(20), unique=True, nullable=False)
-    password=db.Column(db.String(30), nullable=False)
-    balance=db.Column(db.Integer, nullable=True, default=0)
-    post=db.relationship('Post',backref='user')
+    id=db.Column(db.Integer,primary_key=True)  #User ID
+    username=db.Column(db.String(20), unique=True, nullable=False) #user name
+    password=db.Column(db.String(30), nullable=False) #user password
+    balance=db.Column(db.Integer, nullable=True, default=0) #user balance
+    post=db.relationship('General_topic',backref='user') #relation#
 
-class Post(db.Model):
-    id=db.Column(db.Integer,primary_key=True)
-    data=db.Column(db.String, nullable=False)
-    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))
-    time = db.Column(db.DateTime, default=func.now())
-
+class General_topic(db.Model):
+    id=db.Column(db.Integer,primary_key=True) #msg/post ID
+    data=db.Column(db.String, nullable=False) #actuall msg
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
+    time = db.Column(db.DateTime, default=func.now()) #time
 
 
 # SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -138,8 +137,8 @@ def user():
 
 
 
-@app.route("/user/to-do",methods=["GET","POST"])
-def todo():
+@app.route("/user/<topic>",methods=["GET","POST"])
+def todo(topic):
     if session.get("id")==None:
         return redirect("/login")
         
@@ -147,13 +146,17 @@ def todo():
     post_data=request.form.get("post")
     user = Users.query.filter_by(id=id).first()
     name=user.username
-    if post_data!=None:
-        post=Post(data=post_data,sender_id=user.id)
-        db.session.add(post)
-        db.session.commit()
-    data=Post.query.order_by(Post.time.desc()).all()
-    user=Users.query.order_by(Users.id).all()
-    return render_template("todo.html",name=name,mydata=data,user=user)
+    if topic=="General_topic":  
+        if post_data!=None:
+            try:
+                post=General_topic(data=post_data,sender_id=user.id)
+                db.session.add(post)
+                db.session.commit()
+            except:
+                return render_template("messaage.html",msg="lol")
+        data=General_topic.query.order_by(General_topic.time.asc()).all()
+        user=Users.query.order_by(Users.id).all()
+        return render_template("todo.html",name=name,mydata=data,user=user)
 
 
 @app.route("/shop",methods=["GET","POST"])

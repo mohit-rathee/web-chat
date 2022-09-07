@@ -5,11 +5,16 @@
 Your balance: {{balance}}
 <h3>
 <br>
-<form action="/user/to-do" method="post">
-    <input type="submit" value="TODO">
+<form action="/user/General_topic" method="post">
+    <input type="submit" value="Genral_Topic">
 </form>
 <br>
 
+<form action="/user" method="post">
+    <input autocomplete="off" name="topic_name" placeholder="topic_name" type="text">
+</form>  
+
+<br>
     <form action="/logout" method="post">
         <input type="submit" value="logout">
     </form>    
