@@ -1,6 +1,10 @@
+from socket import MsgFlag
 from flask import Flask, render_template, request, redirect, session
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
+from datetime import timezone
+from sqlalchemy.sql import func
+
 
 
 app = Flask(__name__)
@@ -13,12 +17,17 @@ class Users(db.Model):
     username=db.Column(db.String(20), unique=True, nullable=False)
     password=db.Column(db.String(30), nullable=False)
     balance=db.Column(db.Integer, nullable=True, default=0)
-    superusers=db.relationship('Superusers',backref='user')
+    post=db.relationship('Post',backref='user')
 
-class Superusers(db.Model):
+class Post(db.Model):
     id=db.Column(db.Integer,primary_key=True)
-    user_id=db.Column(db.Integer,db.ForeignKey('users.id'))
+    data=db.Column(db.String, nullable=False)
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))
+    time = db.Column(db.DateTime, default=func.now())
 
+
+
+# SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 db.create_all()
 
@@ -26,6 +35,8 @@ db.create_all()
 app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_TYPE"]="filesystem"
 Session(app)
+
+
 
 # Database
 superuser=[]
@@ -70,25 +81,21 @@ def login():
                 if user.password == password:
                     session["id"]=user.id
                     return  redirect("/")
-                return render_template("failure.html",error="incorrect password")
+                return render_template("message.html",msg="incorrect password")
             except:
-                return render_template("failure.html",error="Username doesn't exist")
+                return render_template("message.html",msg="Username doesn't exist")
 
         if operation == "register":
             user = Users.query.filter_by(username=name).first()
             if user!=None:
-                return render_template("failure.html",error="Username exist")
+                print(user)
+                return render_template("message.html",msg="Username exist")
             user=Users(username=name,password=password)
             db.session.add(user)
             db.session.commit()
             user = Users.query.filter_by(username=name).first()
             session["id"] =user.id
-            if power=="super":
-                superuser=Superusers(user_id=user.id)
-                db.session.add(superuser)
-                db.session.commit()
-            
-            
+            return  redirect("/")
         if send=="register":
             return render_template("register.html")  
         elif send=="login":
@@ -100,7 +107,24 @@ def logout():
     session["id"]=None
     print(session["id"])
     return redirect("login")
-    
+
+@app.route('/reset',methods=["POST"])    
+def reset():
+    try:
+        user = Users.query.order_by(Users.id.asc()).all()
+        for i in user:
+            db.session.delete(i)
+            db.session.commit()
+        data = Post.query.order_by(Post.id.asc()).all()
+        for i in data:
+            print(i)
+            db.session.delete(i)
+            db.session.commit()
+        return redirect("/login")
+    except:
+        return redirect("/login")
+
+
 @app.route("/user",methods=["GET","POST"])
 def user():
     if session.get("id")==None:
@@ -109,17 +133,8 @@ def user():
     user=Users.query.filter_by(id=id).first()
     name=user.username
     balance=user.balance
-    superuser=Superusers.query.filter_by(user_id=id).first()
-
-        # if (request.form.get("new_coupon") and request.form.get("new_value")):
-        #     couponbase[x][str(request.form.get("new_coupon"))]=int(request.form.get("new_value"))
-        #     print(couponbase)
-        #     return render_template("user.html",name=name,balance=balance,superuser=True,coupons=couponbase[x])
-        # if request.form.get("remove_coupon"):
-        #     couponbase[x].pop(str(request.form.get("remove_coupon")))
-    if superuser!=None:
-        return render_template("user.html",name=name,balance=balance,superuser=True,sname=superuser.user.username)
-    return render_template("user.html",name=name,balance=balance,superuser=False)
+    return render_template("user.html",name=name,balance=balance)
+    
 
 
 
@@ -127,26 +142,19 @@ def user():
 def todo():
     if session.get("id")==None:
         return redirect("/login")
+        
     id=session.get("id")
-    if not id in superuser:
-        if request.form.get("item")==None:
-            return render_template('todo.html',name=namedata[id],data=database[id],superuser=False)
-        item=request.form.get("item")
-        database[id][str(item)]="free"
-        print(database[id])
-        return render_template('todo.html',name=namedata[id],data=database[id],superuser=False)
-    if request.form.get("item")==None:
-        return render_template('todo.html',name=namedata[id],data=database[id],superuser=True)
-    item=request.form.get("item")
-    if request.form.get("value"):
-        value=request.form.get("value")
-        database[id][str(item)]=value
-        print(database[id])
-        return render_template('todo.html',name=namedata[id],data=database[id],superuser=True)
-    database[id][str(item)]="free"
-    return render_template('todo.html',name=namedata[id],data=database[id],superuser=True)
-    
-    
+    post_data=request.form.get("post")
+    user = Users.query.filter_by(id=id).first()
+    name=user.username
+    if post_data!=None:
+        post=Post(data=post_data,sender_id=user.id)
+        db.session.add(post)
+        db.session.commit()
+    data=Post.query.order_by(Post.time.desc()).all()
+    user=Users.query.order_by(Users.id).all()
+    return render_template("todo.html",name=name,mydata=data,user=user)
+
 
 @app.route("/shop",methods=["GET","POST"])
 def shop():
