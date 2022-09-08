@@ -52,17 +52,6 @@ reffral_code={
     "HACKER":69
 }
 
-def create_table(topic):
-    class topic1(db.Model):
-        id=db.Column(db.Integer,primary_key=True) #msg/post ID
-        data=db.Column(db.String, nullable=False) #actuall msg
-        sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
-        time = db.Column(db.DateTime, default=func.now()) #time
-    db.create_all()
-    table=db.engine.table_names()   
-    print("okay")
-    print(table)
-
 # Routes
 @app.route('/',methods=["GET","POST"])
 def index():
@@ -124,11 +113,15 @@ def reset():
         for i in user:
             db.session.delete(i)
             db.session.commit()
-        data = Post.query.order_by(Post.id.asc()).all()
+        data = general_topic.query.order_by(general_topic.id.asc()).all()
         for i in data:
             print(i)
             db.session.delete(i)
             db.session.commit()
+        tables=db.engine.table_names()   
+        for table in tables:
+            
+
         return redirect("/login")
     except:
         return redirect("/login")
@@ -142,17 +135,26 @@ def user():
     user=users.query.filter_by(id=id).first()
     name=user.username
     balance=user.balance
-    table=db.engine.table_names()   
+    tables=db.engine.table_names()   
     if request.form.get("topic_name") ==None:
-        return render_template("user.html",name=name,balance=balance,tables=table)
+        return render_template("user.html",name=name,balance=balance,tables=tables)
     
     topic=request.form.get("topic_name")
-    try:
-        create_table(topic)
-    except:
-        return render_template("message.html",msg="can't create table")
-    table=db.engine.table_names()   
-    return render_template("user.html",name=name,balance=balance,tables=table)
+    if str(topic) not in table:
+        try:
+            class topic(db.Model):
+                __tablename__=(topic)
+                id=db.Column(db.Integer,primary_key=True) #msg/post ID
+                data=db.Column(db.String, nullable=False) #actuall msg
+                sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
+                time = db.Column(db.DateTime, default=func.now()) #time
+            db.create_all()
+        except:
+            return render_template("message.html",msg="can't create table")
+        table=db.engine.table_names()   
+        return render_template("user.html",name=name,balance=balance,tables=table)
+    else:
+        return render_template("message.html",msg="topic already exist")
 
 
 
