@@ -32,7 +32,6 @@ class topic_id(db.Model):
     name=db.Column(db.String, nullable=False,unique=True)
 
 
-
 # class general_topic(db.Model):
 #     id=db.Column(db.Integer,primary_key=True) #msg/post ID
 #     data=db.Column(db.String, nullable=False) #actuall msg
@@ -166,7 +165,8 @@ def user():
     top=str(topic)
     if str(topic) not in tables:
         try:
-            class topic(db.Model):
+            
+            class post(db.Model):
                 __tablename__=str(topic)
                 id=db.Column(db.Integer,primary_key=True) #msg/post ID
                 data=db.Column(db.String, nullable=False) #actuall msg
@@ -178,7 +178,7 @@ def user():
                     self.sender_id=sender_id
             db.create_all()
         except:
-            return render_template("message.html",msg="can't create table")
+                return render_template("message.html",msg="cant relates")
         try:
             topic=topic_id(name=top)
             db.session.add(topic)
@@ -207,8 +207,9 @@ def todo(topic):
     tables=db.engine.table_names() 
     if topic in tables:
         try:
-            user = topic_id.query.filter_by(name=topic).first()
-            print(user.name)
+            topic = topic_id.query.filter_by(name=topic).first()
+            print(topic.name)
+            print(topic.post.data)
         except:
             return render_template("message.html",msg="ghapla")
         
