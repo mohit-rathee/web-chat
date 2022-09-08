@@ -4,6 +4,7 @@ from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timezone
 from sqlalchemy.sql import func
+from sqlalchemy import MetaData, create_engine
 
 
 
@@ -11,14 +12,9 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.sqlite3'
 db = SQLAlchemy(app)
+# engine = create_engine('sqlite:///test.sqlite3', echo=True)
 
-metadata=None
-
-def connect_db():
-    engine = create_engine(app.config['DATABASE_URI'])
-    global metadata
-    metadata = MetaData(bind=engine)
-    return engine.connect()
+# metadata=None
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)  #User ID
@@ -26,6 +22,10 @@ class users(db.Model):
     password=db.Column(db.String(30), nullable=False) #user password
     balance=db.Column(db.Integer, nullable=True, default=0) #user balance
     # post=db.relationship('general_topic',backref='user') #relation#
+    def __init__(self, username, password, balance):
+        self.username=username
+        self.password=password
+        self.balance=balance
 
 class topic_id(db.Model):
     id=db.Column(db.Integer,primary_key=True) 
@@ -41,8 +41,7 @@ class topic_id(db.Model):
 
 
 
-# SQLALCHEMY_TRACK_MODIFICATIONS = False
-
+# SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 db.create_all()
 
@@ -112,7 +111,7 @@ def login():
             if user!=None:
                 print(user)
                 return render_template("message.html",msg="Username exist")
-            user=users(username=name,password=password)
+            user=users(username=name,password=password,balance=0)
             db.session.add(user)
             db.session.commit()
             user = users.query.filter_by(username=name).first()
@@ -173,6 +172,10 @@ def user():
                 data=db.Column(db.String, nullable=False) #actuall msg
                 sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
                 time = db.Column(db.DateTime, default=func.now()) #time
+                def __init__(self, data, time, sender_id): 
+                    self.data=data
+                    self.time=time
+                    self.sender_id=sender_id
             db.create_all()
         except:
             return render_template("message.html",msg="can't create table")
@@ -234,9 +237,5 @@ def shop():
 
 @app.route("/test",methods=["GET","POST"])
 def test():
-    user = users.query.all()
-    users=[]
-    for i in user:
-        users.append(i.username)
-        users.append(i.password)
-    return render_template("test.html",user=users)
+    # print(MetaData)
+    return "done"
