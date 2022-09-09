@@ -6,8 +6,8 @@ Your balance: {{balance}}
 <h3>
 <br>
 {% for table in tables: %}
-    <form action="/user/{{table}}" method="post">
-        <input type="submit" value="{{table}}">
+    <form action="/user/{{table.name}}" method="post">
+        <input type="submit" value="{{table.name}}">
     </form>
     <br>
 {% endfor %}

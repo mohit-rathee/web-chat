@@ -21,7 +21,7 @@ class users(db.Model):
     username=db.Column(db.String(20), unique=True, nullable=False) #user name
     password=db.Column(db.String(30), nullable=False) #user password
     balance=db.Column(db.Integer, nullable=True, default=0) #user balance
-    # post=db.relationship('general_topic',backref='user') #relation#
+    post=db.relationship('posts',backref='user') #relation#
     def __init__(self, username, password, balance):
         self.username=username
         self.password=password
@@ -30,13 +30,14 @@ class users(db.Model):
 class topic_id(db.Model):
     id=db.Column(db.Integer,primary_key=True) 
     name=db.Column(db.String, nullable=False,unique=True)
+    topic=db.relationship('posts',backref='topic')
 
-
-# class general_topic(db.Model):
-#     id=db.Column(db.Integer,primary_key=True) #msg/post ID
-#     data=db.Column(db.String, nullable=False) #actuall msg
-#     sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
-#     time = db.Column(db.DateTime, default=func.now()) #time
+class posts(db.Model):
+    id=db.Column(db.Integer,primary_key=True) #msg/post ID
+    data=db.Column(db.String, nullable=False) #actuall msg
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
+    topicid=db.Column(db.Integer, db.ForeignKey('topic_id.id')) #topic ID
+    time = db.Column(db.DateTime, default=func.now()) #time
 
 
 
@@ -157,41 +158,22 @@ def user():
     user=users.query.filter_by(id=id).first()
     name=user.username
     balance=user.balance
-    tables=db.engine.table_names()   
-    if request.form.get("topic_name") ==None:
-        return render_template("user.html",name=name,balance=balance,tables=tables)
-    
     topic=request.form.get("topic_name")
-    top=str(topic)
-    if str(topic) not in tables:
-        try:
-            
-            class post(db.Model):
-                __tablename__=str(topic)
-                id=db.Column(db.Integer,primary_key=True) #msg/post ID
-                data=db.Column(db.String, nullable=False) #actuall msg
-                sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
-                time = db.Column(db.DateTime, default=func.now()) #time
-                def __init__(self, data, time, sender_id): 
-                    self.data=data
-                    self.time=time
-                    self.sender_id=sender_id
-            db.create_all()
-        except:
-                return render_template("message.html",msg="cant relates")
-        try:
-            topic=topic_id(name=top)
-            db.session.add(topic)
-            db.session.commit()
-            print("sucess")
-        except:
-            return render_template("message.html",msg="can't add to topic id")
-
-        tables=db.engine.table_names()   
+    tables=topic_id.query.all()
+    if topic==None:
         return render_template("user.html",name=name,balance=balance,tables=tables)
-    else:
-        return render_template("message.html",msg="topic already exist")
-
+    try:
+        topic=topic_id(name=topic)
+        db.session.add(topic)
+        db.session.commit()
+        print("sucess")
+    except:
+        return render_template("message.html",msg="can't add to topic id")
+    try:
+        tables=topic_id.query.all()
+        return render_template("user.html",name=name,balance=balance,tables=tables)
+    except:
+        print("can't show topics id")
 
 
 
@@ -204,31 +186,24 @@ def todo(topic):
     post_data=request.form.get("post")
     user = users.query.filter_by(id=id).first()
     name=user.username
-    tables=db.engine.table_names() 
-    if topic in tables:
-        try:
-            topic = topic_id.query.filter_by(name=topic).first()
-            print(topic.name)
-            print(topic.post.data)
-        except:
-            return render_template("message.html",msg="ghapla")
-        
-        return render_template("message.html",msg=user.name+" exist")
-    #     if table==topic:
-    #     # if topic=="general_topic":  
-    #         if post_data!=None:
-    #             try:
-    #                 post=topic(data=post_data,sender_id=user.id)
-    #                 db.session.add(post)
-    #                 db.session.commit()
-    #             except:
-    #                 return render_template("message.html",msg="not added to table/topic")
-    #         data=topic.query.order_by(topic.time.asc()).all()
-    #         user=users.query.order_by(users.id).all()
-    #         return render_template("todo.html",name=name,mydata=data,user=user)
-    #     else:
-    #         return render_template("message.html",msg="not a good table")
-    # return render_template("message.html",msg="not a good table")
+    topics=topic_id.query.all()
+    for i in topics:
+        if i.name==topic:
+            topid=i.id
+            if post_data!=None:
+                try:
+                    post=posts(data=post_data,sender_id=user.id,topicid=topid)
+                    db.session.add(post)
+                    db.session.commit()
+                    print("posted")
+                except:
+                    return render_template("message.html",msg="not added to table/topic")
+            data=posts.query.filter_by(topicid=topid).order_by(posts.time.desc()).all()
+            user=users.query.order_by(users.id).all()
+            topic=topic_id.query.filter_by(id=topid).first()
+            return render_template("todo.html",name=name,mydata=data,user=user,topic=topic)
+            
+    return render_template("message.html",msg="topic don't exist")
 
 @app.route("/shop",methods=["GET","POST"])
 def shop():

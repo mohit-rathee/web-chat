@@ -9,7 +9,7 @@
 <ul>{% for u in user: %}
         <li>{{u.username}}</li>
         {% for msg in mydata: %}
-            {% if msg.user.username == u.username: %}
+            {% if msg.sender_id == u.id: %}
                 <ul><li>{{msg.data}} </li></ul>
             {% endif %}
         {% endfor %}
@@ -31,9 +31,8 @@
 </div>
 </header>
 <br>
-<form action="/user/general_topic" method="post">
+<form action="/user/{{topic.name}}" method="post">
     <input autofocus autocomplete="off" type="text" name="post" placeholder="post">    
-    <input type="hidden" name="topic_name" value="general_topic">
     <input type="submit" value="ADD"> 
 </form>
 <form action="/user" method="post">
