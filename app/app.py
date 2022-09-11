@@ -39,10 +39,10 @@ class channel(db.Model):
 
 
 class posts(db.Model):
-    id=db.Column(db.Integer,primary_key=True)                           #msg/post ID
-    data=db.Column(db.String, nullable=False)                           #actuall msg
-    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))         #User ID
-    time = db.Column(db.DateTime, default=func.now())                   #time
+    id=db.Column(db.Integer,primary_key=True)                               #msg/post ID
+    data=db.Column(db.String, nullable=False)                               #actuall msg
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #User ID
+    time = db.Column(db.DateTime, default=func.now())                       #time
     topic=db.relationship('channel',secondary=channel_post,backref='posts') #Association table->channel_post
 
 
@@ -212,13 +212,9 @@ def channel_chat(Channel):
                 post.topic.append(current_channel)
                 db.session.add(post)
                 db.session.commit()
+                print("posted")
             except:
                 return render_template("message.html",msg="not added to channel")
-            # try:
-            #     print("added to association table")
-            # except:
-            #     return render_template('message.html',msg="can't append to association table")
-            print("posted")
         post=current_channel.posts
         print(post)
         current_channel=channel.query.filter_by(name=Channel).first()
