@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}{{name}}
-</style>
 {% endblock %}
 {% block body %}
 
@@ -9,57 +8,59 @@
 <p></p><h2>Yeah {{name}}<br> We got SUCCESS!!! </h2></p>
 
 
-
-{% for post in posts: %}
-    {% if loop.previtem is not defined: %}
-        {% if post.user.username==name: %}
-            <ol>
-                <li>{{post.user.username}}</li>
-                <ul>
-                    <li>{{post.data}}</li>
-        {% else: %}
-            <ul>
-                <li>{{post.user.username}}</li>
+<section class="parent">
+    <section class=""child>
+        {% for post in posts: %}
+            {% if loop.previtem is not defined: %}
+                {% if post.user.username==name: %}
+                    <ul style="list-style-type:square;">
+                        <li>{{post.user.username}}</li>
+                        <ul style="list-style-type:square;">
+                            <li>{{post.data}}</li>
+                {% else: %}
                     <ul>
+                        <li>{{post.user.username}}</li>
+                            <ul>
+                                <li>{{post.data}}</li>
+                {% endif %}   
+            {% elif loop.previtem is defined and post.user.username==loop.previtem.user.username: %}
                         <li>{{post.data}}</li>
-        {% endif %}   
-    {% elif loop.previtem is defined and post.user.username==loop.previtem.user.username: %}
-                <li>{{post.data}}</li>
-            
-    {% elif post.user.username!=loop.previtem.user.username: %}
-        {% if loop.previtem.user.username==name: %}
-            </ul>
-            </ol>
-            <ul>
-                <li>{{post.user.username}}</li>
-                <ul>
-                    <li>{{post.data}}</li>
-        {% elif post.user.username==name: %}
-            </ul>
-            </ul>
-            <ol>
-                <li>{{post.user.username}}</li>
-                <ul>
-                    <li>{{post.data}}</li>
-        {% else: %}
-            </ul>
-            </ul>
-            <ul>
-                <li>{{post.user.username}}</li>
-                <ul>
-                    <li>{{post.data}}</li>
-        {% endif %}
-    {% elif loop.nextitem is not defined: %}
-        {% if loop.previtem.user.username==name: %}
-            </ul>
-            </ol>
-        {% else: %}
-            </ul>
-            </ul>
-        {% endif %}
-    {% endif %}
-{% endfor %}
-
+                    
+            {% elif post.user.username!=loop.previtem.user.username: %}
+                {% if loop.previtem.user.username==name: %}
+                    </ul>
+                    </ul>
+                    <ul>
+                        <li>{{post.user.username}}</li>
+                        <ul>
+                            <li>{{post.data}}</li>
+                {% elif post.user.username==name: %}
+                    </ul>
+                    </ul>
+                    <ul style="list-style-type:square;">
+                        <li>{{post.user.username}}</li>
+                        <ul style="list-style-type:square;">
+                            <li>{{post.data}}</li>
+                {% else: %}
+                    </ul>
+                    </ul>
+                    <ul>
+                        <li>{{post.user.username}}</li>
+                        <ul>
+                            <li>{{post.data}}</li>
+                {% endif %}
+            {% elif loop.nextitem is not defined: %}
+                {% if loop.previtem.user.username==name: %}
+                    </ul>
+                    </ul>
+                {% else: %}
+                    </ul>
+                    </ul>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </section>
+</section>
 
 
 </div>
