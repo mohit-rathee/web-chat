@@ -80,7 +80,10 @@ def teardown_request(exception):
 def index():
     if session.get("id")==None:
         return redirect("/login")
-    return redirect("/user")
+    if session.get("topic")!=None:
+        return redirect("/user/"+str(session.get("topic")))
+    else:
+        return redirect("/user")
 
 
 
@@ -132,28 +135,31 @@ def logout():
 @app.route('/reset',methods=["POST"])    
 def reset():
     try:
-        user = users.query.order_by(users.id.asc()).all()
-        # for i in user:
-        #     db.session.delete(i)
-        #     db.session.commit()
-        # data = general_topic.query.order_by(general_topic.id.asc()).all()
+        post= posts.query.all()
+        for i in post:
+            print(i)
+            db.session.delete(i)
+            db.session.commit()
+        user = users.query.all()
+        for i in user:
+            db.session.delete(i)
+            db.session.commit()
+        data = topic_id.query.all()
         for i in data:
             print(i)
             db.session.delete(i)
             db.session.commit()
         print("delete")
-        tables=db.engine.table_names()   
-        # for t in tables:
-            #delete table
         return redirect("/login")
     except:
-        return redirect("/login")
+        return render_template("message.html",msg="can't delete plz check your data")
 
 
 @app.route("/user",methods=["GET","POST"])
 def user():
     if session.get("id")==None:
-        return redirect("/login")    
+        return redirect("/login") 
+    session["topic"]=None   
     id=session.get("id")
     user=users.query.filter_by(id=id).first()
     name=user.username
@@ -181,30 +187,33 @@ def user():
 def todo(topic):
     if session.get("id")==None:
         return redirect("/login")
-        
     id=session.get("id")
     post_data=request.form.get("post")
+    Topic=str(topic)
     user = users.query.filter_by(id=id).first()
     name=user.username
-    topics=topic_id.query.all()
-    for i in topics:
-        if i.name==topic:
-            topid=i.id
-            if post_data!=None:
-                try:
-                    post=posts(data=post_data,sender_id=user.id,topicid=topid)
-                    db.session.add(post)
-                    db.session.commit()
-                    print("posted")
-                except:
-                    return render_template("message.html",msg="not added to table/topic")
-            data=posts.query.filter_by(topicid=topid).order_by(posts.time.desc()).all()
-            user=users.query.order_by(users.id).all()
-            topic=topic_id.query.filter_by(id=topid).first()
-            return render_template("todo.html",name=name,mydata=data,user=user,topic=topic)
-            
-    return render_template("message.html",msg="topic don't exist")
-
+    try:
+        topic=topic_id.query.filter_by(name=Topic).first()
+        session["topic"]=topic.name
+        print(session.get("topic"))
+    except:
+        return render_template("message.html",msg="topic not found")
+    if session.get("topic"):
+        if post_data!=None:
+            try:
+                post=posts(data=post_data,sender_id=user.id,topicid=topic.id)
+                db.session.add(post)
+                db.session.commit()
+                print("posted")
+            except:
+                return render_template("message.html",msg="not added to table/topic")
+        data=posts.query.filter_by(topicid=topic.id).order_by(posts.time.desc()).all()
+        user=users.query.order_by(users.id).all()
+        return render_template("todo.html",name=name,mydata=data,user=user,topic=topic)
+                
+        return render_template("message.html",msg="topic don't exist")
+    else:
+        return render_template("message.html",msg="stop messing with me")
 @app.route("/shop",methods=["GET","POST"])
 def shop():
     if session.get("id")==None:
