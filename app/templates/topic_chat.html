@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% block title %}{{name}}{% endblock %}
+{% block title %}{{name}}
+</style>
+{% endblock %}
 {% block body %}
 
 <p><h1>{{topic.name}}</h1>  <h4>created by {{topic.user.username}}</h4></p>
@@ -7,7 +9,7 @@
 <p></p><h2>Yeah {{name}}<br> We got SUCCESS!!! </h2></p>
 
 
-<ul >
+
 {% for post in posts: %}
     {% if loop.previtem is not defined: %}
         {% if post.user.username==name: %}
@@ -16,39 +18,48 @@
                 <ul>
                     <li>{{post.data}}</li>
         {% else: %}
-            <li>{{post.user.username}}</li>
-                <ul>
-                    <li>{{post.data}}</li>
+            <ul>
+                <li>{{post.user.username}}</li>
+                    <ul>
+                        <li>{{post.data}}</li>
         {% endif %}   
     {% elif loop.previtem is defined and post.user.username==loop.previtem.user.username: %}
                 <li>{{post.data}}</li>
             
     {% elif post.user.username!=loop.previtem.user.username: %}
         {% if loop.previtem.user.username==name: %}
+            </ul>
             </ol>
-            <li>{{post.user.username}}</li>
             <ul>
-                <li>{{post.data}}</li>
+                <li>{{post.user.username}}</li>
+                <ul>
+                    <li>{{post.data}}</li>
         {% elif post.user.username==name: %}
+            </ul>
+            </ul>
             <ol>
                 <li>{{post.user.username}}</li>
                 <ul>
                     <li>{{post.data}}</li>
         {% else: %}
             </ul>
-        <li>{{post.user.username}}</li>
+            </ul>
             <ul>
-                <li>{{post.data}}</li>
+                <li>{{post.user.username}}</li>
+                <ul>
+                    <li>{{post.data}}</li>
         {% endif %}
     {% elif loop.nextitem is not defined: %}
         {% if loop.previtem.user.username==name: %}
+            </ul>
             </ol>
         {% else: %}
+            </ul>
             </ul>
         {% endif %}
     {% endif %}
 {% endfor %}
-</ul>
+
 
 
 </div>
