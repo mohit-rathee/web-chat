@@ -17,27 +17,30 @@ db = SQLAlchemy(app)
 # metadata=None
 
 class users(db.Model):
-    id=db.Column(db.Integer,primary_key=True)  #User ID
-    username=db.Column(db.String(20), unique=True, nullable=False) #user name
-    password=db.Column(db.String(30), nullable=False) #user password
-    balance=db.Column(db.Integer, nullable=True, default=0) #user balance
-    post=db.relationship('posts',backref='user') #relation#
+    id=db.Column(db.Integer,primary_key=True)                            #User ID
+    username=db.Column(db.String(20), unique=True, nullable=False)       #user name
+    password=db.Column(db.String(30), nullable=False)                    #user password
+    balance=db.Column(db.Integer, nullable=True, default=0)              #user balance
+    post=db.relationship('posts',backref='user')                         #relation#
+    topic=db.relationship('topic_id',backref='user')
     def __init__(self, username, password, balance):
         self.username=username
         self.password=password
         self.balance=balance
 
 class topic_id(db.Model):
-    id=db.Column(db.Integer,primary_key=True) 
-    name=db.Column(db.String, nullable=False,unique=True)
-    topic=db.relationship('posts',backref='topic')
+    id=db.Column(db.Integer,primary_key=True)                   #topic ID
+    name=db.Column(db.String, nullable=False,unique=True)       #topic name
+    topic=db.relationship('posts',backref='topic')              #relation with post#
+    creator_id=db.Column(db.Integer,db.ForeignKey('users.id'))  #creator ID
+
 
 class posts(db.Model):
-    id=db.Column(db.Integer,primary_key=True) #msg/post ID
-    data=db.Column(db.String, nullable=False) #actuall msg
+    id=db.Column(db.Integer,primary_key=True)                   #msg/post ID
+    data=db.Column(db.String, nullable=False)                   #actuall msg
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id')) #User ID
     topicid=db.Column(db.Integer, db.ForeignKey('topic_id.id')) #topic ID
-    time = db.Column(db.DateTime, default=func.now()) #time
+    time = db.Column(db.DateTime, default=func.now())           #time
 
 
 
@@ -169,7 +172,7 @@ def user():
     if topic==None:
         return render_template("user.html",name=name,balance=balance,tables=tables)
     try:
-        topic=topic_id(name=topic)
+        topic=topic_id(name=topic,creator_id=user.id)
         db.session.add(topic)
         db.session.commit()
         print("sucess")
@@ -184,7 +187,7 @@ def user():
 
 
 @app.route("/user/<topic>",methods=["GET","POST"])
-def todo(topic):
+def topic_chat(topic):
     if session.get("id")==None:
         return redirect("/login")
     id=session.get("id")
@@ -207,9 +210,9 @@ def todo(topic):
                 print("posted")
             except:
                 return render_template("message.html",msg="not added to table/topic")
-        data=posts.query.filter_by(topicid=topic.id).order_by(posts.time.desc()).all()
+        post=posts.query.filter_by(topicid=topic.id).order_by(posts.time.asc()).all()
         user=users.query.order_by(users.id).all()
-        return render_template("todo.html",name=name,mydata=data,user=user,topic=topic)
+        return render_template("topic_chat.html",name=name,posts=post,users=user,topic=topic)
                 
         return render_template("message.html",msg="topic don't exist")
     else:
@@ -220,7 +223,14 @@ def shop():
         return redirect("/login")
     return render_template("shop.html")
 
-@app.route("/test",methods=["GET","POST"])
-def test():
-    # print(MetaData)
+@app.route("/test/<Topic>",methods=["GET","POST"])
+def test(Topic):
+    topic=topic_id.query.filter_by(name=Topic).first()
+    name=topic.user.username
+    print(name)
     return "done"
+
+
+
+def chat():
+    return "hello"

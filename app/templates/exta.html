@@ -1,0 +1,26 @@
+{% def %}
+
+{% for post in posts: %}
+    {% if post %}
+
+
+
+    <ul>{% for u in user: %}
+        <li>{{u.username}}</li>
+        {% for msg in posts: %}
+            {% if msg.sender_id == u.id: %}
+                <ul><li>{{msg.data}} </li></ul>
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+    </ul>
+
+
+
+
+
+    {% macro check(obj1,obj2) -%}
+    {% if obj1.user.username ==  obj2.user.username: %}
+        {{obj1.data}}
+    {% endif %}
+{% endmacro %}

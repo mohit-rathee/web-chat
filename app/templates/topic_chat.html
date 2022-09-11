@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{name}}{% endblock %}
+{% block body %}
+
+<p><h1>{{topic.name}}</h1>  <h4>created by {{topic.user.username}}</h4></p>
+
+<p></p><h2>Yeah {{name}}<br> We got SUCCESS!!! </h2></p>
+
+<br>
+<header class=""all_nav>
+<div class="nav">
+
+
+<ul style="list-style-type:disk;">
+{% for post in posts: %}
+    {% if loop.previtem is not defined: %}
+        <li>{{post.user.username}}</li>
+            <ul>
+                <li>{{post.data}}</li>
+            
+    {% elif loop.previtem is defined and post.user.username==loop.previtem.user.username: %}
+                <li>{{post.data}}</li>
+            
+    {% elif post.user.username!=loop.previtem.user.username: %}
+            </ul>
+        <li>{{post.user.username}}</li>
+            <ul>
+                <li>{{post.data}}</li>
+    {% elif loop.nextitem is not defined: %}
+            </ul>
+    {% endif %}
+{% endfor %}
+</ul>
+
+
+</div>
+
+
+<br>
+<form action="/user/{{topic.name}}" method="post">
+    <input autofocus autocomplete="off" type="text" name="post" placeholder="post">    
+    <input type="submit" value="ADD"> 
+</form>
+<form action="/user" method="post">
+    <input type="submit" value="Back">    
+</form>
+
+{% endblock %}
+
+
