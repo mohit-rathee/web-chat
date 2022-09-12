@@ -1,27 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Let's start{% endblock %}
 {% block body %}
-<h1>Welcome {{name}}</h1><br>
-Your balance: {{balance}}
-<h3>
-<br>
-{% for table in tables: %}
-    <form action="/user/{{table.name}}" method="post">
-        <input type="submit" value="{{table.name}}">
-    </form>
-    <br>
-{% endfor %}
-<form action="/user" method="post">
-    <input autocomplete="off" name="channel_name" placeholder="channel_name" type="text">
-    <input type="submit" value="Add Topic">
+<div class="container">
+    <div class="leftSide" >
+        <h2>Channels</h2>
+        {% for table in tables: %}
+            <form action="/user/{{table.name}}" method="post">
+                <input type="submit" value="{{table.name}}">
+            </form>
 
-</form>  
-
-<br>
-    <form action="/logout" method="post">
-        <input type="submit" value="logout">
-    </form>    
-    <form action="/shop" method="post">
-        <input type="submit" value="shop">
-    </form>
+            <br>
+        {% endfor %}
+            <form action="/user" method="post">
+                <input autocomplete="off" name="channel_name" placeholder="channel_name" type="text">
+                <input type="submit" value="Add Topic">
+            </form>      
+    </div>
+    <div class="rightSide">
+        <p><h2>Welcome {{name}}</h2><br><h3>Your balance: {{balance}}</h3></p>
+        <form action="/logout" method="post">
+            <input type="submit" value="logout">
+        </form> 
+        <br>   
+    </div>
+</div>
 {% endblock %}

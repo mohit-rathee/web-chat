@@ -1,0 +1,101 @@
+body
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-height: 100vh;
+    background-color: aqua;
+}
+.container
+{
+    position: relative;
+    width: 1396px;
+    max-width: 100%;
+    height: calc(100vh -40px);
+    background: white;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,0,0.06),0 2px 5px 0 rgba(0,0,0,0,0.06);
+    display: flex;
+}
+.container .leftSide
+{
+    position: relative;
+    flex: 30%;
+    background: lightblue;
+}
+.container .rightSide
+{
+    position: relative;
+    flex: 70%;
+    background: lightgreen;
+}
+
+.chatbox
+{
+    position: relative;
+    width: 100%;
+    height: calc(100% - 120px);
+    padding: 50px;
+    overflow-y: auto;
+}
+.message
+{
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin: 5px 0;
+}
+.message p
+{
+    position: relative;
+    right: 0;
+    text-align: right;
+    max-width: 65%;
+    /* background: blue; */
+    border-radius: 10px;
+    font-size: 0.9em;
+}
+
+.message p span
+{
+    display: block;
+    margin-top: 5px;
+    font-size: 0.85em;
+    opacity: 0.5;
+}
+.my_message
+{
+    justify-content: flex-end;
+}
+.frnd_message
+{
+    justify-content: flex-start;
+}
+.frnd_message p
+{
+    /* background-color: aqua; */
+    text-align: left;
+}
+
+.chatbox_input
+{
+    position: relative;
+    width: 100%;
+    height: 60px;
+    background: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+.chatbox_input input
+{
+    position: relative;
+    width: 90%;
+    margin: 0 20px;
+    padding: 10px 20px;
+    border: none;
+    outline: none;
+    border-radius: 30px;
+    font-size: 1em;
+}
