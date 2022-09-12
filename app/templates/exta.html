@@ -1,26 +1,194 @@
-{% def %}
+        
+<p><h1>{{topic.name}}</h1>  <h4>created by {{topic.user.username}}</h4></p>
+    
+<p></p><h2>Yeah {{name}}<br> We got SUCCESS!!! </h2></p>
 
-{% for post in posts: %}
-    {% if post %}
+<div class="container">
+    <div class="leftSide">
+
+    </div>
+    <div class="rightSide">
+        <div class="chatbox">
+            {% for post in posts: %}
+                {% if loop.previtem is not defined: %}
+                    {% if post.user.username==name: %}
+                        <div class="message my_message">
+                        <p>{{post.user.username}}<br><p>{{post.data}}<br><span>{{post.time}}</span></p>
+                    {% else: %}
+                        <div class="message frnd_message">
+                        <p>{{post.user.username}}<br><p>{{post.data}}<br><span>{{post.time}}</span></p>
+                    {% endif %}   
+                {% elif loop.previtem is defined and post.user.username==loop.previtem.user.username: %}
+                            <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                {% elif post.user.username!=loop.previtem.user.username: %}
+                    {% if loop.previtem.user.username==name: %}
+                        </p>
+                        </div>
+                        <div class="message frnd_message">
+                        <p>{{post.user.username}}<br><p>{{post.data}}<br><span>{{post.time}}</span></p>
+                    {% elif post.user.username==name: %}
+                        </p>
+                        </div>
+                        <div class="message my_message">
+                        <p>{{post.user.username}}<br><p>{{post.data}}<br><span>{{post.time}}</span></p>
+    
+                    {% else: %}
+                        </p>
+                        </div>
+                        <div class="message frnd_message">
+                        <p>{{post.user.username}}<br><p>{{post.data}}<br><span>{{post.time}}</span></p>
+                    {% endif %}
+                {% elif loop.nextitem is not defined: %}
+                    {% if loop.previtem.user.username==name: %}
+                        </p>
+                        </div>
+                    {% else: %}
+                        </p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        
+        <br>
+        <div class="chatbox_input">
+            <form action="/user/{{topic.name}}" method="post">
+                <input autofocus autocomplete="off" type="text" name="post" placeholder="post">    
+                <input type="submit" value="ADD"> 
+            </form>
+            <form action="/user" method="post">
+                <input type="submit" value="Back">    
+            </form>
+        </div>
+        
+        </div>
+
+</div>
 
 
 
-    <ul>{% for u in user: %}
-        <li>{{u.username}}</li>
-        {% for msg in posts: %}
-            {% if msg.sender_id == u.id: %}
-                <ul><li>{{msg.data}} </li></ul>
-            {% endif %}
-        {% endfor %}
-    {% endfor %}
-    </ul>
 
 
 
 
 
-    {% macro check(obj1,obj2) -%}
-    {% if obj1.user.username ==  obj2.user.username: %}
-        {{obj1.data}}
-    {% endif %}
-{% endmacro %}
+
+
+
+
+
+
+
+
+
+container
+{
+    position: relative;
+    width: 1396px;
+    max-width: 100%;
+    height: calc(100vh -40px);
+    background: white;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,0,0.06),0 2px 5px 0 rgba(0,0,0,0,0.06);
+
+}
+.container .leftSide
+{
+    position: relative;
+    flex: 30%;
+    background: red;
+}
+.container .rightSide
+{
+    position: relative;
+    flex: 70%;
+    background: lightgreen;
+}
+.chatbox
+{
+    position: relative;
+    width: 100%;
+    height: calc(100% - 120px);
+    padding: 50px;
+    overflow-y: auto;
+}
+.message
+{
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin: 5px 0;
+}
+.message p
+{
+    position: relative;
+    right: 0;
+    text-align: right;
+    max-width: 65%;
+    background: blue;
+    border-radius: 10px;
+    font-size: 0.9em;
+}
+.message p::before
+{
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg,#dcf8c6 0%,#dcf8c6 50%,transparent 50%,transparent);
+}
+.message p span
+{
+    display: block;
+    margin-top: 5px;
+    font-size: 0.85em;
+    opacity: 0.5;
+}
+.my_message
+{
+    justify-content: flex-end;
+}
+.frnd_message
+{
+    justify-content: flex-start;
+}
+.frnd_message p
+{
+    background-color: aqua;
+    text-align: left;
+}
+.message.frnd_message p::before
+{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -12px;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(255deg,#dcf8c6 0%,#dcf8c6 50%,transparent 50%,transparent);
+}
+.chatbox_input
+{
+    position: relative;
+    width: 100%;
+    height: 60px;
+    background: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+.chatbox_input input
+{
+    position: relative;
+    width: 90%;
+    margin: 0 20px;
+    padding: 10px 20px;
+    border: none;
+    outline: none;
+    border-radius: 30px;
+    font-size: 1em;
+}

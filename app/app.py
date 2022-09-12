@@ -215,11 +215,11 @@ def channel_chat(Channel):
                 print("posted")
             except:
                 return render_template("message.html",msg="not added to channel")
-        posts=current_channel.posts
+        topic_posts=current_channel.posts
         current_channel=channel.query.filter_by(name=Channel).first()
 
         user=users.query.order_by(users.id).all()
-        return render_template("topic_chat.html",name=name,posts=posts,users=user,topic=current_channel)
+        return render_template("topic_chat.html",name=name,posts=topic_posts,users=user,topic=current_channel)
                 
         return render_template("message.html",msg="channel don't exist")
     else:

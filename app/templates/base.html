@@ -5,23 +5,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
-    <style>
-        body{
-            color: #d64161;
-            font-size: 1.25rem;
-            margin-left: 20px;
-            margin-bottom: 20%;
-            text-decoration: none;
-        }
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-gap: 20px;
-        }
-    </style>
     <!-- <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
     <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
      -->
+    {% block head %}{% endblock %}
 </head>
 <body>
 {% block body %}{% endblock %}
