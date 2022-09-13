@@ -1,15 +1,23 @@
-{% extends "base.html" %}
-{% block title %}{{name}}{% endblock %}
-{% block style %}
-<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-<script src="{{ url_for('static',filename='script.js')}}"></script>
-{% endblock %}
-
-{% block body %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{name.username}}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static',filename='script.js')}}"></script>
+</head>
+<body>
     <div class="container">
         <div class="leftside">
             <div class="header">
-                <h3>Mohit</h3>
+                <div class="imgtext">
+                    <div class="userimg">
+                        <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
+                    </div>
+                    <h4>{{name.username}}<br><span>Points: {{name.balance}}</span></h4>
+                </div>
             </div>
             <div class="search_channel">
                 <div>
@@ -47,7 +55,7 @@
                                     <p class="time"></p>
                                 </div>
                                 <div class="message_p">
-                                    <p>created by {{table.user.userrname}} </p>
+                                    <p>created by {{table.user.username}} </p>
                                     <b>3</b>
                                 </div>
                             </div>
@@ -58,14 +66,18 @@
             </div>
         </div>
         <div class="rightside">
-            <script>
-                let msgbox = document.querySelector('.chatbox');
-                msgbox.scrollTop = 12;
-            </script>
+            <div class="header">
+                <div class="imgtext">
+                    <div class="userimg">
+                        <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
+                    </div>
+                    <h4 id="topic">{{topic.name}}<br><span>{{topic.user.username}}</span></h4>
+                </div>
+            </div>
             <div class="chatbox">
                 {% for post in posts: %}
                     {% if loop.previtem is not defined: %}
-                        {% if post.user.username==name: %}
+                        {% if post.user.username==name.username: %}
                             <div class="message my_message">
                                 <p>{{post.data}}<br><span>{{post.time}}</span></p>
                             </div>
@@ -79,7 +91,7 @@
                         {% endif %}
                     {% elif loop.previtem is defined: %}
                         {% if post.user.username==loop.previtem.user.username: %}
-                            {% if post.user.username == name: %}
+                            {% if post.user.username == name.username: %}
                                 <div class="message my_message">
                                     <p>{{post.data}}<br><span>{{post.time}}</span></p>
                                 </div>
@@ -89,7 +101,7 @@
                                 </div>
                             {% endif %}
                         {% else: %}
-                            {% if post.user.username==name: %}
+                            {% if post.user.username==name.username: %}
                                 <div class="message my_message">
                                     <p>{{post.data}}<br><span>{{post.time}}</span></p>
                                 </div>
@@ -103,7 +115,7 @@
                             {% endif %}
                         {% endif %}
                     {% elif loop.nextitem is not defined: %}
-                        {% if loop.previtem.user.username==name: %}
+                        {% if loop.previtem.user.username==name.username: %}
                             <div class="message my_message">
                                 <p>{{post.data}}<br><span>{{post.time}}</span></p>
                             </div>
@@ -122,9 +134,8 @@
                 <form action="/user/{{topic.name}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
                 </form>
-
             </div>
         </div>
     </div>
-
-{% endblock %}  
+</body>
+</html>

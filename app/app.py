@@ -198,7 +198,7 @@ def channel_chat(Channel):
     id=session.get("id")
     post_data=request.form.get("post")
     user = users.query.filter_by(id=id).first()
-    name=user.username
+    name=user
     try:
         current_channel=channel.query.filter_by(name=Channel).first()
         session["channel"]=current_channel.name
