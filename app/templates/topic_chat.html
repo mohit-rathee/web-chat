@@ -74,7 +74,7 @@
                     <h4 id="topic">{{topic.name}}<br><span>{{topic.user.username}}</span></h4>
                 </div>
             </div>
-            <div class="chatbox">
+            <div class="chatbox" id="chats">
                 {% for post in posts: %}
                     {% if loop.previtem is not defined: %}
                         {% if post.user.username==name.username: %}
@@ -130,6 +130,10 @@
                     {% endif %}
                 {% endfor %}
             </div>
+            <script>
+                var objDiv = document.getElementById("chats");
+                objDiv.scrollTop = objDiv.scrollHeight;
+            </script>
             <div class="chatbox_input">
                 <form action="/user/{{topic.name}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
