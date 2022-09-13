@@ -76,7 +76,7 @@ body
     padding: 15px;
     border-bottom: 1px solid rgba(0,0,0,0,0.06);
 }
-.channel_list .block .listHead
+.channel_list .block .name
 {
     display: flex;
     justify-content: space-between;

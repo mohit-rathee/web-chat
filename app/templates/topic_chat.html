@@ -1,88 +1,130 @@
 {% extends "base.html" %}
 {% block title %}{{name}}{% endblock %}
-{% block body %}
-
-<div class="container">
-    <div class="leftSide">
-        <div class="header">
-            <p>
-            <h2>{{topic.name}}</h2><small>created by {{topic.user.username}}</small></p>
-        </div>
-
-
-        <h3>Channels</h3>
-        <form action="/user" method="post">
-            <input autocomplete="off" name="channel_name" placeholder="channel_name" type="text" class="search_channel">
-            <input type="submit" value="Add Topic">
-        </form>
-        <div class="channel_list">
-            {% for table in tables: %}
-            <div class="block"><a href="/user/{{table.name}}" class="listHead">{{table.name}}</a></div>
-            {% endfor %}
-        </div>
-
-
-    </div>
-    <div class="rightSide">
-        <div class="chatbox">
-            {% for post in posts: %}
-            {% if loop.previtem is not defined: %}
-            {% if post.user.username==name: %}
-            <div class="message my_message">
-                <p>{{post.user.username}}<br>
-                <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                {% else: %}
-                <div class="message frnd_message">
-                    <p>{{post.user.username}}<br>
-                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                    {% endif %}
-                    {% elif loop.previtem is defined and post.user.username==loop.previtem.user.username: %}
-                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                    {% elif post.user.username!=loop.previtem.user.username: %}
-                    {% if loop.previtem.user.username==name: %}
-                    </p>
-                </div>
-                <div class="message frnd_message">
-                    <p>{{post.user.username}}<br>
-                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                    {% elif post.user.username==name: %}
-                    </p>
-                </div>
-                <div class="message my_message">
-                    <p>{{post.user.username}}<br>
-                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-
-                    {% else: %}
-                    </p>
-                </div>
-                <div class="message frnd_message">
-                    <p>{{post.user.username}}<br>
-                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                    {% endif %}
-                    {% elif loop.nextitem is not defined: %}
-                    {% if loop.previtem.user.username==name: %}
-                    </p>
-                </div>
-                {% else: %}
-                </p>
-            </div>
-            {% endif %}
-            {% endif %}
-            {% endfor %}
-        </div>
-
-
-        <div class="chatbox_input">
-            <form action="/user/{{topic.name}}" method="post">
-                <input autofocus autocomplete="off" type="text" name="post" placeholder="post">
-                <input type="submit" value="ADD">
-            </form>
-            <form action="/user" method="post">
-                <input type="submit" value="Back">
-            </form>
-        </div>
-        <br>
-    </div>
-</div>
-
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<script src="{{ url_for('static',filename='script.js')}}"></script>
 {% endblock %}
+
+{% block body %}
+    <div class="container">
+        <div class="leftside">
+            <div class="header">
+                <h3>Mohit</h3>
+            </div>
+            <div class="search_channel">
+                <div>
+                    <form action="/user" method="post">
+                        <input autocomplete="off" name="channel_name" placeholder="Search/Add channel" type="text" class="search_channel">
+                    </form>
+                </div>
+            </div>
+            <div class="channel_list">
+                {% for table in tables: %}
+                    {% if table.name == topic.name: %}
+                        <div class="block active">
+                            <div class="imgbx">
+                                <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
+                            </div>
+                            <div class="details">
+                                <div class="name">
+                                    <h4>{{table.name}}</h4>
+                                    <p class="time"></p>
+                                </div>
+                                <div class="message_p">
+                                    <p>created by {{table.user.userrname}} </p>
+                                    <b>3</b>
+                                </div>
+                            </div>
+                        </div>
+                    {% else: %}
+                        <div class="block">
+                            <div class="imgbx">
+                                <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
+                            </div>
+                            <div class="details" onclick="location.href='/user/{{table.name}}'">
+                                <div class="name">
+                                    <h4><a href="{{table.name}}" style="text-decoration: none; ">{{table.name}}</a></h4>
+                                    <p class="time"></p>
+                                </div>
+                                <div class="message_p">
+                                    <p>created by {{table.user.userrname}} </p>
+                                    <b>3</b>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                <!-- profile pic will be added later -->
+            </div>
+        </div>
+        <div class="rightside">
+            <script>
+                let msgbox = document.querySelector('.chatbox');
+                msgbox.scrollTop = 12;
+            </script>
+            <div class="chatbox">
+                {% for post in posts: %}
+                    {% if loop.previtem is not defined: %}
+                        {% if post.user.username==name: %}
+                            <div class="message my_message">
+                                <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                            </div>
+                        {% else: %}
+                            <div class="message frnd">
+                                <p>{{post.user.username}}</p><br>
+                            </div>
+                            <div class="message frnd_message">
+                                <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                            </div>
+                        {% endif %}
+                    {% elif loop.previtem is defined: %}
+                        {% if post.user.username==loop.previtem.user.username: %}
+                            {% if post.user.username == name: %}
+                                <div class="message my_message">
+                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                                </div>
+                            {% else: %}
+                                <div class="message frnd_message">
+                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                                </div>
+                            {% endif %}
+                        {% else: %}
+                            {% if post.user.username==name: %}
+                                <div class="message my_message">
+                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                                </div>
+                            {% else: %}
+                                <div class="message frnd">
+                                    <p>{{post.user.username}}</p><br>
+                                </div>
+                                <div class="message frnd_message">
+                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% elif loop.nextitem is not defined: %}
+                        {% if loop.previtem.user.username==name: %}
+                            <div class="message my_message">
+                                <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                            </div>
+                        {% else: %}
+                            <div class="message frnd">
+                                <p>{{post.user.username}}</p><br>
+                            </div>
+                            <div class="message fnd_message">
+                                <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="chatbox_input">
+                <form action="/user/{{topic.name}}" method="post" class="form">
+                    <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}  

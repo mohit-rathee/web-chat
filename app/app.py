@@ -220,6 +220,7 @@ def channel_chat(Channel):
         topic_posts=current_channel.posts
 
         user=users.query.order_by(users.id).all()
+        print("my work is done")
         return render_template("topic_chat.html",name=name,posts=topic_posts,users=user,topic=current_channel,tables=tables)
                 
         return render_template("message.html",msg="channel don't exist")
