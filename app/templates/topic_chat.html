@@ -21,8 +21,8 @@
             </div>
             <div class="search_channel">
                 <div>
-                    <form action="/user" method="post">
-                        <input autocomplete="off" name="channel_name" placeholder="Search/Add channel" type="text" class="search_channel">
+                    <form action="/app" method="post">
+                        <input autocomplete="off" name="search_channel" placeholder="Search/Add channel" type="text" class="search_channel">
                     </form>
                 </div>
             </div>
@@ -39,7 +39,7 @@
                                     <p class="time"></p>
                                 </div>
                                 <div class="message_p">
-                                    <p>created by {{table.user.userrname}} </p>
+                                    <p>created by {{table.user.username}} </p>
                                     <b>3</b>
                                 </div>
                             </div>
@@ -49,7 +49,7 @@
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>
-                            <div class="details" onclick="location.href='/user/{{table.name}}'">
+                            <div class="details" onclick="location.href='/channel/{{table.name}}'">
                                 <div class="name">
                                     <h4><a href="{{table.name}}" style="text-decoration: none; ">{{table.name}}</a></h4>
                                     <p class="time"></p>
@@ -68,10 +68,7 @@
         <div class="rightside">
             <div class="header">
                 <div class="imgtext">
-                    <div class="userimg">
-                        <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
-                    </div>
-                    <h4 id="topic">{{topic.name}}<br><span>{{topic.user.username}}</span></h4>
+                    <h4 id="topic">{{topic.name}}<br></h4>
                 </div>
             </div>
             <div class="chatbox" id="chats">
@@ -135,7 +132,7 @@
                 objDiv.scrollTop = objDiv.scrollHeight;
             </script>
             <div class="chatbox_input">
-                <form action="/user/{{topic.name}}" method="post" class="form">
+                <form action="/channel/{{topic.name}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
                 </form>
             </div>

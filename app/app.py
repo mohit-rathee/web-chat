@@ -87,9 +87,9 @@ def index():
     if session.get("id")==None:
         return redirect("/login")
     if session.get("channel")!=None:
-        return redirect("/user/"+str(session.get("channel")))
+        return redirect("/channel/"+str(session.get("channel")))
     else:
-        return redirect("/user")
+        return redirect("/app")
 
 
 
@@ -163,21 +163,29 @@ def reset():
         return render_template("message.html",msg="can't delete plz check your data")
 
 
-@app.route("/user",methods=["GET","POST"])
-def user():
+@app.route("/app",methods=["GET","POST"])
+def application():
     if session.get("id")==None:
         return redirect("/login") 
     session["channel"]=None   
     id=session.get("id")
-    new_channel=request.form.get("channel_name")
+    newChannel=request.form.get("channel_name")
+    channelRequest=request.form.get("search_channel")
     user=users.query.filter_by(id=id).first()
-    name=user.username
-    balance=user.balance
     channels=channel.query.all()
-    if new_channel==None:
-        return render_template("user.html",name=name,balance=balance,tables=channels)
+    if channelRequest!=None:
+        try:
+            channelRequest.strip()
+            my_channel=channel.query.filter_by(name=channelRequest).first()
+        except:
+            return "hhhhhiiii"
+        return redirect("/channel/"+str(channelRequest).strip())
+    elif newChannel==None:
+        return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
+    
+    str(newChannel).strip()
     try:
-        topic=channel(name=new_channel,creator_id=user.id)
+        topic=channel(name=newChannel,creator_id=user.id)
         db.session.add(topic)
         db.session.commit()
         print("sucess")
@@ -187,11 +195,11 @@ def user():
         channels=channel.query.all()
     except:
         print("can't show topics id")
-    return render_template("user.html",name=name,balance=balance,tables=channels)
+    return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
 
 
 
-@app.route("/user/<Channel>",methods=["GET","POST"])
+@app.route("/channel/<Channel>",methods=["GET","POST"])
 def channel_chat(Channel):
     if session.get("id")==None:
         return redirect("/login")
