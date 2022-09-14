@@ -14,11 +14,6 @@ db = SQLAlchemy(app)
 # engine = create_engine('sqlite:///test.sqlite3', echo=True)
 
 # metadata=None
-
-channel_post=db.Table('channel_post',
-    db.Column('channel',db.Integer,db.ForeignKey('channel.id')),
-    db.Column('posts',db.Integer,db.ForeignKey('posts.id')))
-
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
     username=db.Column(db.String(20), unique=True, nullable=False)       #user name
@@ -26,11 +21,20 @@ class users(db.Model):
     balance=db.Column(db.Integer, nullable=True, default=0)              #user balance
     post=db.relationship('posts',backref='user')                         #relation#
     topic=db.relationship('channel',backref='user')
-    chat=db.relationship('chats' ,backref='user')
+    chat=db.relationship('chats',backref='sender')
     def __init__(self, username, password, balance):
         self.username=username
         self.password=password
         self.balance=balance
+
+channel_post=db.Table('channel_post',
+    db.Column('channel',db.Integer,db.ForeignKey('channel.id')),
+    db.Column('posts',db.Integer,db.ForeignKey('posts.id')))
+
+user_chat=db.Table('user_chat',
+    db.Column('reciever',db.Integer,db.ForeignKey('users.id')),
+    db.Column('chats',db.Integer,db.ForeignKey('chats.id'))) 
+
 
 class channel(db.Model):
     id=db.Column(db.Integer,primary_key=True)                   #topic ID
@@ -41,9 +45,9 @@ class chats(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #topic ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))
-    reciever_id=db.Column(db.Integer,db.ForeignKey('users.username'))            #User ID
     time = db.Column(db.DateTime, default=func.now())                       #time
-    
+    user=db.relationship('users',secondary=user_chat,backref=db.backref('chats',lazy='dynamic'))  #reciever
+
 class posts(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #msg/post ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
@@ -237,13 +241,16 @@ def chat(frnd):
 
     if message==None:
         try:
-            posts=chats.query.filter_by(sender_id=me.id , reciever_id=friend.user.username).all()
+            frnd_chats=me.chats.all()
+            my_chats=friend.chats.all()
+            our_chats=my_chats+frnd_chats
         except:
             return render_template("message.html",msg="plz give valid input or check code")    
-        return render_template("chat.html",name=me,posts=posts,frnd=friend.user.username)
+        return render_template("chat.html",name=me,posts=our_chats,frnd=friend)
 
     try:
-        msg=chats(data=message,sender_id=me.id,reciever_id=friend.user.username).all()
+        msg=chats(data=message,sender_id=me.id)
+        msg.user.append(friend)
         db.session.add(msg)
         db.session.commit()
     except:
