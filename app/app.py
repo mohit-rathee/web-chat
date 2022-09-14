@@ -26,7 +26,7 @@ class users(db.Model):
     balance=db.Column(db.Integer, nullable=True, default=0)              #user balance
     post=db.relationship('posts',backref='user')                         #relation#
     topic=db.relationship('channel',backref='user')
-
+    chat=db.relationship('chats' ,backref='user')
     def __init__(self, username, password, balance):
         self.username=username
         self.password=password
@@ -37,15 +37,19 @@ class channel(db.Model):
     name=db.Column(db.String, nullable=False,unique=True)       #topic name
     creator_id=db.Column(db.Integer,db.ForeignKey('users.id'))  #creator ID
 
-
+class chats(db.Model):
+    id=db.Column(db.Integer,primary_key=True)                               #topic ID
+    data=db.Column(db.String, nullable=False)                               #actuall msg
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))
+    reciever_id=db.Column(db.Integer,db.ForeignKey('users.username'))            #User ID
+    time = db.Column(db.DateTime, default=func.now())                       #time
+    
 class posts(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #msg/post ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #User ID
     time = db.Column(db.DateTime, default=func.now())                       #time
-    topic=db.relationship('channel',secondary=channel_post,backref='posts') #Association table->channel_post
-
-
+    topic=db.relationship('channel',secondary=channel_post,backref=db.backref('posts',lazy='dynamic'))      #Association table->channel_post
 
 # SQLALCHEMY_TRACK_MODIFICATIONS = True
 
@@ -57,20 +61,6 @@ app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_TYPE"]="filesystem"
 Session(app)
 
-
-
-# Database
-superuser=[]
-couponbase=[]
-namedata=[]
-passdata=[]
-database=[]
-# database=[{"titanic":50,"hacking":550},{"nudes":"free"},{},{},...]
-balancedata=[]
-reffral_code={
-    "JAIHO":100,
-    "HACKER":69
-}
 
 # Routes
 @app.before_request
@@ -178,7 +168,8 @@ def application():
             channelRequest.strip()
             my_channel=channel.query.filter_by(name=channelRequest).first()
         except:
-            return "hhhhhiiii"
+            print("see line no 187")
+            return redirect("/channel/hello")
         return redirect("/channel/"+str(channelRequest).strip())
     elif newChannel==None:
         return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
@@ -215,30 +206,56 @@ def channel_chat(Channel):
         return render_template("message.html",msg="channel not found")
     if session.get("channel"):
         if post_data!=None:
-            try:
-                post=posts(data=post_data,sender_id=user.id)
-                post.topic.append(current_channel)
-                db.session.add(post)
-                db.session.commit()
-                print("posted")
-            except:
-                return render_template("message.html",msg="not added to channel")
+            
+            post=posts(data=post_data,sender_id=user.id)
+            post.topic.append(current_channel)
+            db.session.add(post)
+            db.session.commit()
+            print("posted")
+                        
         tables=channel.query.all()
         current_channel=channel.query.filter_by(name=Channel).first()
         topic_posts=current_channel.posts
 
         user=users.query.order_by(users.id).all()
         print("my work is done")
-        return render_template("topic_chat.html",name=name,posts=topic_posts,users=user,topic=current_channel,tables=tables)
+        return render_template("channel_chat.html",name=name,posts=topic_posts,users=user,topic=current_channel,tables=tables)
                 
         return render_template("message.html",msg="channel don't exist")
     else:
         return render_template("message.html",msg="stop messing with me")
-@app.route("/shop",methods=["GET","POST"])
-def shop():
+
+
+@app.route("/chat/<frnd>",methods=["GET","POST"])
+def chat(frnd):
     if session.get("id")==None:
         return redirect("/login")
-    return render_template("shop.html")
+    id=session.get("id")
+    message=request.form.get("message")
+    me=users.query.filter_by(id=id).first()
+    friend=users.query.filter_by(username=frnd).first()
+
+    if message==None:
+        try:
+            posts=chats.query.filter_by(sender_id=me.id , reciever_id=friend.user.username).all()
+        except:
+            return render_template("message.html",msg="plz give valid input or check code")    
+        return render_template("chat.html",name=me,posts=posts,frnd=friend.user.username)
+
+    try:
+        msg=chats(data=message,sender_id=me.id,reciever_id=friend.user.username).all()
+        db.session.add(msg)
+        db.session.commit()
+    except:
+        return render_template("message.html",msg="can't send to database")
+
+    return redirect("/chat/"+str(frnd).strip())
+
+
+
+
+
+
 
 @app.route("/test/<topic>",methods=["GET","POST"])
 def test(topic):

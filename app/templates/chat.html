@@ -5,70 +5,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{name.username}}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
     <script src="{{ url_for('static',filename='script.js')}}"></script>
 </head>
 <body>
     <div class="container">
-        <div class="leftside">
-            <div class="header">
-                <div class="imgtext">
-                    <div class="userimg">
-                        <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
-                    </div>
-                    <h4>{{name.username}}<br><span>Points: {{name.balance}}</span></h4>
-                </div>
-            </div>
-            <div class="search_channel">
-                <div>
-                    <form action="/app" method="post">
-                        <input autocomplete="off" name="search_channel" placeholder="Search/Add channel" type="text" class="search_channel">
-                    </form>
-                </div>
-            </div>
-            <div class="channel_list">
-                {% for table in tables: %}
-                    {% if table.name == topic.name: %}
-                        <div class="block active">
-                            <div class="imgbx">
-                                <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
-                            </div>
-                            <div class="details">
-                                <div class="name">
-                                    <h4>{{table.name}}</h4>
-                                    <p class="time"></p>
-                                </div>
-                                <div class="message_p">
-                                    <p>created by {{table.user.username}} </p>
-                                    <b>3</b>
-                                </div>
-                            </div>
-                        </div>
-                    {% else: %}
-                        <div class="block">
-                            <div class="imgbx">
-                                <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
-                            </div>
-                            <div class="details" onclick="location.href='/channel/{{table.name}}'">
-                                <div class="name">
-                                    <h4><a href="{{table.name}}" style="text-decoration: none; ">{{table.name}}</a></h4>
-                                    <p class="time"></p>
-                                </div>
-                                <div class="message_p">
-                                    <p>created by {{table.user.username}} </p>
-                                    <b>3</b>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-                <!-- profile pic will be added later -->
-            </div>
-        </div>
         <div class="rightside">
             <div class="header">
                 <div class="imgtext">
-                    <h4 id="topic">{{topic.name}}<br></h4>
+                    <h4 id="{{frnd.username}}">Chats<br></h4>
                 </div>
             </div>
             <div class="chatbox" id="chats">
@@ -80,7 +25,7 @@
                             </div>
                         {% else: %}
                             <div class="message frnd">
-                                <p>{{post.user.username}}</p><br>
+                                <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
                             <div class="message frnd_message">
                                 <p>{{post.data}}<br><span>{{post.time}}</span></p>
@@ -104,7 +49,7 @@
                                 </div>
                             {% else: %}
                                 <div class="message frnd">
-                                    <p>{{post.user.username}}</p><br>
+                                    <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                                 </div>
                                 <div class="message frnd_message">
                                     <p>{{post.data}}<br><span>{{post.time}}</span></p>
@@ -118,7 +63,7 @@
                             </div>
                         {% else: %}
                             <div class="message frnd">
-                                <p>{{post.user.username}}</p><br>
+                                <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
                             <div class="message fnd_message">
                                 <p>{{post.data}}<br><span>{{post.time}}</span></p>
@@ -132,8 +77,8 @@
                 objDiv.scrollTop = objDiv.scrollHeight;
             </script>
             <div class="chatbox_input">
-                <form action="/channel/{{topic.name}}" method="post" class="form">
-                    <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
+                <form action="/chat/{{frnd.username}}" method="post" class="form">
+                    <input autofocus autocomplete="off" type="text" name="message" placeholder="Message ">
                 </form>
             </div>
         </div>

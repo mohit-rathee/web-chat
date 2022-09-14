@@ -1,0 +1,323 @@
+*
+{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: s;
+}
+body
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(#009688 0%, #009688 130px, #d9dbd5 130px, #d9dbd5 100%);;
+}
+.container
+{
+    position: relative;
+    width: 90%;
+    max-width: 100%;
+    height: 90vh;
+    background-color: white;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,0,0.06),0 2px 5px 0 rgba(0,0,0,0,0.06);
+    display: flex;
+    overflow: hidden;
+}
+
+.container .leftside
+{
+    position: relative;
+    flex: 20%;
+    background: rgb(255, 255, 255);
+    border-right: 1px solid rgba(0,0,0,0.2);
+}
+.container .rightside
+{
+    position: relative;
+    flex: 80%;
+    background: white;
+}
+.container .rightside::before
+{
+    content:'';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url("/static/pattern.png");
+    opacity: 0.6;
+}
+.header
+{
+    position: relative;
+    width: 100%;
+    height: 60px;
+    background: rgb(219, 221, 219);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px;
+}
+.imgtext
+{
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#topic
+{
+    font-weight: 550;
+    line-height: 1.2em;
+    margin-left: 15px;
+}
+.imgtext h4
+{
+    font-weight: 500;
+    line-height: 1.2em;
+    margin-left: 15px;
+}
+.imgtext h4 span
+{
+    font-size: 0.8em;
+    color: #555;
+}
+.userimg
+{
+    position: relative;
+    width: 45px;
+    height: 45px;
+    overflow: hidden;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+.search_channel
+{
+    position: relative;
+    width: 100%;
+    height: 50px;
+    background: rgb(231, 231, 231);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.search_channel div
+{
+    width: 100%;
+    max-height: 100px;
+}
+.search_channel div input
+{
+    width: 100%;
+    outline: none;
+    border: none;
+    background: white;
+    padding: 6px;
+    height: 38px;
+    border-radius: 30px;
+    font-size: 14px;
+    padding-left: 40px;
+}
+.search_channel div input::placeholder
+{
+    color:rgb(252, 171, 66)
+}
+.channel_list
+{
+    position: relative;
+    height: calc(100% - 110px);
+    overflow-y: auto;
+    background: white;
+    
+}
+.channel_list .block .btn .details .name button
+{
+    background: none!important;
+    border: none;
+    padding: 0!important;
+    text-decoration: none;
+    cursor: pointer;
+}
+.channel_list .block.active
+{
+    background: #d4d4d4;
+}
+
+.channel_list .block
+{
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid rgb(187, 184, 184);
+    background: white;
+}
+.channel_list .block:hover
+{
+    background: #ebebeb;
+}
+.channel_list .block .imgbx
+{
+    position: relative;
+    width: 45px;
+    height: 45px;
+    overflow: hidden;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+.cover
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.channel_list .block .details
+{
+    position: relative;
+    width: 100%;
+}
+.channel_list .block .details .name
+{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 1.1em;
+    color: black;
+}
+.channel_list .block .details .name a
+{
+    font-size: 0.9em;
+    font-weight:bold ;
+    color: rgb(58, 58, 58);
+}
+.channel_list .block .details .name .time
+{
+    font-size: 0.75em;
+    color: #aaa;
+}
+.message_p
+{
+    display: flex;
+    justify-content: flex-end;
+    align-items: right;
+}
+.message_p p
+{
+    color: #aaa;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    font-size: 0.9em;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.message_p b
+{
+    background: rgb(53, 241, 53);
+    color: white;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.75em;
+}
+.chatbox
+{
+    position: relative;
+    width: 102%;
+    height: calc(100% - 130px);
+    padding: 50px;
+    padding-bottom: 10px;
+    overflow-y: scroll
+
+}
+.message
+{
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin: 5px 0;
+}
+.message p
+{
+    position: relative;
+    right: 0;
+    text-align: right;
+    max-width: 65%;
+    background: #afeb81;
+    border-radius: 10px;
+    font-size: 0.9em;
+    padding: 10px;
+}
+.message p span
+{
+    display: block;
+    margin-top: 5px;
+    font-size: 0.85em;
+    opacity: 0.5;
+}
+.my_message
+{
+    justify-content: flex-end;
+}
+.frnd_message
+{
+    justify-content: flex-start;
+}
+.frnd p
+{
+    background: aqua;
+    text-align: left;
+
+}
+.frnd_message p
+{
+    background-color: rgb(255, 255, 255);
+    text-align: left;
+}
+
+.chatbox_input
+{
+    position: relative;
+    width: 100%;
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+.chatbox_input .form
+{
+    position: relative;
+    width: 100%;
+    
+}
+.chatbox_input .form input
+{
+    cursor: pointer; 
+    position: relative;
+    width: 95%;
+    margin: 0 30px;
+    padding: 10px;
+    border: 1px solid lightgray;
+    outline: none;
+    align-items: center;
+    border-radius: 30px;
+    font-size: 1em;
+
+}
+
+
+
+
+
+
+
+
