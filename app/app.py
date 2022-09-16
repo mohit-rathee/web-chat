@@ -228,9 +228,8 @@ def channel_chat(Channel):
         print("my work is done")
         return render_template("channel_chat.html",name=name,posts=topic_posts,users=user,topic=current_channel,tables=tables)
                 
-        return render_template("message.html",msg="channel don't exist")
     else:
-        return render_template("message.html",msg="stop messing with me")
+        return render_template("message.html",msg="channel don't exist")
 
 
 @app.route("/chat/<frnd>",methods=["GET","POST"])

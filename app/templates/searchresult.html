@@ -31,9 +31,9 @@
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>
-                            <div class="details">
+                            <div class="details" onclick="location.href='/channel/{{table.name}}'">
                                 <div class="name">
-                                    <h4><a href="/channel/{{table.name}}" style="text-decoration: none; ">{{table.name}}</a></h4>
+                                    <h4>{{table.name}}</h4>
                                     <p class="time"></p>
                                 </div>
                                 <div class="message_p">
@@ -46,9 +46,9 @@
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>
-                            <div class="details" onclick="location.href='/channel/{{table.name}}'">
+                            <div class="details" onclick="location.href='/chat/{{table.username}}'">
                                 <div class="name">
-                                    <h4><a href="/chat{{table.username}}" style="text-decoration: none; ">{{table.username}}</a></h4>
+                                    <h4>{{table.username}}</h4>
                                     <p class="time"></p>
                                 </div>
                             </div>
