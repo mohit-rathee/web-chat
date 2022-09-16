@@ -155,22 +155,30 @@ def reset():
 @app.route("/app",methods=["GET","POST"])
 def application():
     if session.get("id")==None:
-        return redirect("/login") 
+        return redirect("/login")
     session["channel"]=None   
     id=session.get("id")
     newChannel=request.form.get("channel_name")
-    channelRequest=request.form.get("search_channel")
+    searchRequest=request.form.get("search")
     user=users.query.filter_by(id=id).first()
-    channels=channel.query.all()
-    if channelRequest!=None:
+    if searchRequest!=None:
+        results=[]
+        searching_for=searchRequest.strip()
+        print(searching_for)
         try:
-            channelRequest.strip()
-            my_channel=channel.query.filter_by(name=channelRequest).first()
+            channel_list=channel.query.filter(channel.name.like("%"+searching_for+"%")).all()
+            results.extend(channel_list)
         except:
-            print("see line no 187")
-            return redirect("/channel/hello")
-        return redirect("/channel/"+str(channelRequest).strip())
+            print("error")
+        try:
+            user_list=users.query.filter(users.username.like("%"+searching_for+"%")).all()
+            results.extend(user_list)
+        except:
+            print("error")
+        return render_template("searchresult.html",name=user,tables=results)
+    
     elif newChannel==None:
+        channels=channel.query.all()
         return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
     
     str(newChannel).strip()

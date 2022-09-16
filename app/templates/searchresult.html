@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{name.username}}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='post.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="leftside">
+            <div class="header">
+                <div class="imgtext">
+                    
+                    <a href="/app" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
+                    <h4>{{name.username}}<br><span>Points: {{name.balance}}</span></h4>
+                </div>
+            </div>
+            <div class="search_channel">
+                <div>
+                    <form action="/app" method="post">
+                        <input autocomplete="off" name="search" placeholder="Search channel/people" type="text" class="search_channel">
+                    </form>
+                </div>
+            </div>
+            <div class="channel_list">
+                {% for table in tables: %}
+                    {% if table.name: %}
+                        <div class="block">
+                            <div class="imgbx">
+                                <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
+                            </div>
+                            <div class="details">
+                                <div class="name">
+                                    <h4><a href="/channel/{{table.name}}" style="text-decoration: none; ">{{table.name}}</a></h4>
+                                    <p class="time"></p>
+                                </div>
+                                <div class="message_p">
+                                    <p>created by {{table.user.username}} </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% elif table.username: %}
+                        <div class="block">
+                            <div class="imgbx">
+                                <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
+                            </div>
+                            <div class="details" onclick="location.href='/channel/{{table.name}}'">
+                                <div class="name">
+                                    <h4><a href="/chat{{table.username}}" style="text-decoration: none; ">{{table.username}}</a></h4>
+                                    <p class="time"></p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                <!-- profile pic will be added later -->
+            </div>
+        </div>
+        <div class="rightside">
+            <div class="header">
+                <div class="imgtext">
+                </div>
+            </div>
+            <div class="chatbox" id="chats">
+            </div>
+        </div>
+    </div>
+<script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+</html>
