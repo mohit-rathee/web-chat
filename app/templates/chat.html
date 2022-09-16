@@ -13,18 +13,19 @@
         <div class="rightside">
             <div class="header">
                 <div class="imgtext">
-                    <h4 id="{{frnd.username}}">Chats<br></h4>
+                    <a href="/" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
+                    <h4>{{frnd.username}}<br></h4>
                 </div>
             </div>
             <div class="chatbox" id="chats">
-                {% for post in posts: %}
-                    {% if post.sender.username==name.username: %}
+                {% for chat in chats: %}
+                    {% if chat.sender.username==name.username: %}
                         <div class="message my_message">
-                            <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                            <p>{{chat.data}}<br><span>{{chat.time}}</span></p>
                         </div>
                     {% else: %}
                         <div class="message frnd_message">
-                            <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                            <p>{{chat.data}}<br><span>{{chat.time}}</span></p>
                         </div>
                     {% endif %}
                     
@@ -41,5 +42,7 @@
             </div>
         </div>
     </div>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </body>
 </html>

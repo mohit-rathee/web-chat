@@ -31,11 +31,6 @@ channel_post=db.Table('channel_post',
     db.Column('channel',db.Integer,db.ForeignKey('channel.id')),
     db.Column('posts',db.Integer,db.ForeignKey('posts.id')))
 
-user_chat=db.Table('user_chat',
-    db.Column('reciever',db.Integer,db.ForeignKey('users.id')),
-    db.Column('chats',db.Integer,db.ForeignKey('chats.id'))) 
-
-
 class channel(db.Model):
     id=db.Column(db.Integer,primary_key=True)                   #topic ID
     name=db.Column(db.String, nullable=False,unique=True)       #topic name
@@ -43,10 +38,10 @@ class channel(db.Model):
 
 class chats(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #topic ID
+    key=db.Column(db.String,unique=False,nullable=False)                      #Private Key
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #Sender ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
-    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))
     time = db.Column(db.DateTime, default=func.now())                       #time
-    user=db.relationship('users',secondary=user_chat,backref=db.backref('chats',lazy='dynamic'))  #reciever
 
 class posts(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #msg/post ID
@@ -239,20 +234,30 @@ def chat(frnd):
     me=users.query.filter_by(id=id).first()
     friend=users.query.filter_by(username=frnd).first()
 
+#private key
+    my_id=me.id
+    frnd_id=friend.id
+    if my_id<frnd_id:
+        prvt_key=str(my_id)+"-"+str(frnd_id)
+    elif frnd_id<my_id:
+        prvt_key=str(frnd_id)+"-"+str(my_id)
+    else:
+        prvt_key=str(my_id)+'-'+str(frnd_id)
+
     if message==None:
+#get chats
         try:
-            frnd_chats=me.chats.filter_by(sender_id=friend.id).all()
-            my_chats=friend.chats.filter_by(sender_id=id).all()
-            our_chats=my_chats+frnd_chats
+            our_chats=chats.query.filter_by(key=prvt_key).all()
         except:
             return render_template("message.html",msg="plz give valid input or check code")    
-        return render_template("chat.html",name=me,posts=our_chats,frnd=friend)
+        return render_template("chat.html",name=me,chats=our_chats,frnd=friend)
 
+# add to table pyare
     try:
-        msg=chats(data=message,sender_id=me.id)
-        msg.user.append(friend)
-        db.session.add(msg)
+        chat=chats(data=message,key=prvt_key,sender_id=my_id)
+        db.session.add(chat)
         db.session.commit()
+        print("your chat is saved privately")
     except:
         return render_template("message.html",msg="can't send to database")
 

@@ -60,6 +60,7 @@ body
     align-items: center;
     padding: 0 15px;
 }
+
 .imgtext
 {
     position: relative;
@@ -92,6 +93,7 @@ body
     overflow: hidden;
     border-radius: 50%;
     margin-right: 10px;
+    margin-left: 7px;
 }
 .search_channel
 {
