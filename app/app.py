@@ -241,8 +241,8 @@ def chat(frnd):
 
     if message==None:
         try:
-            frnd_chats=me.chats.all()
-            my_chats=friend.chats.all()
+            frnd_chats=me.chats.filter_by(sender_id=friend.id).all()
+            my_chats=friend.chats.filter_by(sender_id=id).all()
             our_chats=my_chats+frnd_chats
         except:
             return render_template("message.html",msg="plz give valid input or check code")    
