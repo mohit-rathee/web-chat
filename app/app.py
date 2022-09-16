@@ -127,12 +127,28 @@ def logout():
     print(session["id"])
     return redirect("login")
 
+
+@app.route('/delete/<Channel>' ,methods=["GET"])
+def delete_channel(Channel):
+    try:
+        data=channel.query.filter_by(name=Channel).first()
+        post=data.posts
+        for i in post:
+            db.session.delete(i)
+            db.session.commit()
+        db.session.delete(data)
+        db.session.commit()
+        session["channel"]=None
+    except:
+        return render_template("message.html",msg="no channel exist/can't delete")
+    return redirect('/')
+
+
 @app.route('/reset',methods=["POST"])    
 def reset():
     try:
         post= posts.query.all()
         for i in post:
-            print(i)
             db.session.delete(i)
             db.session.commit()
         user = users.query.all()
@@ -141,7 +157,10 @@ def reset():
             db.session.commit()
         data = channel.query.all()
         for i in data:
-            print(i)
+            db.session.delete(i)
+            db.session.commit()
+        chat=chats.query.all()
+        for i in data:
             db.session.delete(i)
             db.session.commit()
         print("delete")
