@@ -84,6 +84,19 @@ body
     font-size: 0.8em;
     color: #555;
 }
+.header p
+{
+    cursor: pointer;
+    background: red;
+    color: white;
+    min-width: 45px;
+    height: 30px;
+    border-radius: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.75em;
+}
 .userimg
 {
     position: relative;

@@ -143,6 +143,21 @@ def delete_channel(Channel):
         return render_template("message.html",msg="no channel exist/can't delete")
     return redirect('/')
 
+@app.route('/delete_chat/<Frnd>' ,methods=["GET"])
+def delete_chat(Frnd):
+    id=session.get("id")
+    friend=users.query.filter_by(username=Frnd).first()
+    frnd_id=friend.id
+    prvt_key=private_key(id,frnd_id)
+    try:
+        chat=chats.query.filter_by(key=prvt_key).all()
+        for i in chat:
+            db.session.delete(i)
+            db.session.commit()
+        session["channel"]=None
+    except:
+        return render_template("message.html",msg="no channel exist/can't delete")
+    return redirect('/app')
 
 @app.route('/reset',methods=["POST"])    
 def reset():
@@ -250,6 +265,15 @@ def channel_chat(Channel):
     else:
         return render_template("message.html",msg="channel don't exist")
 
+#private key
+def private_key(a,b):
+    if a<b:
+        key=str(a)+"-"+str(b)
+    elif frnd_id<my_id:
+        key=str(b)+"-"+str(a)
+    else:
+        key=str(a)+"-"+str(b)
+    return key
 
 @app.route("/chat/<frnd>",methods=["GET","POST"])
 def chat(frnd):
@@ -261,26 +285,19 @@ def chat(frnd):
     friend=users.query.filter_by(username=frnd).first()
 
 #private key
-    my_id=me.id
-    frnd_id=friend.id
-    if my_id<frnd_id:
-        prvt_key=str(my_id)+"-"+str(frnd_id)
-    elif frnd_id<my_id:
-        prvt_key=str(frnd_id)+"-"+str(my_id)
-    else:
-        prvt_key=str(my_id)+'-'+str(frnd_id)
-
-    if message==None:
+    prvt_key=private_key(me.id,friend.id)
+    print(prvt_key)
 #get chats
+    if message==None:
         try:
             our_chats=chats.query.filter_by(key=prvt_key).all()
         except:
             return render_template("message.html",msg="plz give valid input or check code")    
         return render_template("chat.html",name=me,chats=our_chats,frnd=friend)
 
-# add to table pyare
+# add to chats
     try:
-        chat=chats(data=message,key=prvt_key,sender_id=my_id)
+        chat=chats(data=message,key=prvt_key,sender_id=me.id)
         db.session.add(chat)
         db.session.commit()
         print("your chat is saved privately")

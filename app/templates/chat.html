@@ -16,6 +16,7 @@
                     <a href="/" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
                     <h4>{{frnd.username}}<br></h4>
                 </div>
+                <p onclick="location.href='/delete_chat/{{frnd.username}}'">Delete</p>
             </div>
             <div class="chatbox" id="chats">
                 {% for chat in chats: %}

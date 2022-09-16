@@ -149,6 +149,7 @@ body
 
 .channel_list .block
 {
+    cursor: pointer;
     position: relative;
     display: flex;
     align-items: center;
@@ -220,6 +221,7 @@ body
 }
 .message_p b
 {
+    cursor: pointer;
     background: orange;
     color: white;
     min-width: 20px;
