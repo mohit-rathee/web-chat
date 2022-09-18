@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
     <script src="{{ url_for('static',filename='script.js')}}"></script>
 </head>
-<body>
+<body class="{{body}}">
     <div class="container">
         <div class="rightside">
             <div class="header">
@@ -31,14 +31,41 @@
                     {% endif %}
                     
                 {% endfor %}
+                <hr>
+                <div style="align-items: right;">
+                    <button onclick="darkfunction()" style="align-items:center;">chat useless</button>
+<!--  -->
+                </div>
+                <script>
+                    function darkfunction() {
+                        var mybody=document.body
+                        var hide=document.getElementById("inputfield")
+                        if (hide.value=="True"){
+                            mybody.classList.remove("darkbody");
+                            hide.value="False";
+                        }
+                        else {
+                            hide.value="True";
+                            mybody.classList.toggle("darkbody");
+                        }
+                    }
+                </script>
+                <div class="shortBox" id="shortBox">
+                    {% for post in feelings: %}
+                        <p>{{post.data}} - <span>{{post.username}}</span> </p>
+                    {% endfor %}
+                </div>
+                <script>
+                    var objDiv1 = document.getElementById("shortBox");
+                    var objDiv2 = document.getElementById("chats");
+                    objDiv1.scrollTop = objDiv1.scrollHeight;
+                    objDiv2.scrollTop = objDiv2.scrollHeight;
+                </script>
             </div>
-            <script>
-                var objDiv = document.getElementById("chats");
-                objDiv.scrollTop = objDiv.scrollHeight;
-            </script>
             <div class="chatbox_input">
                 <form action="/chat/{{frnd.username}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="message" placeholder="Message ">
+                    <input type="hidden" name="hide" default="False" value={{hide}} id ="inputfield">
                 </form>
             </div>
         </div>

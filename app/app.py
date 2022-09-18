@@ -40,7 +40,7 @@ class channel(db.Model):
 
 class chats(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #topic ID
-    key=db.Column(db.String,unique=False,nullable=False)                      #Private Key
+    key=db.Column(db.String,nullable=False)                                 #Private Key
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #Sender ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
     time = db.Column(db.DateTime, default=func.now())                       #time
@@ -52,12 +52,12 @@ class posts(db.Model):
     time = db.Column(db.DateTime, default=func.now())                       #time
     topic=db.relationship('channel',secondary=channel_post,backref=db.backref('posts',lazy='dynamic'))      #Association table->channel_post
 
-# class short_messages(db.Model):
-#     id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
-#     data=db.Column(db.String, nullable=False)                                #actuall msg
-#     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
-#     message=db.Column(db.String,unique=False,nullable=False)                     #Private Key
-#     time = db.Column(db.DateTime, default=func.now()) 
+class short_messages(db.Model):
+    id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
+    key=db.Column(db.String,nullable=False)                                  #Private Key
+    data=db.Column(db.String, nullable=False)                                #actuall msg
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
+    time = db.Column(db.DateTime, default=func.now()) 
 
 class short_posts(db.Model):
     id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
@@ -314,31 +314,52 @@ def chat(frnd):
     if session.get("id")==None:
         return redirect("/login")
     id=session.get("id")
+    fun=request.form.get("hide")
     message=request.form.get("message")
     me=users.query.filter_by(id=id).first()
     friend=users.query.filter_by(username=frnd).first()
+    body="body"
+
 
 #private key
     prvt_key=private_key(me.id,friend.id)
     print(prvt_key)
-#get chats
-    if message==None:
-        try:
-            our_chats=chats.query.filter_by(key=prvt_key).all()
-        except:
-            return render_template("message.html",msg="plz give valid input or check code")    
-        return render_template("chat.html",name=me,chats=our_chats,frnd=friend)
+    if fun=="True":
+        if message!=None:
+            try:
+                chat=short_messages(data=message,key=prvt_key,sender_id=me.id)
+                db.session.add(chat)
+                db.session.commit()
+                body="darkbody"
+                print("your chat is saved privately")
+            except:
+                return render_template("message.html",msg="can't post in short chats")
+    else:
+        if message!=None:
+            try:
+                chat=chats(data=message,key=prvt_key,sender_id=me.id)
+                db.session.add(chat)
+                db.session.commit()
+                body="darkbody"
+            except:
+                return render_template("message.html",msg="can't post in chats")
+            funposts=short_messages.query.filter_by(key=prvt_key).all()
+            for i in funposts:
+                db.session.delete(i)
+                db.session.commit()
+            body=body
+            fun="False"          
 
-# add to chats
+
     try:
-        chat=chats(data=message,key=prvt_key,sender_id=me.id)
-        db.session.add(chat)
-        db.session.commit()
-        print("your chat is saved privately")
+        our_chats=chats.query.filter_by(key=prvt_key).all()
+        shortchat=short_messages.query.filter_by(key=prvt_key).all()
     except:
-        return render_template("message.html",msg="can't send to database")
+        return render_template("message.html",msg="plz give valid input or check code")    
+    return render_template("chat.html",name=me,chats=our_chats,frnd=friend,feelings=shortchat,hide=fun,body=body)
 
-    return redirect("/chat/"+str(frnd).strip())
+
+    # return redirect("/chat/"+str(frnd).strip())
 
 
 

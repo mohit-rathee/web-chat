@@ -13,6 +13,14 @@ body
     min-height: 100vh;
     background: linear-gradient(#009688 0%, #009688 130px, #d9dbd5 130px, #d9dbd5 100%);;
 }
+.darkbody
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: rgb(134, 134, 134);;
+}
 .container
 {
     position: relative;
@@ -295,7 +303,29 @@ body
     background-color: rgb(255, 255, 255);
     text-align: left;
 }
-
+.shortBox
+{
+    position: relative;
+    width: 105%;
+    min-height: 0;
+    max-height: calc(100% - 220px);
+    justify-items: center;
+    overflow-y: scroll
+}
+.shortBox p
+{
+    position: relative;
+    text-align: left;
+    max-width: 65%;
+    font-size: 0.9em;
+    padding: 2px;
+}
+.shortBox p span
+{
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-align-last:right;
+}
 .chatbox_input
 {
     position: relative;
