@@ -7,7 +7,7 @@
     <title>{{name.username}}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='post.css') }}">
 </head>
-<body>
+<body class="{{body}}">
     <div class="container" >
         <div class="leftside">
             <div class="header">
@@ -129,17 +129,20 @@
                 {% endfor %}   
                 <hr>
                 <div style="align-items: right;">
-                    <button onclick="darkfunction()" style="align-items:center;">Switch theme</button>
-   <!--  -->
+                    <button onclick="darkfunction()" style="align-items:center;">chat useless</button>
+<!--  -->
                 </div>
                 <script>
                     function darkfunction() {
-                        hide=document.getElementById("inputfield")
+                        var mybody=document.body
+                        var hide=document.getElementById("inputfield")
                         if (hide.value=="True"){
+                            mybody.classList.remove("darkbody");
                             hide.value="False";
                         }
-                        else{
+                        else {
                             hide.value="True";
+                            mybody.classList.toggle("darkbody");
                         }
                     }
                 </script>
@@ -150,13 +153,12 @@
                 </div>
                 <script>
                     var objDiv1 = document.getElementById("shortBox");
+                    var objDiv2 = document.getElementById("chats");
                     objDiv1.scrollTop = objDiv1.scrollHeight;
+                    objDiv2.scrollTop = objDiv2.scrollHeight;
                 </script>
             </div>
-            <script>
-                var objDiv2 = document.getElementById("chats");
-                objDiv2.scrollTop = objDiv2.scrollHeight;
-            </script>
+
             <div class="chatbox_input">
                 <form action="/channel/{{topic.name}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">

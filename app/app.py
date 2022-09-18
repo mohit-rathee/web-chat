@@ -258,6 +258,7 @@ def channel_chat(Channel):
     fun=request.form.get("hide")
     post_data=request.form.get("post")
     user = users.query.filter_by(id=id).first()
+    body="body"
     try:
         current_channel=channel.query.filter_by(name=Channel).first()
         session["channel"]=current_channel.name
@@ -271,6 +272,7 @@ def channel_chat(Channel):
                 msg=short_posts(data=post_data,sender_id=user.id,topic_id=current_channel.id)
                 db.session.add(msg)
                 db.session.commit()
+                body="darkbody"
                 print("send an friendly message")
         else:
             if post_data!=None:
@@ -278,6 +280,11 @@ def channel_chat(Channel):
                 post.topic.append(current_channel)
                 db.session.add(post)
                 db.session.commit()
+                funposts=short_posts.query.filter_by(sender_id=user.id).all()
+                for i in funposts:
+                    db.session.delete(i)
+                    db.session.commit()
+                body=body
                 fun="False"
                 print("posted")
                         
@@ -287,7 +294,7 @@ def channel_chat(Channel):
         shortPost=short_posts.query.filter_by(topic_id=current_channel.id).all()
         all_user=users.query.order_by(users.id).all()
         print("my work is done")
-        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost,hide=fun)
+        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body)
                 
     else:
         return render_template("message.html",msg="channel don't exist")

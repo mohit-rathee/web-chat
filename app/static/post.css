@@ -299,10 +299,9 @@ body
 {
     position: relative;
     width: 105%;
-    height: calc(100% - 220px);
-    padding: 50px;
+    min-height: 0;
+    max-height: calc(100% - 220px);
     justify-items: center;
-    padding-bottom: 5px;
     overflow-y: scroll
 }
 .shortBox p
