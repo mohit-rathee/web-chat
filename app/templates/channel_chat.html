@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='post.css') }}">
 </head>
 <body>
-    <div class="container">
+    <div class="container" >
         <div class="leftside">
             <div class="header">
                 <div class="imgtext">
@@ -66,7 +66,7 @@
                 <!-- profile pic will be added later -->
             </div>
         </div>
-        <div class="rightside">
+        <div class="rightside" id="chatside">
             <div class="header">
                 <div class="imgtext">
                     <h4 id="topic">{{topic.name}}<br></h4>
@@ -128,6 +128,21 @@
                     {% endif %}
                 {% endfor %}   
                 <hr>
+                <div style="align-items: right;">
+                    <button onclick="darkfunction()" style="align-items:center;">Switch theme</button>
+   <!--  -->
+                </div>
+                <script>
+                    function darkfunction() {
+                        hide=document.getElementById("inputfield")
+                        if (hide.value=="True"){
+                            hide.value="False";
+                        }
+                        else{
+                            hide.value="True";
+                        }
+                    }
+                </script>
                 <div class="shortBox" id="shortBox">
                     {% for post in feelings: %}
                         <p>{{post.data}} - <span>{{post.sender.username}}</span> </p>
@@ -145,7 +160,7 @@
             <div class="chatbox_input">
                 <form action="/channel/{{topic.name}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
-                    <input type="hidden" name="hide" value="True">
+                    <input type="hidden" name="hide" default="False" value={{hide}} id ="inputfield">
                 </form>
             </div>
         </div>

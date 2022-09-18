@@ -278,6 +278,7 @@ def channel_chat(Channel):
                 post.topic.append(current_channel)
                 db.session.add(post)
                 db.session.commit()
+                fun="False"
                 print("posted")
                         
         tables=channel.query.all()
@@ -286,7 +287,7 @@ def channel_chat(Channel):
         shortPost=short_posts.query.filter_by(topic_id=current_channel.id).all()
         all_user=users.query.order_by(users.id).all()
         print("my work is done")
-        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost)
+        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost,hide=fun)
                 
     else:
         return render_template("message.html",msg="channel don't exist")
