@@ -160,6 +160,10 @@ def delete_channel(Channel):
         session["channel"]=None
     except:
         return render_template("message.html",msg="no channel exist/can't delete")
+    funposts=short_posts.query.filter_by(sender_id=user.id).all()
+    for i in funposts:
+        db.session.delete(i)
+        db.session.commit()
     return redirect('/')
 
 @app.route('/delete_chat/<Frnd>' ,methods=["GET"])
@@ -176,6 +180,10 @@ def delete_chat(Frnd):
         session["channel"]=None
     except:
         return render_template("message.html",msg="no channel exist/can't delete")
+    funposts=short_messages.query.filter_by(key=prvt_key).all()
+    for i in funposts:
+        db.session.delete(i)
+        db.session.commit()    
     return redirect('/app')
 
 @app.route('/reset',methods=["POST"])    
