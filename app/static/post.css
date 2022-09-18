@@ -239,7 +239,8 @@ body
     height: calc(100% - 130px);
     padding: 50px;
     padding-bottom: 10px;
-    overflow-y: scroll
+    overflow-y: scroll;
+    overflow-x:hidden
 
 }
 .message
@@ -286,7 +287,30 @@ body
     background-color: rgb(255, 255, 255);
     text-align: left;
 }
-
+.shortBox
+{
+    position: relative;
+    width: 105%;
+    height: calc(100% - 220px);
+    padding: 50px;
+    justify-items: center;
+    padding-bottom: 5px;
+    overflow-y: scroll
+}
+.shortBox p
+{
+    position: relative;
+    text-align: left;
+    max-width: 65%;
+    font-size: 0.9em;
+    padding: 2px;
+}
+.shortBox p span
+{
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-align-last:right;
+}
 .chatbox_input
 {
     position: relative;

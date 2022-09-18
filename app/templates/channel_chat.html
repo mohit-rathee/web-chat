@@ -126,14 +126,21 @@
                             </div>
                         {% endif %}
                     {% endif %}
-                {% endfor %}
-                {% for post in feelings: %}
-                    <b>{{post.data}} - <h7>{{post.sender.username}}</h7> </b>
-                {% endfor %}
+                {% endfor %}   
+                <hr>
+                <div class="shortBox" id="shortBox">
+                    {% for post in feelings: %}
+                        <p>{{post.data}} - <span>{{post.sender.username}}</span> </p>
+                    {% endfor %}
+                </div>
+                <script>
+                    var objDiv1 = document.getElementById("shortBox");
+                    objDiv1.scrollTop = objDiv1.scrollHeight;
+                </script>
             </div>
             <script>
-                var objDiv = document.getElementById("chats");
-                objDiv.scrollTop = objDiv.scrollHeight;
+                var objDiv2 = document.getElementById("chats");
+                objDiv2.scrollTop = objDiv2.scrollHeight;
             </script>
             <div class="chatbox_input">
                 <form action="/channel/{{topic.name}}" method="post" class="form">
