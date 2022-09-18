@@ -52,7 +52,7 @@
                 </script>
                 <div class="shortBox" id="shortBox">
                     {% for post in feelings: %}
-                        <p>{{post.data}} - <span>{{post.username}}</span> </p>
+                        <p>{{post.data}} - <span>{{post.sender.username}}</span> </p>
                     {% endfor %}
                 </div>
                 <script>

@@ -22,7 +22,7 @@ class users(db.Model):
     post=db.relationship('posts',backref='user')                         #relation#
     topic=db.relationship('channel',backref='user')
     chat=db.relationship('chats',backref='sender')
-    # short_message=db.relationship('short_messages',backref='sender')
+    short_message=db.relationship('short_messages',backref='sender')
     short_post=db.relationship('short_posts',backref='sender')
     def __init__(self, username, password, balance):
         self.username=username
@@ -351,7 +351,7 @@ def chat(frnd):
                 body="darkbody"
             except:
                 return render_template("message.html",msg="can't post in chats")
-            funposts=short_messages.query.filter_by(key=prvt_key).all()
+            funposts=short_messages.query.filter_by(key=prvt_key, sender_id=me.id).all()
             for i in funposts:
                 db.session.delete(i)
                 db.session.commit()
