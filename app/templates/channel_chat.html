@@ -127,6 +127,9 @@
                         {% endif %}
                     {% endif %}
                 {% endfor %}
+                {% for post in feelings: %}
+                    <b>{{post.data}} - <h7>{{post.sender.username}}</h7> </b>
+                {% endfor %}
             </div>
             <script>
                 var objDiv = document.getElementById("chats");
@@ -135,6 +138,7 @@
             <div class="chatbox_input">
                 <form action="/channel/{{topic.name}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
+                    <input type="hidden" name="hide" value="True">
                 </form>
             </div>
         </div>

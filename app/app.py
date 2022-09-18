@@ -22,6 +22,8 @@ class users(db.Model):
     post=db.relationship('posts',backref='user')                         #relation#
     topic=db.relationship('channel',backref='user')
     chat=db.relationship('chats',backref='sender')
+    # short_message=db.relationship('short_messages',backref='sender')
+    short_post=db.relationship('short_posts',backref='sender')
     def __init__(self, username, password, balance):
         self.username=username
         self.password=password
@@ -49,6 +51,23 @@ class posts(db.Model):
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #User ID
     time = db.Column(db.DateTime, default=func.now())                       #time
     topic=db.relationship('channel',secondary=channel_post,backref=db.backref('posts',lazy='dynamic'))      #Association table->channel_post
+
+# class short_messages(db.Model):
+#     id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
+#     data=db.Column(db.String, nullable=False)                                #actuall msg
+#     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
+#     message=db.Column(db.String,unique=False,nullable=False)                     #Private Key
+#     time = db.Column(db.DateTime, default=func.now()) 
+
+class short_posts(db.Model):
+    id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
+    data=db.Column(db.String, nullable=False)                                #actuall msg
+    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
+    topic_id=db.Column(db.Integer, db.ForeignKey('channel.id')) 
+    time = db.Column(db.DateTime, default=func.now()) 
+
+
+
 
 # SQLALCHEMY_TRACK_MODIFICATIONS = True
 
@@ -236,9 +255,9 @@ def channel_chat(Channel):
     if session.get("id")==None:
         return redirect("/login")
     id=session.get("id")
+    fun=request.form.get("hide")
     post_data=request.form.get("post")
     user = users.query.filter_by(id=id).first()
-    name=user
     try:
         current_channel=channel.query.filter_by(name=Channel).first()
         session["channel"]=current_channel.name
@@ -246,21 +265,28 @@ def channel_chat(Channel):
     except:
         return render_template("message.html",msg="channel not found")
     if session.get("channel"):
-        if post_data!=None:
-            
-            post=posts(data=post_data,sender_id=user.id)
-            post.topic.append(current_channel)
-            db.session.add(post)
-            db.session.commit()
-            print("posted")
+        if fun=="True":
+            #add short messages#
+            if post_data!=None:
+                msg=short_posts(data=post_data,sender_id=user.id,topic_id=current_channel.id)
+                db.session.add(msg)
+                db.session.commit()
+                print("send an friendly message")
+        else:
+            if post_data!=None:
+                post=posts(data=post_data,sender_id=user.id)
+                post.topic.append(current_channel)
+                db.session.add(post)
+                db.session.commit()
+                print("posted")
                         
         tables=channel.query.all()
         current_channel=channel.query.filter_by(name=Channel).first()
         topic_posts=current_channel.posts
-
-        user=users.query.order_by(users.id).all()
+        shortPost=short_posts.query.filter_by(topic_id=current_channel.id).all()
+        all_user=users.query.order_by(users.id).all()
         print("my work is done")
-        return render_template("channel_chat.html",name=name,posts=topic_posts,users=user,topic=current_channel,tables=tables)
+        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost)
                 
     else:
         return render_template("message.html",msg="channel don't exist")
@@ -269,7 +295,7 @@ def channel_chat(Channel):
 def private_key(a,b):
     if a<b:
         key=str(a)+"-"+str(b)
-    elif frnd_id<my_id:
+    elif b<a:
         key=str(b)+"-"+str(a)
     else:
         key=str(a)+"-"+str(b)
