@@ -121,16 +121,16 @@
                             <div class="message frnd">
                                 <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
-                            <div class="message fnd_message">
+                            <div class="message frnd_message">
                                 <p>{{post.data}}<br><span>{{post.time}}</span></p>
                             </div>
                         {% endif %}
                     {% endif %}
                 {% endfor %}   
                 <hr>
-                <div style="align-items: right;">
-                    <button onclick="darkfunction()" style="align-items:center;">chat useless</button>
-<!--  -->
+                <div  class="useless">
+                    <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
+                    <button onclick="location.href='/delete_short/{{topic.name}}'" id="delete">Delete</button>
                 </div>
                 <script>
                     function darkfunction() {
@@ -148,7 +148,15 @@
                 </script>
                 <div class="shortBox" id="shortBox">
                     {% for post in feelings: %}
-                        <p>{{post.data}} - <span>{{post.sender.username}}</span> </p>
+                        {% if post.sender_id==name.id: %}
+                            <div class="short my_short">
+                                <p>{{post.data}}</span> </p>
+                            </div>
+                        {% else: %}
+                            <div class="short frnd_short">
+                                <p >{{post.data}} - <span>{{post.sender.username}}</p>
+                            </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
                 <script>

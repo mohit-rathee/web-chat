@@ -24,7 +24,7 @@ body
 .container
 {
     position: relative;
-    width: 75%;
+    width: 65%;
     max-width: 100%;
     height: 90vh;
     background: rgb(97, 97, 97);
@@ -36,14 +36,14 @@ body
 .container .leftside
 {
     position: relative;
-    flex: 20%;
+    flex: 30%;
     background: rgb(143, 143, 143);
     border-right: 1px solid rgba(0,0,0,0.2);
 }
 .container .rightside
 {
     position: relative;
-    flex: 80%;
+    flex: 70%;
     background: white;
 }
 .container .rightside::before
@@ -56,6 +56,28 @@ body
     height: 100%;
     background: url("/static/pattern.png");
     opacity: 0.6;
+}
+.useless
+{
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px;
+}
+#delete
+{
+    cursor: pointer;
+    background: red;
+    color: white;
+    min-width: 45px;
+    height: 30px;
+    border-radius: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.75em;
 }
 .header
 {
@@ -243,12 +265,29 @@ body
 .chatbox
 {
     position: relative;
-    width: 102%;
+    width: 104%;
     height: calc(100% - 130px);
     padding: 50px;
     padding-bottom: 10px;
     overflow-y: scroll;
     overflow-x:hidden
+
+}
+.short
+{
+    position: relative;
+    display: flex;
+    width: auto;
+}
+.my_short
+{
+    justify-content: flex-end;
+    margin-right: 90px;
+}
+.frnd_short
+{
+    justify-content: flex-start;
+    margin-left: 30px;
 
 }
 .message

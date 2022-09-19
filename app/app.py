@@ -166,6 +166,29 @@ def delete_channel(Channel):
         db.session.commit()
     return redirect('/')
 
+@app.route('/delete_short/<xxx>' ,methods=["GET"])
+def delete_short(xxx):
+    user=int(session.get("id"))
+    try:
+        myChannel=channel.query.filter_by(name=xxx).first()
+        funposts=short_posts.query.filter_by(topic_id=myChannel.id, sender_id=user).all()
+        for i in funposts:
+            db.session.delete(i)
+            db.session.commit()
+    except: 
+        try:
+            frnd=users.query.filter_by(username=xxx).first()
+            prvt_key=private_key(user,frnd.id)
+            funposts=short_messages.query.filter_by(key=prvt_key).all()
+            for i in funposts:
+                db.session.delete(i)
+                db.session.commit()        
+            return redirect('/chat/'+str(xxx))
+        except:
+            return redirect('/')
+    return redirect('/channel/'+str(xxx))
+
+
 @app.route('/delete_chat/<Frnd>' ,methods=["GET"])
 def delete_chat(Frnd):
     id=session.get("id")
@@ -339,7 +362,8 @@ def chat(frnd):
                 db.session.add(chat)
                 db.session.commit()
                 body="darkbody"
-                print("your chat is saved privately")
+                fun="True"
+                print("your uselessly chat is saved")
             except:
                 return render_template("message.html",msg="can't post in short chats")
     else:
@@ -348,27 +372,19 @@ def chat(frnd):
                 chat=chats(data=message,key=prvt_key,sender_id=me.id)
                 db.session.add(chat)
                 db.session.commit()
-                body="darkbody"
             except:
                 return render_template("message.html",msg="can't post in chats")
             funposts=short_messages.query.filter_by(key=prvt_key, sender_id=me.id).all()
             for i in funposts:
                 db.session.delete(i)
                 db.session.commit()
-            body=body
-            fun="False"          
-
-
+                fun="False"
     try:
         our_chats=chats.query.filter_by(key=prvt_key).all()
         shortchat=short_messages.query.filter_by(key=prvt_key).all()
     except:
         return render_template("message.html",msg="plz give valid input or check code")    
     return render_template("chat.html",name=me,chats=our_chats,frnd=friend,feelings=shortchat,hide=fun,body=body)
-
-
-    # return redirect("/chat/"+str(frnd).strip())
-
 
 
 

@@ -68,6 +68,16 @@ body
     align-items: center;
     padding: 0 15px;
 }
+.useless
+{
+    position: relative;
+    width: 100%;
+    background: rgb(207, 207, 207);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px;
+}
 .imgtext
 {
     position: relative;
@@ -92,13 +102,13 @@ body
     font-size: 0.8em;
     color: #555;
 }
-.header p
+#delete
 {
     cursor: pointer;
     background: red;
     color: white;
     min-width: 45px;
-    height: 30px;
+    height: 25px;
     border-radius: 20%;
     display: flex;
     justify-content: center;
@@ -265,6 +275,11 @@ body
     display: flex;
     width: 100%;
     margin: 5px 0;
+}
+.short
+{
+    position: relative;
+    display: flex;
 }
 .message p
 {
