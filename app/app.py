@@ -288,6 +288,7 @@ def channel_chat(Channel):
     id=session.get("id")
     fun=request.form.get("hide")
     post_data=request.form.get("post")
+    page=None
     user = users.query.filter_by(id=id).first()
     body="body"
     try:
@@ -321,11 +322,17 @@ def channel_chat(Channel):
                         
         tables=channel.query.all()
         current_channel=channel.query.filter_by(name=Channel).first()
-        topic_posts=current_channel.posts
+        last_post=current_channel.posts.order_by(posts.id.desc()).first()
+        if page!=1:
+            topic_posts=current_channel.posts.offset(last_post.id-page*5).limit(5)
+
+        else:
+            topic_posts=current_channel.posts.offset(last_post.id-5).limit(5)
+
         shortPost=short_posts.query.filter_by(topic_id=current_channel.id).all()
         all_user=users.query.order_by(users.id).all()
         print("my work is done")
-        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body)
+        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body,page=page)
                 
     else:
         return render_template("message.html",msg="channel don't exist")
