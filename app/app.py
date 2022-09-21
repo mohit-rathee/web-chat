@@ -294,7 +294,6 @@ def channel_chat(channel_id):
     try:
         current_channel=channel.query.filter_by(id=channel_id).first()
         session["channel"]=current_channel.id
-        print(session.get("channel"))
     except:
         return render_template("message.html",msg="channel not found")
     if session.get("channel"):
@@ -322,8 +321,15 @@ def channel_chat(channel_id):
                         
         tables=channel.query.all()
         current_channel=channel.query.filter_by(id=channel_id).first()
-        last_post=current_channel.posts.order_by(posts.id.desc()).first()
-        topic_posts=current_channel.posts.offset(last_post.id-7).limit(7)
+
+        
+        last_posts=current_channel.posts.order_by(posts.id.desc()).limit(7)
+        for i in last_posts:
+            print(i.id)
+        last_one=last_posts[-1]
+        last_id=last_one.id
+        print(last_id)
+        topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=last_id).limit(7)
         shortPost=short_posts.query.filter_by(topic_id=channel_id).all()
         print("my work is done")
         return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body,page=page)
@@ -344,16 +350,12 @@ def history(channel_id,action,post):
         last_posts=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<=post).limit(7)
         new_post=last_posts[-1]
         newstart=new_post.id
-        # topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=newstart).limit(7)
-        topic_posts=last_posts.reversed()
-        for i in topic_posts:
-            print(i.id , i.data)        
+        topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=newstart).limit(7)
+
 
 
     tables=channel.query.all()
     current_channel=channel.query.filter_by(id=channel_id).first()
-    # last_post=current_channel.posts.order_by(posts.id.desc()).first()
-    # topic_posts=current_channel.posts.limit(30)
     shortPost=[]
     fun="False"
     body="body"
