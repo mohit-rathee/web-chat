@@ -281,8 +281,8 @@ def application():
 
 
 
-@app.route("/channel/<Channel>",methods=["GET","POST"])
-def channel_chat(Channel):
+@app.route("/channel/<int:channel_id>",methods=["GET","POST"])
+def channel_chat(channel_id):
     if session.get("id")==None:
         return redirect("/login")
     id=session.get("id")
@@ -292,8 +292,8 @@ def channel_chat(Channel):
     user = users.query.filter_by(id=id).first()
     body="body"
     try:
-        current_channel=channel.query.filter_by(name=Channel).first()
-        session["channel"]=current_channel.name
+        current_channel=channel.query.filter_by(id=channel_id).first()
+        session["channel"]=current_channel.id
         print(session.get("channel"))
     except:
         return render_template("message.html",msg="channel not found")
@@ -301,7 +301,7 @@ def channel_chat(Channel):
         if fun=="True":
             #add short messages#
             if post_data!=None:
-                msg=short_posts(data=post_data,sender_id=user.id,topic_id=current_channel.id)
+                msg=short_posts(data=post_data,sender_id=user.id,topic_id=channel_id)
                 db.session.add(msg)
                 db.session.commit()
                 body="darkbody"
@@ -316,26 +316,52 @@ def channel_chat(Channel):
                 for i in funposts:
                     db.session.delete(i)
                     db.session.commit()
-                body=body
+                body="body"
                 fun="False"
                 print("posted")
                         
         tables=channel.query.all()
-        current_channel=channel.query.filter_by(name=Channel).first()
+        current_channel=channel.query.filter_by(id=channel_id).first()
         last_post=current_channel.posts.order_by(posts.id.desc()).first()
-        if page!=1:
-            topic_posts=current_channel.posts.offset(last_post.id-page*5).limit(5)
-
-        else:
-            topic_posts=current_channel.posts.offset(last_post.id-5).limit(5)
-
-        shortPost=short_posts.query.filter_by(topic_id=current_channel.id).all()
-        all_user=users.query.order_by(users.id).all()
+        topic_posts=current_channel.posts.offset(last_post.id-7).limit(7)
+        shortPost=short_posts.query.filter_by(topic_id=channel_id).all()
         print("my work is done")
-        return render_template("channel_chat.html",name=user,posts=topic_posts,users=all_user,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body,page=page)
+        return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body,page=page)
                 
     else:
         return render_template("message.html",msg="channel don't exist")
+
+@app.route("/<int:channel_id>/<action>=<int:post>",methods=["GET","POST"])
+def history(channel_id,action,post):
+    if session.get("id")==None:
+        return redirect("/login")
+    id=session.get("id")
+    user = users.query.filter_by(id=id).first()
+    current_channel=channel.query.filter_by(id=channel_id).first()
+    if action=="next":
+        topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=post).limit(7)
+    elif action=="prev":
+        last_posts=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<=post).limit(7)
+        new_post=last_posts[-1]
+        newstart=new_post.id
+        # topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=newstart).limit(7)
+        topic_posts=last_posts.reversed()
+        for i in topic_posts:
+            print(i.id , i.data)        
+
+
+    tables=channel.query.all()
+    current_channel=channel.query.filter_by(id=channel_id).first()
+    # last_post=current_channel.posts.order_by(posts.id.desc()).first()
+    # topic_posts=current_channel.posts.limit(30)
+    shortPost=[]
+    fun="False"
+    body="body"
+    print("my work is done")
+    return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body)
+                
+
+
 
 #private key
 def private_key(a,b):

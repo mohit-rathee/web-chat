@@ -29,7 +29,7 @@
             </div>
             <div class="channel_list">
                 {% for table in tables: %}
-                    {% if table.name == topic.name: %}
+                    {% if table.id == topic.id: %}
                         <div class="block active">
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
@@ -75,59 +75,52 @@
             <div class="chatbox" id="chats">
                 {% for post in posts: %}
                     {% if loop.previtem is not defined: %}
-                        {% if post.user.username==name.username: %}
-                        {% set X = page %}
-                        {% set Y = 1 %}
+                        {% if post.user.id==name.id: %}
+
                             <div class="message my_message">
-                                <p onclick="location.href='/channel/{{topic.name}}/{{X+Y}}'">{{post.data}}<br><span>{{post.time}}</span></p>
+                                <p onclick="location.href='/{{topic.id}}/prev={{post.id}}'">{{post.data}}<br><span>{{post.time}}</span></p>
                             </div>
                         {% else: %}
                             <div class="message frnd">
                                 <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
                             <div class="message frnd_message">
-                                <p onclick="location.href='/channel/{{topic.name}}/{{X+Y}}'">{{post.data}}<br><span>{{post.time}}</span></p>
+                                <p onclick="location.href='/{{topic.id}}/prev={{post.id}}'">{{post.data}}<br><span>{{post.time}}</span></p>
                             </div>
                         {% endif %}
                     {% elif loop.nextitem is defined: %}
-                        {% if post.user.username==loop.previtem.user.username: %}
-                            {% if post.user.username == name.username: %}
-                                <div class="message my_message">
-                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                                </div>
-                            {% else: %}
-                                <div class="message frnd_message">
-                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                                </div>
-                            {% endif %}
-                        {% else: %}
-                            {% if post.user.username==name.username: %}
-                                <div class="message my_message">
-                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                                </div>
-                            {% else: %}
-                                <div class="message frnd">
-                                    <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
-                                </div>
-                                <div class="message frnd_message">
-                                    <p>{{post.data}}<br><span>{{post.time}}</span></p>
-                                </div>
-                            {% endif %}
-                        {% endif %}
-                    {% elif loop.nextitem is not defined: %}
-                    {% set X = page %}
-                    {% set Y = 1 %}
-                        {% if loop.previtem.user.username==name.username: %}
-                            <div class="message my_message">
-                                <p onclick="location.href='/channel/{{topic.name}}/{{X-Y}}'">{{post.data}}<br><span>{{post.time}}</span></p>
+                        {% if post.user.id==name.id: %}
+                        <div class="message my_message">
+                            <p>{{post.data}}<br><span>{{post.time}}</span></p>
+                        </div>
+                        {% elif post.user.id==loop.previtem.user.id: %}
+                            <div class="message frnd_message">
+                                <p>{{post.data}}<br><span>{{post.time}}</span></p>
                             </div>
                         {% else: %}
                             <div class="message frnd">
                                 <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
                             <div class="message frnd_message">
-                                <p onclick="location.href='/channel/{{topic.name}}/{{X-Y}}'">{{post.data}}<br><span>{{post.time}}</span></p>
+                                <p>{{post.data}}<br><span>{{post.time}}</span></p>
                             </div>
+                        {% endif %}
+                    {% elif loop.nextitem is not defined: %}
+                        {% if post.user.id==name.id: %}
+                            <div class="message my_message">
+                                <p onclick="location.href='/{{topic.id}}/next={{post.id}}'">{{post.data}}<br><span>{{post.time}}</span></p>
+                            </div>
+                        {% elif post.user.id==loop.previtem.user.id: %}
+                            <div class="message frnd_message">
+                                <p onclick="location.href='/{{topic.id}}/next={{post.id}}'">{{post.data}}<br><span>{{post.time}}</span></p>
+                            </div>
+                        {% else: %}
+                            <div class="message frnd">
+                                <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
+                            </div>
+                            <div class="message frnd_message">
+                                <p onclick="location.href='/{{topic.id}}/next={{post.id}}'">{{post.data}}<br><span>{{post.time}}</span></p>
+                            </div>                                
                         {% endif %}
                     {% endif %}
                 {% endfor %}   
@@ -172,7 +165,7 @@
             </div>
 
             <div class="chatbox_input">
-                <form action="/channel/{{topic.name}}" method="post" class="form">
+                <form action="/channel/{{topic.id}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="post" placeholder="Message ">
                     <input type="hidden" name="hide" default="False" value={{hide}} id ="inputfield">
                 </form>

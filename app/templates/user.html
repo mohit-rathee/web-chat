@@ -5,7 +5,7 @@
     <div class="leftSide" >
         <h2>Channels</h2>
         {% for table in tables: %}
-            <form action="/channel/{{table.name}}" method="post">
+            <form action="/channel/{{table.id}}" method="post">
                 <input type="submit" value="{{table.name}}">
             </form>
 
