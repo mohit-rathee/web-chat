@@ -3,7 +3,7 @@ from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timezone
 from sqlalchemy.sql import func
-from sqlalchemy import MetaData, create_engine
+from passlib.hash import sha256_crypt
 
 
 
@@ -117,10 +117,11 @@ def login():
         if operation == "login":
             try:
                 user = users.query.filter_by(username=name).first()
-                if user.password == password:
+                if sha256_crypt.verify(str(name+password), user.password):
                     session["id"]=user.id
                     return  redirect("/")
-                return render_template("message.html",msg="incorrect password")
+                else:    
+                    return render_template("message.html",msg="incorrect password")
             except:
                 return render_template("message.html",msg="Username doesn't exist")
 
@@ -129,7 +130,7 @@ def login():
             if user!=None:
                 print(user)
                 return render_template("message.html",msg="Username exist")
-            user=users(username=name,password=password,balance=0)
+            user=users(username=name,password=sha256_crypt.encrypt(name+password),balance=0)
             db.session.add(user)
             db.session.commit()
             user = users.query.filter_by(username=name).first()
@@ -440,9 +441,10 @@ def chat(frnd):
 
 @app.route("/test/<topic>",methods=["GET","POST"])
 def test(topic):
-    ch=channel.query.filter_by(name=topic).first()
-    name=ch.user.password
-    print(name)
-    return "done"
+    db_password=topic
+    h = hashlib.md5(db_password.encode())  
+    print(h.hexdigit())
+    print(h)
+    return redirect("/")
 
 
