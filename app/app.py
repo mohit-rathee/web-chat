@@ -141,7 +141,7 @@ def login():
             return redirect("/login")
 
             
-@app.route('/logout',methods=["POST"])    
+@app.route('/logout',methods=["GET","POST"])  
 def logout():
     session["id"]=None
     print(session["id"])
@@ -172,13 +172,17 @@ def delete_short():
     user=int(session.get("id"))
     if session.get("channel"):
         try:
-            myChannel=channel.query.filter_by(id=session.get("channel")).first()
-            funposts=short_posts.query.filter_by(topic_id=myChannel.id, sender_id=user).all()
+            funposts=short_posts.query.filter_by(topic_id=session.get("channel"), sender_id=user).all()
             for i in funposts:
                 db.session.delete(i)
                 db.session.commit()
         except: 
             return render_template("message.html",msg="can't delete for this channel")
+        print("deleted")
+        session["body"]=""
+        session["fun"]="False"        
+        return redirect('/channel/'+str(session.get("channel")))
+
     elif session.get("frnd"):
         try:
             frnd=users.query.filter_by(id=session.get("frnd")).first()
@@ -186,7 +190,10 @@ def delete_short():
             funposts=short_messages.query.filter_by(key=prvt_key).all()
             for i in funposts:
                 db.session.delete(i)
-                db.session.commit()        
+                db.session.commit()       
+            print("deleted")
+            session["body"]=""
+            session["fun"]="False"
             return redirect('/chat/'+str(frnd.id))
         except:
             return render_template("message.html",msg="can't delete for this chat")
@@ -266,25 +273,25 @@ def application():
             print("error")
         return render_template("searchresult.html",name=user,tables=results)
     
-    elif newChannel==None:
+    elif newChannel!=None:
+        str(newChannel).strip()
+        try:
+            topic=channel(name=newChannel,creator_id=user.id)
+            db.session.add(topic)
+            db.session.commit()
+            print("sucess")
+        except:
+            return render_template("message.html",msg="can't add channel")
+        try:
+            channels=channel.query.all()
+        except:
+            print("can't show topics id")
+        # return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
+        return render_template("searchresult.html",name=user,tables=channels)
+    else:
         channels=channel.query.all()
-        return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
-    
-    str(newChannel).strip()
-    try:
-        topic=channel(name=newChannel,creator_id=user.id)
-        db.session.add(topic)
-        db.session.commit()
-        print("sucess")
-    except:
-        return render_template("message.html",msg="can't add channel")
-    try:
-        channels=channel.query.all()
-    except:
-        print("can't show topics id")
-    return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
-
-
+        # return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
+        return render_template("searchresult.html",name=user,tables=channels)
 
 @app.route("/channel/<int:channel_id>",methods=["GET","POST"])
 def channel_chat(channel_id):

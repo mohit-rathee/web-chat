@@ -14,7 +14,7 @@
                 <div class="imgtext">
                     
                     <a href="/app" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
-                    <h4>{{name.username}}<br><span>Points: {{name.balance}}</span></h4>
+                    <h4>{{name.username}}<br></h4>
                 </div>
             </div>
             <div class="search_channel">
@@ -59,11 +59,21 @@
             </div>
         </div>
         <div class="rightside">
-            <div class="header">
-                <div class="imgtext">
+            <div class="header">    
+                <div class="useless">
+                    <p>Account</p>
+                    <p  onclick="location.href='/logout'" id="delete">Logout</p>
                 </div>
             </div>
             <div class="chatbox" id="chats">
+                <p><h2>Welcome {{name.username}}</h2><br><h3>Your balance: {{name.balance}}</h3></p>
+            </div>
+            <div class="chatbox_input">
+                <form action="/app" method="post" class="form">
+                    <input autocomplete="off" name="channel_name" placeholder="Add channel" type="text" class="search_channel">
+                    <input type="submit" value="Add Topic">
+                    </div>
+                </form>
             </div>
         </div>
     </div>
