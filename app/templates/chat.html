@@ -16,7 +16,7 @@
                     <a href="/" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
                     <h4>{{frnd.username}}<br></h4>
                 </div>
-                <p id="delete" onclick="location.href='/delete_chat/{{frnd.username}}'">Delete</p>
+                <p id="delete" onclick="location.href='/delete_chat'">Delete</p>
             </div>
             <div class="chatbox" id="chats">
                 {% for chat in chats: %}
@@ -34,7 +34,7 @@
                 <hr>
                 <div class="useless">
                     <button onclick="darkfunction()" style="align-items:center;">chat useless</button>
-                    <button onclick="location.href='/delete_short/{{frnd.username}}'" id="delete">Delete</button>                    
+                    <button onclick="location.href='/delete_short'" id="delete">Delete</button>                    
                 </div>
                 <script>
                     function darkfunction() {
@@ -52,7 +52,15 @@
                 </script>
                 <div class="shortBox" id="shortBox">
                     {% for post in feelings: %}
-                        <p>{{post.data}} - <span>{{post.sender.username}}</span> </p>
+                        {% if post.sender_id==name.id: %}
+                            <div class="short my_short">
+                                <p>{{post.data}}</span> </p>
+                            </div>
+                        {% else: %}
+                            <div class="short frnd_short">
+                                <p >{{post.data}}</p>
+                            </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
                 <script>
@@ -63,7 +71,7 @@
                 </script>
             </div>
             <div class="chatbox_input">
-                <form action="/chat/{{frnd.username}}" method="post" class="form">
+                <form action="/chat/{{frnd.id}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="message" placeholder="Message ">
                     <input type="hidden" name="hide" default="False" value={{hide}} id ="inputfield">
                 </form>

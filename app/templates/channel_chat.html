@@ -41,7 +41,7 @@
                                 </div>
                                 <div class="message_p">
                                     <p>created by {{table.user.username}} </p>
-                                    <b onclick="location.href='/delete/{{table.name}}'"></b>
+                                    <b onclick="location.href='/delete'"></b>
                                 </div>
                             </div>
                         </div>
@@ -57,7 +57,7 @@
                                 </div>
                                 <div class="message_p">
                                     <p>created by {{table.user.username}} </p>
-                                    <b onclick="location.href='/delete/{{table.name}}'"></b>
+                                    <b onclick="location.href='/delete'"></b>
                                 </div>
                             </div>
                         </div>
@@ -82,7 +82,7 @@
                             </div>
                         {% else: %}
                             <div class="message frnd">
-                                <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
+                                <p><a href="/chat/{{post.user.id}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
                             <div class="message frnd_message">
                                 <p onclick="location.href='/{{topic.id}}/prev={{post.id}}'">{{post.data}}<br><span>{{post.time}}</span></p>
@@ -99,7 +99,7 @@
                             </div>
                         {% else: %}
                             <div class="message frnd">
-                                <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
+                                <p><a href="/chat/{{post.user.id}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
                             <div class="message frnd_message">
                                 <p>{{post.data}}<br><span>{{post.time}}</span></p>
@@ -116,7 +116,7 @@
                             </div>
                         {% else: %}
                             <div class="message frnd">
-                                <p><a href="/chat/{{post.user.username}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
+                                <p><a href="/chat/{{post.user.id}}" style="text-decoration: none;font-size: 1.1em; ">{{post.user.username}}</a></p>
                             </div>
                             <div class="message frnd_message">
                                 <p onclick="location.href='/{{topic.id}}/next={{post.id}}'">{{post.data}}<br><span>{{post.time}}</span></p>
@@ -127,7 +127,7 @@
                 <hr>
                 <div  class="useless">
                     <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
-                    <button onclick="location.href='/delete_short/{{topic.name}}'" id="delete">Delete</button>
+                    <button onclick="location.href='/delete_short'" id="delete">Delete</button>
                 </div>
                 <script>
                     function darkfunction() {
