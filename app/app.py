@@ -257,7 +257,7 @@ def application():
     session["channel"]=None 
     session["frnd"]=None
     session["body"]=None
-    session["fun"]=None  
+    session["fun"]=Nonecd   
     id=session.get("id")
     newChannel=request.form.get("channel_name")
     searchRequest=request.form.get("search")
@@ -362,12 +362,17 @@ def history(channel_id,action,post):
     current_channel=channel.query.filter_by(id=channel_id).first()
     if action=="next":
         topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=post).limit(7)
+        if topic_posts.count()<7:
+            return redirect("/channel/"+str(channel_id))
     elif action=="prev":
         last_posts=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<=post).limit(7)
-        # new_post=last_posts[-1]
-        # newstart=new_post.id
-        # topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=newstart).limit(7)
-        topic_posts = last_posts[::-1]
+        if last_posts.count()<7:
+            topic_posts=current_channel.posts.limit(7)
+        else:
+            # new_post=last_posts[-1]
+            # newstart=new_post.id
+            # topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=newstart).limit(7)
+            topic_posts = last_posts[::-1]
 
 
     tables=channel.query.all()
