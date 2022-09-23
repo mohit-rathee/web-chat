@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,59 +9,85 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
     <script src="{{ url_for('static',filename='script.js')}}"></script>
 </head>
+
 <body class="{{body}}">
     <div class="container">
         <div class="rightside">
             <div class="header">
                 <div class="imgtext">
-                    <a href="/" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
+                    <a href="/" style="text-decoration: none;font-size: 1.1em; ">
+                        <ion-icon name="arrow-back-outline"></ion-icon>
+                    </a>
                     <h4>{{frnd.username}}<br></h4>
                 </div>
                 <p id="delete" onclick="location.href='/delete_chat'">Delete</p>
             </div>
             <div class="chatbox" id="chats">
                 {% for chat in chats: %}
-                    {% if chat.sender.username==name.username: %}
+                    {% if loop.previtem is not defined: %}
+                        {% if chat.sender.username==name.username: %}
+                        <div class="message my_message">
+                            <p onclick="location.href='/chat/{{frnd.id}}/prev={{chat.id}}'">
+                                {{chat.data}}<br><span>{{chat.time}}</span></p>
+                        </div>
+                        {% else: %}
+                        <div class="message frnd_message">
+                            <p onclick="location.href='/chat/{{frnd.id}}/prev={{chat.id}}'">
+                                {{chat.data}}<br><span>{{chat.time}}</span></p>
+                        </div>
+                        {% endif %}
+                    {% elif loop.nextitem is defined: %}
+                        {% if chat.sender.username==name.username: %}
                         <div class="message my_message">
                             <p>{{chat.data}}<br><span>{{chat.time}}</span></p>
                         </div>
-                    {% else: %}
+                        {% else: %}
                         <div class="message frnd_message">
                             <p>{{chat.data}}<br><span>{{chat.time}}</span></p>
                         </div>
+                        {% endif %}
+                    {% elif loop.nextitem is not defined: %}
+                        {% if chat.sender.username==name.username: %}
+                        <div class="message my_message">
+                            <p onclick="location.href='/chat/{{frnd.id}}/next={{chat.id}}'">{{chat.data}}<br><span>{{chat.time}}</span></p>
+                        </div>
+                        {% else: %}
+                        <div class="message frnd_message">
+                            <p onclick="location.href='/{{frnd.id}}/next={{chat.id}}'">{{chat.data}}<br><span>{{chat.time}}</span></p>
+                        </div>
+                        {% endif %}
                     {% endif %}
-                    
                 {% endfor %}
                 <hr>
                 <div class="useless">
                     <button onclick="darkfunction()" style="align-items:center;">chat useless</button>
-                    <button onclick="location.href='/delete_short'" id="delete">Delete</button>                    
+                    <button onclick="location.href='/delete_short'" id="delete">Delete</button>
                 </div>
                 <script>
                     function darkfunction() {
-                        var mybody=document.body
-                        var hide=document.getElementById("inputfield")
-                        if (hide.value=="True"){
-                            hide.value="False";
+                        var mybody = document.body
+                        var hide = document.getElementById("inputfield")
+                        if (hide.value == "True") {
+                            hide.value = "False";
                             mybody.classList.remove("darkbody");
                         }
                         else {
-                            hide.value="True";
+                            hide.value = "True";
                             mybody.classList.toggle("darkbody");
                         }
                     }
                 </script>
                 <div class="shortBox" id="shortBox">
                     {% for post in feelings: %}
-                        {% if post.sender_id==name.id: %}
-                            <div class="short my_short">
-                                <p>{{post.data}}</span> </p>
-                            </div>
-                        {% else: %}
-                            <div class="short frnd_short">
-                                <p >{{post.data}}</p>
-                            </div>
-                        {% endif %}
+                    {% if post.sender_id==name.id: %}
+                    <div class="short my_short">
+                        <p>{{post.data}}</span> </p>
+                    </div>
+                    {% else: %}
+                    <div class="short frnd_short">
+                        <p>{{post.data}}</p>
+                    </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
                 <script>
@@ -73,7 +100,7 @@
             <div class="chatbox_input">
                 <form action="/chat/{{frnd.id}}" method="post" class="form">
                     <input autofocus autocomplete="off" type="text" name="message" placeholder="Message ">
-                    <input type="hidden" name="hide" default="False" value={{hide}} id ="inputfield">
+                    <input type="hidden" name="hide" default="False" value={{hide}} id="inputfield">
                 </form>
             </div>
         </div>
@@ -81,4 +108,5 @@
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </body>
+
 </html>

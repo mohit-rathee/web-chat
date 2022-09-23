@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import and_
 from datetime import timezone
 from sqlalchemy.sql import func
 from passlib.hash import sha256_crypt
@@ -189,7 +190,7 @@ def delete_short():
         try:
             frnd=users.query.filter_by(id=session.get("frnd")).first()
             prvt_key=private_key(user,frnd.id)
-            funposts=short_messages.query.filter_by(key=prvt_key.hexdigest()).all()
+            funposts=short_messages.query.filter_by(key=prvt_key).all()
             for i in funposts:
                 db.session.delete(i)
                 db.session.commit()       
@@ -210,14 +211,14 @@ def delete_chat():
     frnd_id=friend.id
     prvt_key=private_key(id,frnd_id)
     try:
-        chat=chats.query.filter_by(key=prvt_key.hexdigest()).all()
+        chat=chats.query.filter_by(key=prvt_key).all()
         for i in chat:
             db.session.delete(i)
             db.session.commit()
         session["frnd"]=None
     except:
         return render_template("message.html",msg="no channel exist/can't delete")
-    funposts=short_messages.query.filter_by(key=prvt_key.hexdigest()).all()
+    funposts=short_messages.query.filter_by(key=prvt_key).all()
     for i in funposts:
         db.session.delete(i)
         db.session.commit()    
@@ -257,7 +258,7 @@ def application():
     session["channel"]=None 
     session["frnd"]=None
     session["body"]=None
-    session["fun"]=Nonecd   
+    session["fun"]=None
     id=session.get("id")
     newChannel=request.form.get("channel_name")
     searchRequest=request.form.get("search")
@@ -354,7 +355,7 @@ def channel_chat(channel_id):
         return render_template("message.html",msg="channel don't exist")
 
 @app.route("/<int:channel_id>/<action>=<int:post>",methods=["GET","POST"])
-def history(channel_id,action,post):
+def post_history(channel_id,action,post):
     if session.get("id")==None:
         return redirect("/login")
     id=session.get("id")
@@ -384,6 +385,33 @@ def history(channel_id,action,post):
     return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body)
                 
 
+@app.route("/chat/<int:frnd>/<action>=<int:chat>",methods=["GET","POST"])
+def chat_history(frnd,action,chat):
+    if session.get("id")==None:
+        return redirect("/login")
+    id=session.get("id")
+    me=users.query.filter_by(id=id).first()
+    friend=users.query.filter_by(id=frnd).first()
+    session["frnd"]=friend.id
+    session["channel"]=None
+    prvt_key=private_key(me.id,friend.id)
+    if action=="next":
+        our_chats=chats.query.order_by(chats.id.asc()).filter(and_(chats.id>=chat,chats.key==prvt_key)).limit(7)
+        if our_chats.count()<7:
+            return redirect("/chat/"+str(frnd))
+    elif action=="prev":
+        last_chats=chats.query.order_by(chats.id.desc()).filter(and_(chats.id<=chat,chats.key==prvt_key)).limit(7)
+        if last_chats.count()<7:
+            our_chats=chats.query.filter_by(key=prvt_key).limit(7)
+        else:
+            our_chats = last_chats[::-1]
+    else:
+        return redirect("/chat/"+str(frnd))           
+    shortchat=[]
+    fun=session.get("fun")
+    body=session.get("body")
+    print("my work is done")
+    return render_template("chat.html",name=me,chats=our_chats,frnd=friend,feelings=shortchat,hide=session.get("fun"),body=session.get("body"))
 
 
 #private key
@@ -394,7 +422,7 @@ def private_key(a,b):
         key=str(b)+"-"+str(a)
     else:
         key=str(a)+"-"+str(b)
-    return hashlib.md5(key.encode())  
+    return hashlib.md5(key.encode()).hexdigest()
 
 
 @app.route("/chat/<int:frnd>",methods=["GET","POST"])
@@ -416,7 +444,7 @@ def chat(frnd):
     if message!=None:
         if fun=="True":
             try:
-                chat=short_messages(data=message,key=prvt_key.hexdigest(),sender_id=me.id)
+                chat=short_messages(data=message,key=prvt_key,sender_id=me.id)
                 db.session.add(chat)
                 db.session.commit()
                 session["body"]="darkbody"
@@ -426,20 +454,21 @@ def chat(frnd):
                 return render_template("message.html",msg="can't post in short chats")
         else:
             try:
-                chat=chats(data=message,key=prvt_key.hexdigest(),sender_id=me.id)
+                chat=chats(data=message,key=prvt_key,sender_id=me.id)
                 db.session.add(chat)
                 db.session.commit()
             except:
                 return render_template("message.html",msg="can't post in chats")
             session["body"]=""
             session["fun"]="False"
-            funposts=short_messages.query.filter_by(key=prvt_key.hexdigest(), sender_id=me.id).all()
+            funposts=short_messages.query.filter_by(key=prvt_key, sender_id=me.id).all()
             for i in funposts:
                 db.session.delete(i)
                 db.session.commit()
     try:
-        our_chats=chats.query.filter_by(key=prvt_key.hexdigest()).all()
-        shortchat=short_messages.query.filter_by(key=prvt_key.hexdigest()).all()
+        our_chats=chats.query.order_by(chats.id.desc()).filter_by(key=prvt_key).limit(7)
+        our_chats=our_chats[::-1]
+        shortchat=short_messages.query.filter_by(key=prvt_key).all()
     except:
         return render_template("message.html",msg="plz give valid input or check code")    
     return render_template("chat.html",name=me,chats=our_chats,frnd=friend,feelings=shortchat,hide=session.get("fun"),body=session.get("body"))
