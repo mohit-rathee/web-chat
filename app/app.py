@@ -15,7 +15,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.sqlite3'
 db = SQLAlchemy(app)
 # engine = create_engine('sqlite:///test.sqlite3', echo=True)
 
-# metadata=None
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
     username=db.Column(db.String(20), unique=True, nullable=False)       #user name
@@ -478,11 +477,9 @@ def chat(frnd):
 
 
 
-@app.route("/test/<topic>",methods=["GET","POST"])
+@app.route("/<topic>",methods=["GET","POST"])
 def test(topic):
-    h = hashlib.md5(topic.encode())  
-    print(h.hexdigest())
-    print(h)
+
     return redirect("/")
 
 
