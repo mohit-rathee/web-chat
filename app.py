@@ -326,10 +326,13 @@ def channel_chat(channel_id):
                 post.topic.append(current_channel)
                 db.session.add(post)
                 db.session.commit()
-                funposts=short_posts.query.filter_by(sender_id=user.id).all()
+            try:
+                funposts=short_posts.query.filter(and_(topic_id=session.get("channel"), sender_id=user)).all()
                 for i in funposts:
                     db.session.delete(i)
                     db.session.commit()
+            except: 
+                return render_template("message.html",msg="can't delete for this channel")
                 session["body"]=""
                 session["fun"]="False"
                 print("posted")
