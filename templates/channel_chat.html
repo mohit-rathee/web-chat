@@ -185,7 +185,7 @@
     });
     socket.on('refresh',function(data) {
         console.log(data);
-        location.reload();
+        document.location.replace("/channel/{{topic.id}}");
     });
 
     let message_form = document.getElementById('chatinput');
