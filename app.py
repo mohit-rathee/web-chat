@@ -19,6 +19,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.sqlite3'
 db = SQLAlchemy(app)
 
 # engine = create_engine('sqlite:///test.sqlite3', echo=True)
+if __name__ == "__main__":
+    socket.run(app)
+
+
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
