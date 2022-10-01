@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, session
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -14,10 +15,9 @@ from flask_socketio import SocketIO, join_room, emit
 app = Flask(__name__)
 app.config.from_object(__name__)
 socketio = SocketIO(app)
-app.config['SECRET_KEY'] = 'secret!'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.sqlite3'
+app.config['SECRET_KEY'] = os.environ.get['SECRET_KEY']
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get['DATABASE_URI']
 db = SQLAlchemy(app)
-# engine = create_engine('sqlite:///test.sqlite3', echo=True)
 
 
 
@@ -501,4 +501,4 @@ def test(topic):
 
 
 if __name__=="__main__":
-    socketio.run(app)
+    app.run()
