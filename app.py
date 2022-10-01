@@ -17,10 +17,7 @@ socketio = SocketIO(app)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.sqlite3'
 db = SQLAlchemy(app)
-
 # engine = create_engine('sqlite:///test.sqlite3', echo=True)
-if __name__ == "__main__":
-    socket.run(app)
 
 
 
@@ -114,11 +111,12 @@ def index():
 @socketio.on('join_channel')
 def handle_join_channel(data):
     join_room(data['channel'])
+    socketio.emit('notify',data,room= data['channel'])
 
 
 @socketio.on('order_refresh')
 def handel_order_refresh(data):
-    socketio.emit('refresh',data, room =data['channel'])
+    socketio.emit('refresh', room =data['channel'])
 
 
 
@@ -501,3 +499,6 @@ def test(topic):
     return redirect("/")
 
 
+
+if __name__=="__main__":
+    socketio.run(app)
