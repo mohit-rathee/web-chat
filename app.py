@@ -6,13 +6,18 @@ from datetime import timezone
 from sqlalchemy.sql import func
 from passlib.hash import sha256_crypt
 import hashlib 
+from flask_socketio import SocketIO, join_room, emit
+
 
 
 
 app = Flask(__name__)
 app.config.from_object(__name__)
+socketio = SocketIO(app)
+app.config['SECRET_KEY'] = 'secret!'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.sqlite3'
 db = SQLAlchemy(app)
+
 # engine = create_engine('sqlite:///test.sqlite3', echo=True)
 
 class users(db.Model):
@@ -101,6 +106,15 @@ def index():
         return redirect("/chat/"+str(session.get("frnd")))
     else:
         return redirect("/app")
+
+@socketio.on('join_channel')
+def handle_join_channel(data):
+    join_room(data['channel'])
+
+
+@socketio.on('order_refresh')
+def handel_order_refresh(data):
+    socketio.emit('refresh',data, room =data['channel'])
 
 
 

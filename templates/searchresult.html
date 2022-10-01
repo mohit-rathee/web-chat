@@ -27,11 +27,11 @@
             <div class="channel_list">
                 {% for table in tables: %}
                     {% if table.name: %}
-                        <div class="block">
+                        <div class="block" onclick="location.href='/channel/{{table.id}}'">
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>
-                            <div class="details" onclick="location.href='/channel/{{table.id}}'">
+                            <div class="details">
                                 <div class="name">
                                     <h4>{{table.name}}</h4>
                                     <p class="time"></p>
@@ -42,11 +42,11 @@
                             </div>
                         </div>
                     {% elif table.username: %}
-                        <div class="block">
+                        <div class="block" onclick="location.href='/chat/{{table.id}}'">
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>
-                            <div class="details" onclick="location.href='/chat/{{table.id}}'">
+                            <div class="details">
                                 <div class="name">
                                     <h4>{{table.username}}</h4>
                                     <p class="time"></p>
@@ -79,5 +79,12 @@
     </div>
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+
+
+
+<script type="text/javascript" charset="utf-8"> 
+
+   
+</script>
 </body>
 </html>

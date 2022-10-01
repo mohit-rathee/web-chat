@@ -52,3 +52,34 @@
 </div>
 <br>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+socket.on('channel_announcement',function(data) {
+    console.log(data);
+    p = document.createElement("p");
+    text = document.createTextNode(`${data.name} has joined the channel`)
+    p.appendChild(text);
+    message=document.createElement("div")
+    message.classList.add('message', 'frnd_message')
+    message.appendChild(p)
+    chat = document.getElementById("chats")
+    chat.appendChild(message)
+});

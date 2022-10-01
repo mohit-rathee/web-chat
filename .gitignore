@@ -1,5 +1,5 @@
-app/venv/
-app/__pycache__
-app/flask_session
-app/test.py
-app/test.sqlite3
+venv/
+__pycache__
+flask_session
+test.py
+test.sqlite3
