@@ -7,7 +7,7 @@ from datetime import timezone
 from sqlalchemy.sql import func
 from passlib.hash import sha256_crypt
 import hashlib 
-from flask_socketio import SocketIO, join_room, emit
+# from flask_socketio import SocketIO, join_room, emit
 
 
 
@@ -31,10 +31,15 @@ class users(db.Model):
     chat=db.relationship('chats',backref='sender')
     short_message=db.relationship('short_messages',backref='sender')
     short_post=db.relationship('short_posts',backref='sender')
-    def __init__(self, username, password, balance):
+    def __init__(self,id ,post, topic, chat, short_message, short_post, username, password):
+        self.id=id
         self.username=username
         self.password=password
-        self.balance=balance
+        self.post=post
+        self.chat=chat
+        self.short_message=short_message
+        self.topic=topic
+        self.short_post=short_post
 
 channel_post=db.Table('channel_post',
     db.Column('channel',db.Integer,db.ForeignKey('channel.id')),
@@ -44,6 +49,10 @@ class channel(db.Model):
     id=db.Column(db.Integer,primary_key=True)                   #topic ID
     name=db.Column(db.String, nullable=False,unique=True)       #topic name
     creator_id=db.Column(db.Integer,db.ForeignKey('users.id'))  #creator ID
+    def __init__(self, id, name, creator):
+        self.id=id
+        self.name=name
+        self.creator=creator
 
 class chats(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #topic ID
@@ -52,12 +61,17 @@ class chats(db.Model):
     data=db.Column(db.String, nullable=False)                               #actuall msg
     time = db.Column(db.DateTime, default=func.now())                       #time
 
+
 class posts(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #msg/post ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #User ID
     time = db.Column(db.DateTime, default=func.now())                       #time
     topic=db.relationship('channel',secondary=channel_post,backref=db.backref('posts',lazy='dynamic'))      #Association table->channel_post
+    def __init__self(data, sender_id,topic):
+        self.data=data
+        self.sender_id=sender_id
+        self.topic=topic
 
 class short_messages(db.Model):
     id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
@@ -72,7 +86,10 @@ class short_posts(db.Model):
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
     topic_id=db.Column(db.Integer, db.ForeignKey('channel.id')) 
     time = db.Column(db.DateTime, default=func.now()) 
-
+    def __init__(self, data, sender_id,topic_id):
+        self.data=data
+        self.sender_id=sender_id
+        self.topic_id=topic_id
 
 
 
@@ -88,14 +105,14 @@ Session(app)
 
 
 # Routes
-@app.before_request
-def hello():
-    print(request.path+"/"+request.method)
+# @app.before_request
+# def hello():
+#     print(request.path+"/"+request.method)
 
 
-@app.teardown_request
-def teardown_request(exception):
-    print("done")
+# @app.teardown_request
+# def teardown_request(exception):
+#     print("done")
 
 @app.route('/',methods=["GET","POST"])
 def index():
@@ -108,15 +125,15 @@ def index():
     else:
         return redirect("/app")
 
-@socketio.on('join_channel')
-def handle_join_channel(data):
-    join_room(data['channel'])
-    socketio.emit('notify',data,room= data['channel'])
+# @socketio.on('join_channel')
+# def handle_join_channel(data):
+#     join_room(data['channel'])
+#     socketio.emit('notify',data,room= data['channel'])
 
 
-@socketio.on('order_refresh')
-def handel_order_refresh(data):
-    socketio.emit('refresh', room =data['channel'])
+# @socketio.on('order_refresh')
+# def handel_order_refresh(data):
+#     socketio.emit('refresh', room =data['channel'])
 
 
 
@@ -466,6 +483,9 @@ def chat(frnd):
                 session["fun"]="True"
                 print("your uselessly chat is saved")
             except:
+                print(message)
+                print(prvt_key)
+                print(me.id)
                 return render_template("message.html",msg="can't post in short chats")
         else:
             try:
@@ -473,6 +493,9 @@ def chat(frnd):
                 db.session.add(chat)
                 db.session.commit()
             except:
+                print(message)
+                print(prvt_key)
+                print(me.id)
                 return render_template("message.html",msg="can't post in chats")
             session["body"]=""
             session["fun"]="False"

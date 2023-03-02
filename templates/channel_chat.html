@@ -14,9 +14,9 @@
                 <div class="imgtext">
                     
                     <a href="/app" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
-                    <div class="userimg">
+                    <!-- <div class="userimg">
                         <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
-                    </div>
+                    </div> -->
                     <h4>{{name.username}}<br><span>Points: {{name.balance}}</span></h4>
                 </div>
             </div>
@@ -31,9 +31,9 @@
                 {% for table in tables: %}
                     {% if table.id == topic.id: %}
                         <div class="block active">
-                            <div class="imgbx">
+                            <!-- <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
-                            </div>
+                            </div> -->
                             <div class="details">
                                 <div class="name">
                                     <h4>{{table.name}}</h4>
@@ -47,9 +47,9 @@
                         </div>
                     {% else: %}
                         <div class="block">
-                            <div class="imgbx">
+                            <!-- <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
-                            </div>
+                            </div> -->
                             <div class="details" onclick="location.href='/channel/{{table.id}}'">
                                 <div class="name">
                                     <h4>{{table.name}}</h4>
