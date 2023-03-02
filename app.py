@@ -31,7 +31,10 @@ class users(db.Model):
     chat=db.relationship('chats',backref='sender')
     short_message=db.relationship('short_messages',backref='sender')
     short_post=db.relationship('short_posts',backref='sender')
-
+    def __init__(self, username, password, balance):
+        self.username=username
+        self.password=password
+        self.balance=balance
 
 channel_post=db.Table('channel_post',
     db.Column('channel',db.Integer,db.ForeignKey('channel.id')),
@@ -48,7 +51,6 @@ class chats(db.Model):
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #Sender ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
     time = db.Column(db.DateTime, default=func.now())                       #time
-
 
 class posts(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #msg/post ID
@@ -70,6 +72,8 @@ class short_posts(db.Model):
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
     topic_id=db.Column(db.Integer, db.ForeignKey('channel.id')) 
     time = db.Column(db.DateTime, default=func.now()) 
+
+
 
 
 # SQLALCHEMY_TRACK_MODIFICATIONS = True
@@ -462,9 +466,6 @@ def chat(frnd):
                 session["fun"]="True"
                 print("your uselessly chat is saved")
             except:
-                print(message)
-                print(prvt_key)
-                print(me.id)
                 return render_template("message.html",msg="can't post in short chats")
         else:
             try:
@@ -472,9 +473,6 @@ def chat(frnd):
                 db.session.add(chat)
                 db.session.commit()
             except:
-                print(message)
-                print(prvt_key)
-                print(me.id)
                 return render_template("message.html",msg="can't post in chats")
             session["body"]=""
             session["fun"]="False"
