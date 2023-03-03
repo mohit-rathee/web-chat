@@ -15,10 +15,9 @@ import hashlib
 app = Flask(__name__)
 app.config.from_object(__name__)
 # socketio = SocketIO(app)
-# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"     # os.environ.get('DATABASE_URI')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['UPLOAD_FOLDER']="/db"
-app.config['Databases']=1
 db = SQLAlchemy(app)
 
 class users(db.Model):
@@ -545,23 +544,23 @@ def download_database():
 
 
 
-@app.route('/test',methods=['GET'])
-def test():
-    # file=request.files['file']
+# @app.route('/test',methods=['GET'])
+# def test():
+#     # file=request.files['file']
     # if file and file.filename!="db.sqlite3" and file.filename.rsplit(".")[1]=="sqlite3":
     #     uploads_dir = os.path.join('db')
     #     if os.path.exists(uploads_dir)==False:
     #         print("true")
     #         os.makedirs(uploads_dir)
     #     file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
-    #     return redirect("/")
-    # return redirect("/")
-    print(os.listdir("db"))
-    databases=[]
-    for db in os.listdir("db"):
-        databases.append(db)
-        print(databases)
-    return render_template("database.html",databases=data)
+    # #     return redirect("/")
+    # # return redirect("/")
+    # print(os.listdir("db"))
+    # databases=[]
+    # for db in os.listdir("db"):
+    #     databases.append(db)
+    #     print(databases)
+    # return render_template("database.html",databases=data)
 
 if __name__=="__main__":
     app.run(debug=True)
