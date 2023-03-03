@@ -17,7 +17,6 @@ app.config.from_object(__name__)
 # socketio = SocketIO(app)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
-app.config['UPLOAD_FOLDER']="/db"
 db = SQLAlchemy(app)
 
 class users(db.Model):
@@ -120,6 +119,8 @@ def upload_db():
 
 @app.route('/session',methods=["POST","GET"])
 def change_db():
+    if os.path.exists("db")==False:
+        os.makedirs("db")
     databases=[]
     for db in os.listdir("db"):
         databases.append(db) 
