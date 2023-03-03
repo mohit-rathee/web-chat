@@ -1,25 +1,25 @@
 import os
 from flask import Flask, render_template, request, redirect, session
+from werkzeug.utils import secure_filename
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_
 from datetime import timezone
 from sqlalchemy.sql import func
+from flask import send_file
 from passlib.hash import sha256_crypt
 import hashlib 
 # from flask_socketio import SocketIO, join_room, emit
 
 
-
-
 app = Flask(__name__)
 app.config.from_object(__name__)
 # socketio = SocketIO(app)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
+# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"     # os.environ.get('DATABASE_URI')
+app.config['UPLOAD_FOLDER']="/db"
+app.config['Databases']=1
 db = SQLAlchemy(app)
-
-
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
@@ -96,6 +96,55 @@ Session(app)
 # @app.teardown_request
 # def teardown_request(exception):
 #     print("done")
+# allowedExtention=("sqlite3")
+# def allowed(filename):
+#     return '.'in filename and filename.rsplit('.',1)(1).lower() in allowedExtention
+
+@app.route('/upload',methods=["POST"])
+def upload_db():
+    file=request.files['file']
+    if file and file.filename.rsplit(".")[1]=="sqlite3":
+        uploads_dir = os.path.join('db')
+        if os.path.exists(uploads_dir)==False:
+            os.makedirs(uploads_dir)
+        file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
+        try:
+            app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
+        except:
+            file.remove(os.path.join(uploads_dir,secure_filename(file.filename)))
+            return render_template("message.html",msg="Coudn't set to this database.")
+        print("changed to uploaded database")
+        print(app.config['SQLALCHEMY_DATABASE_URI'])
+        return redirect("/session")
+    else:
+        return render_template("message.html",msg="select a valid database file or rename it except db.sqlite3.")
+
+@app.route('/session',methods=["POST","GET"])
+def change_db():
+    databases=[]
+    for db in os.listdir("db"):
+        databases.append(db) 
+    if request.method=="GET":
+        return render_template("database.html",databases=databases)
+    if request.method=="POST":
+        try:
+            data=request.form['database']
+        except:
+            data=False
+        try:
+            deldb=request.form['deldb']
+        except:
+            deldb=False
+            
+        if data:
+            app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db/"+str(data)
+            return render_template("login.html",dbsession=data)
+        elif deldb:
+            os.remove("db/"+str(deldb).rsplit("-")[1])
+            app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
+            print("Done")
+            return redirect("/session")
+        
 
 @app.route('/',methods=["GET","POST"])
 def index():
@@ -489,16 +538,30 @@ def chat(frnd):
     return render_template("chat.html",name=me,chats=our_chats,frnd=friend,feelings=shortchat,hide=session.get("fun"),body=session.get("body"))
 
 
+@app.route('/download')
+def download_database():
+    path= str(app.config['SQLALCHEMY_DATABASE_URI']).rsplit("///")[1]
+    return send_file(path, as_attachment=True)
 
 
 
-
-@app.route("/<topic>",methods=["GET","POST"])
-def test(topic):
-
-    return redirect("/")
-
-
+@app.route('/test',methods=['GET'])
+def test():
+    # file=request.files['file']
+    # if file and file.filename!="db.sqlite3" and file.filename.rsplit(".")[1]=="sqlite3":
+    #     uploads_dir = os.path.join('db')
+    #     if os.path.exists(uploads_dir)==False:
+    #         print("true")
+    #         os.makedirs(uploads_dir)
+    #     file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
+    #     return redirect("/")
+    # return redirect("/")
+    print(os.listdir("db"))
+    databases=[]
+    for db in os.listdir("db"):
+        databases.append(db)
+        print(databases)
+    return render_template("database.html",databases=data)
 
 if __name__=="__main__":
-    app.run()
+    app.run(debug=True)
