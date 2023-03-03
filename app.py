@@ -564,4 +564,4 @@ def download_database():
     # return render_template("database.html",databases=data)
 
 if __name__=="__main__":
-    app.run(debug=True)
+    app.run(debug=False)
