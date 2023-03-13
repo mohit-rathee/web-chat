@@ -1,10 +1,8 @@
 # web-chat
-Here i created a kind of experimental state of an online chat application. 
-It do not use sockets which means none other user will get notified when you send text(until now).
-It saves data of your session in server usually and allow you to download that as a file(***.db).
-Now just upload that file ,and continue from where you left. 
-(this is because your data might not be saved for long time where i hosted this app)
-You can use this project in your local area network instead of using emails and messages which rely on the network outside the network i.e. Internet
+ https://web-chat.onrender.com
+ 
+Here i created a kind of experimental state of an online chat application. It do not use sockets which means none other user will get notified when you send text(until now).It saves data of your session in server usually and allow you to download that as a file(***.db).Now just upload that file ,and continue from where you left. 
+(this is because your data might not be saved for long time where i hosted this app).You can use this project in your local area network instead of using emails and messages which rely on the network outside the network i.e. Internet
 
 
 ## Installation for linux local machine:
