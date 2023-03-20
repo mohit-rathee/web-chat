@@ -18,6 +18,8 @@ socketio = SocketIO(app)
 app.config['SECRET_KEY'] ="secret!" #os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"    # os.environ.get('DATABASE_URI')
 db = SQLAlchemy(app)
+socketio.init_app(app, cors_allowed_origins="*")
+
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
