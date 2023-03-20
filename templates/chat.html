@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{name.username}}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
+    <script src="{{ url_for('static',filename='script.js')}}"></script>
+</head>
+
+<body class="{{body}}">
+    <div class="container">
+        <div class="rightside">
+            <div class="header">
+                <div class="imgtext">
+                    <a href="/" style="text-decoration: none;font-size: 1.1em; ">
+                        <ion-icon name="arrow-back-outline"></ion-icon>
+                    </a>
+                    <h4>{{frnd.username}}<br></h4>
+                </div>
+                <p id="delete" onclick="location.href='/delete_chat'">Delete</p>
+            </div>
+            <div class="chatbox" id="chats">
+                {% for chat in chats: %}
+                    {% if loop.previtem is not defined: %}
+                        {% if chat.sender.username==name.username: %}
+                        <div class="message my_message">
+                            <p onclick="location.href='/chat/{{frnd.id}}/prev={{chat.id}}'">
+                                {{chat.data}}<br><span>{{chat.time.strftime("%D  %H:%M")}}</span></p>
+                        </div>
+                        {% else: %}
+                        <div class="message frnd_message">
+                            <p onclick="location.href='/chat/{{frnd.id}}/prev={{chat.id}}'">
+                                {{chat.data}}<br><span>{{chat.time.strftime("%D  %H:%M")}}</span></p>
+                        </div>
+                        {% endif %}
+                    {% elif loop.nextitem is defined: %}
+                        {% if chat.sender.username==name.username: %}
+                        <div class="message my_message">
+                            <p>{{chat.data}}<br><span>{{chat.time.strftime("%D  %H:%M")}}</span></p>
+                        </div>
+                        {% else: %}
+                        <div class="message frnd_message">
+                            <p>{{chat.data}}<br><span>{{chat.time.strftime("%D  %H:%M")}}</span></p>
+                        </div>
+                        {% endif %}
+                    {% elif loop.nextitem is not defined: %}
+                        {% if chat.sender.username==name.username: %}
+                        <div class="message my_message">
+                            <p onclick="location.href='/chat/{{frnd.id}}/next={{chat.id}}'">{{chat.data}}<br><span>{{chat.time.strftime("%D  %H:%M")}}</span></p>
+                        </div>
+                        {% else: %}
+                        <div class="message frnd_message">
+                            <p onclick="location.href='/{{frnd.id}}/next={{chat.id}}'">{{chat.data}}<br><span>{{chat.time.strftime("%D  %H:%M")}}</span></p>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                <hr id="breaker">
+                <div class="useless">
+                    <button onclick="darkfunction()" style="align-items:center;">chat useless</button>
+                    <button onclick="location.href='/delete_short'" id="delete">Delete</button>
+                </div>
+                <script>
+                    function darkfunction() {
+                        var mybody = document.body
+                        var hide = document.getElementById("inputfield")
+                        if (hide.value == "True") {
+                            hide.value = "False";
+                            mybody.classList.remove("darkbody");
+                        }
+                        else {
+                            hide.value = "True";
+                            mybody.classList.toggle("darkbody");
+                        }
+                    }
+                </script>
+                <div class="shortBox" id="shortBox"><p>under maintainance...</p>
+                    {% for post in feelings: %}
+                    {% if post.sender_id==name.id: %}
+                    <div class="short my_short">
+                        <p>{{post.data}}</span> </p>
+                    </div>
+                    {% else: %}
+                    <div class="short frnd_short">
+                        <p>{{post.data}}</p>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <script>
+                    var objDiv1 = document.getElementById("shortBox");
+                    var objDiv2 = document.getElementById("chats");
+                    objDiv1.scrollTop = objDiv1.scrollHeight;
+                    objDiv2.scrollTop = objDiv2.scrollHeight;
+                </script>
+            </div>
+            <div class="chatbox_input" id="chatinput">
+                <form action="/chat/{{frnd.id}}" method="post" class="form">
+                    <input autofocus autocomplete="off" type="text" name="message" placeholder="Message " id="text_message">
+                    <input type="hidden" name="hide" default="False" value={{hide}} id="inputfield">
+                </form>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    
+    <!-- SOKET PROGRAMMING -->
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <script type="text/javascript" charset="utf-8">    
+    var socket =io();
+    socket.on('connect', function() {
+        socket.emit('enter_private',{
+            name: "{{name.username}}",
+            myId:Number("{{name.id}}"),
+            frndId:Number("{{frnd.id}}")
+        });
+    });
+    socket.on('show_private_message',function(data) {
+        // console.log(data[0]+" sends "+data[1]);
+        // TO ADD NEW CHILD OF MESSAGE //
+        let chatbox = document.getElementById("chats");
+        let line = document.getElementById("breaker")
+        const chat = document.createElement("div");
+        // console.log("gotten data now creating a new box for message");
+        if (data[0]=="{{name.username}}"){
+            // console.log(data[0])
+            // console.log("{{name.id}}")
+            chat.classList.add("message");
+            chat.classList.add("my_message");
+            // console.log("added for right side my message");
+        }
+        else {
+            // console.log(data[0])
+            // console.log("{{name.id}}")
+            chat.classList.add("message");
+            chat.classList.add("frnd_message");
+            // console.log("added for right side friend message");
+        }
+        chat.innerHTML='<p>'+data[1]+'<span>'+data[2]+'</span>'+'</p>';
+        // console.log(chat);
+        chatbox.insertBefore(chat, line);
+        // console.log("done");
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+    });
+
+    let message_form = document.getElementById('chatinput');
+    let message_input = document.getElementById('text_message');
+    
+    document.getElementById('chatinput').onsubmit = function() {
+        let message=message_input.value.trim();
+        if (message.length) {
+            // console.log("sending to server")
+            socket.emit('recieve_private_message',
+            {
+                name:"{{name.username}}",
+                myId:"{{name.id}}",
+                frndId:"{{frnd.id}}",
+                text:String(message)
+            });
+            message_input.value=""
+        }
+        return false
+    }
+    socket.on('notify', function(data) {
+        // console.log(data+" has joinned the room." )
+    })
+</script>
+
+
+</body>
+
+</html>
