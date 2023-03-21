@@ -1,4 +1,6 @@
 import os
+from gevent import monkey
+import ssl
 from flask import Flask, render_template, request, redirect, session
 from werkzeug.utils import secure_filename
 from flask_session import Session
@@ -9,20 +11,26 @@ from sqlalchemy.sql import func
 from flask import send_file
 from passlib.hash import sha256_crypt
 import hashlib 
-from flask_socketio import SocketIO, join_room, emit
+from gevent.pywsgi import WSGIServer
+from flask_socketio import SocketIO, join_room, emit, leave_room,send
+import gevent
+# Explicitly patch the ssl module before monkey-patching everything else
+ssl_context = ssl.create_default_context()
+monkey.patch_ssl(ssl_context)
 
+# Now you can monkey-patch everything else
+monkey.patch_all()
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-socketio = SocketIO(app, async_mode='gevent', transports=['websocket'])
+socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
 app.config['SECRET_KEY'] ="secret!" #os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"    # os.environ.get('DATABASE_URI')
-db = SQLAlchemy(app)
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
 socketio.init_app(app, cors_allowed_origins="*")
-
-
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
@@ -173,6 +181,7 @@ def handel_recieve_message(data):
     # print("From : "+data["user"])
     # print("Topic : "+data["channel"])
     # print("Message : "+data["text"])
+    print("====================")
     id=session.get("id")
     channel_id=session.get("channel")
     user = users.query.filter_by(id=id).first()
@@ -626,5 +635,6 @@ def download_database():
     #     print(databases)
     # return render_template("database.html",databases=data)
 
-if __name__=="__main__":
-    socketio.run(app ,port(5000))
+if __name__ == '__main__':
+    http_server = WSGIServer(('', 7000), app)
+    http_server.serve_forever()
