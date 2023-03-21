@@ -111,8 +111,8 @@ def upload_db():
         except:
             file.remove(os.path.join(uploads_dir,secure_filename(file.filename)))
             return render_template("message.html",msg="Coudn't set to this database.")
-        print("changed to uploaded database")
-        print(app.config['SQLALCHEMY_DATABASE_URI'])
+        #print("changed to uploaded database")
+        #print(app.config['SQLALCHEMY_DATABASE_URI'])
         return redirect("/session")
     else:
         return render_template("message.html",msg="select a valid database file or rename it except db.sqlite3.")
@@ -168,7 +168,7 @@ def handel_recieve_message(data):
     # print("From : "+data["user"])
     # print("Topic : "+data["channel"])
     # print("Message : "+data["text"])
-    print("====================")
+    #print("====================")
     id=session.get("id")
     channel_id=session.get("channel")
     user = users.query.filter_by(id=id).first()
@@ -250,7 +250,7 @@ def login():
         if operation == "register":
             user = users.query.filter_by(username=name).first()
             if user!=None:
-                print(user)
+                #print(user)
                 return render_template("message.html",msg="Username exist")
             user=users(username=name,password=sha256_crypt.encrypt(name+password),balance=0)
             db.session.add(user)
