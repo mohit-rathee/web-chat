@@ -20,6 +20,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"    # os.environ.ge
 db = SQLAlchemy(app)
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
+socketio.init_app(app, cors_allowed_origins="*")
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
