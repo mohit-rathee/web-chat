@@ -1,1 +1,1 @@
-web: gunicorn --worker-class gevent --workers 2 app:app
+web: gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 2 app:app
