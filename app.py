@@ -14,13 +14,15 @@ from flask_socketio import SocketIO, join_room, emit
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='gevent', transports=['websocket'])
 app.config['SECRET_KEY'] ="secret!" #os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"    # os.environ.get('DATABASE_URI')
 db = SQLAlchemy(app)
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
 socketio.init_app(app, cors_allowed_origins="*")
+
+
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
