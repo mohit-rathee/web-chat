@@ -157,7 +157,6 @@ def index():
 @socketio.on('join_channel')
 def handle_join_channel():
     join_room(session.get("channel"))
-    print(str(session.get("id"))+" joined the "+str(session.get("channel")))
     socketio.emit('notify',session.get("id"),room= session.get("channel"))
 
 @socketio.on('prevChats')
@@ -192,10 +191,7 @@ def handel_recieve_message(data):
     last_posts=current_channel.posts.order_by(posts.id.desc()).limit(1)
     lastpost=last_posts[0]
     socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = channel_id)
-
-
-    # socketio.emit('show_message',[data["user"],data["text"]], room =data['channel'])
-
+    
 @socketio.on('enter_private')
 def handle_enter_private(data):
     key=private_key_string(data['myId'], data['frndId'])
