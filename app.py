@@ -15,8 +15,8 @@ import gevent
 app = Flask(__name__)
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
+app.config['SECRET_KEY'] ="secret!"  #os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"   #os.environ.get('DATABASE_URI')
 db = SQLAlchemy(app)
 
 class users(db.Model):
@@ -157,6 +157,7 @@ def index():
 @socketio.on('join_channel')
 def handle_join_channel():
     join_room(session.get("channel"))
+    print(str(session.get("id"))+" joined the "+str(session.get("channel")))
     socketio.emit('notify',session.get("id"),room= session.get("channel"))
 
 @socketio.on('prevChats')
@@ -191,7 +192,10 @@ def handel_recieve_message(data):
     last_posts=current_channel.posts.order_by(posts.id.desc()).limit(1)
     lastpost=last_posts[0]
     socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = channel_id)
-    
+
+
+    # socketio.emit('show_message',[data["user"],data["text"]], room =data['channel'])
+
 @socketio.on('enter_private')
 def handle_enter_private(data):
     key=private_key_string(data['myId'], data['frndId'])
@@ -213,6 +217,21 @@ def handel_recieve_private_message(data):
     last_chat=chats.query.order_by(chats.id.desc()).filter(chats.key==prvt_key).limit(1)
     lastchat=last_chat[0]
     socketio.emit('show_private_message',[data["name"],lastchat.data,lastchat.time.strftime("%D  %H:%M")], room=key)
+
+@socketio.on('getHistory')
+def getHistory(post):
+    id=session.get('id')
+    channel_id=session.get("channel")
+    # print("show history for: "+str(id))
+    current_channel=channel.query.filter_by(id=channel_id).first()
+    history=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<post).limit(20)
+    History=[]
+    messageID=history[-1].id
+    History.append(messageID)
+    for i in history:
+        History.append([i.user.username,i.data,i.time.strftime("%D  %H:%M")])
+    socketio.emit('showHistory',History[::-1])
+
 
 
 @app.route('/login',methods=["GET","POST"])
@@ -441,11 +460,9 @@ def channel_chat(channel_id):
                             
         tables=channel.query.all()
         current_channel=channel.query.filter_by(id=channel_id).first()    
-        last_posts=current_channel.posts.order_by(posts.id.desc()).limit(50)
+        last_posts=current_channel.posts.order_by(posts.id.desc()).limit(20)
         if last_posts.count()!=0:
-            last_one=last_posts[-1]
-            last_id=last_one.id
-            topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=last_id).limit(50)
+            topic_posts=last_posts[::-1]
         else:
             topic_posts=[]
         shortPost=short_posts.query.filter_by(topic_id=channel_id).all()
