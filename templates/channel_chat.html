@@ -75,7 +75,7 @@
             </div>
 
             <div class="chatbox" id="chats">
-                <div id="up">_-^-_</div>
+                <div id="up"><ion-icon name="arrow-up-outline"></ion-icon></a></div>
                 {% for post in posts: %}
                     {% if loop.previtem is not defined: %}
                         {% if post.user.id==name.id: %}
@@ -233,7 +233,7 @@
                     Frnd.classList.add("message")
                     Frnd.classList.add("frnd")
                     Frnd.innerHTML='<p><a href="/chat/'+data[i][0]+'" style="text-decoration: none;font-size: 1.1em; ">'+data[i][0]+'</a></p>'
-                    Mess.scrollIntoView();
+                    chatbox.insertBefore(Frnd,Mess)
                 }
             }
             message.innerHTML='<p>'+data[i][1]+'<span>'+data[i][2]+'</span>'+'</p>';
@@ -248,12 +248,14 @@
                 }
             }
             if (del){
+                Mess.scrollIntoView();
                 Mess.remove()
+
             }
-            Mess.scrollIntoView();
-        }})
+        }
+        Mess.scrollIntoView();
+    })
     socket.on('notify', function(data) {
-        // console.log(data+" has joinned the room -> "+"{{topic.name}}" )
     })
 </script>
 </body>
