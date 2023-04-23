@@ -284,14 +284,10 @@ a{
     font-size: 0.75em;
     color: #aaa;
 }
-<<<<<<< HEAD
 .arrow{
     cursor: pointer;
 }
 #UP{
-=======
-#up{
->>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
     margin-left: 47%;
 }
 .message_p
@@ -450,3 +446,11 @@ a{
     display: flex;
 
 }
+
+
+
+
+
+
+
+
