@@ -17,6 +17,10 @@ app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
 app.config['SECRET_KEY'] ="secret!"  #os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"   #os.environ.get('DATABASE_URI')
+app.config.update(
+    SESSION_COOKIE_SAMESITE='None',
+    SESSION_COOKIE_SECURE='True'
+)
 db = SQLAlchemy(app)
 
 class users(db.Model):
@@ -224,12 +228,14 @@ def getHistory(post):
     channel_id=session.get("channel")
     # print("show history for: "+str(id))
     current_channel=channel.query.filter_by(id=channel_id).first()
-    history=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<post).limit(20)
-    History=[]
-    messageID=history[-1].id
-    History.append(messageID)
+    history=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<post).limit(30)
+    History=[None]
     for i in history:
         History.append([i.user.username,i.data,i.time.strftime("%D  %H:%M")])
+    if len(History)>1:
+        History.pop(0)
+        messageID=history[-1].id
+        History.append(messageID)
     socketio.emit('showHistory',History[::-1])
 
 
@@ -460,7 +466,7 @@ def channel_chat(channel_id):
                             
         tables=channel.query.all()
         current_channel=channel.query.filter_by(id=channel_id).first()    
-        last_posts=current_channel.posts.order_by(posts.id.desc()).limit(20)
+        last_posts=current_channel.posts.order_by(posts.id.desc()).limit(30)
         if last_posts.count()!=0:
             topic_posts=last_posts[::-1]
         else:
@@ -479,11 +485,11 @@ def channel_chat(channel_id):
 #     user = users.query.filter_by(id=id).first()
 #     current_channel=channel.query.filter_by(id=channel_id).first()
 #     if action=="next":
-#         topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=post).limit(20)
+#         topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=post).limit(30)
 #         if topic_posts.count()<7:
 #             return redirect("/channel/"+str(channel_id))
 #     elif action=="prev":
-#         last_posts=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<=post).limit(20)
+#         last_posts=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<=post).limit(30)
 #         if last_posts.count()<7:
 #             topic_posts=current_channel.posts.limit(7)
 #         else:
