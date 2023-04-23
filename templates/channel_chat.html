@@ -72,7 +72,9 @@
                     <h4 id="topic">{{topic.name}}<br></h4>
                 </div>
             </div>
+
             <div class="chatbox" id="chats">
+                <div id="up">_-^-_</div>
                 {% for post in posts: %}
                     {% if loop.previtem is not defined: %}
                         {% if post.user.id==name.id: %}
@@ -88,6 +90,10 @@
                                 <p>{{post.data}}<br><span>{{post.time.strftime("%D  %H:%M")}}</span></p>
                             </div>
                         {% endif %}
+                        <script>
+                            let up = "{{post.id}}"
+
+                        </script>
                     {% else: %}
                         {% if post.user.id==name.id: %}
                         <div class="message my_message">
@@ -173,19 +179,18 @@
         let chatbox = document.getElementById("chats");
         let line = document.getElementById("breaker")
         const chat = document.createElement("div");
+        chat.classList.add("message");
         if (data[0]=="{{name.username}}"){
-            chat.classList.add("message");
             chat.classList.add("my_message");
         }
         else {
-            chat.classList.add("message");
             chat.classList.add("frnd_message");
             let LM=document.getElementsByClassName("frnd")
             if(LM.length==0 || LM[LM.length-1].innerText!=data[0]){
                 const Frnd=document.createElement("div");
                 Frnd.classList.add("message")
                 Frnd.classList.add("frnd");
-                Frnd.innerHTML='<p><a href="/chat/2" style="text-decoration: none;font-size: 1.1em; ">'+data[0]+'</a></p>'
+                Frnd.innerHTML='<p><a href="/chat/'+data[0]+'" style="text-decoration: none;font-size: 1.1em; ">'+data[0]+'</a></p>'
                 chatbox.insertBefore(Frnd,line);      
             }
         }
@@ -204,9 +209,50 @@
             socket.emit('recieve_message',String(message));
             message_input.value=""
         }
-
         return false
     }
+    document.getElementById('up').onclick = function() {
+        socket.emit('getHistory',up)
+    }
+    socket.on('showHistory', function(data){
+        let chatbox = document.getElementById("chats");
+        let top = document.getElementById("up")
+        up=data[20]
+        if (!up){
+            top.remove();
+        }
+        Mess=document.getElementsByClassName("message")[0]
+        for(let i=0;i<=data.length-2;i++){
+            let message=document.createElement("div")
+            message.classList.add("message")
+            if(data[i][0]=="{{name.username}}"){
+                message.classList.add("my_message")
+            }
+            else{
+                message.classList.add("frnd_message")
+                if(i==0 || data[i][0]!=data[i-1][0]){
+                    let Frnd=document.createElement("div")
+                    Frnd.classList.add("message")
+                    Frnd.classList.add("frnd")
+                    Frnd.innerHTML='<p><a href="/chat/'+data[i][0]+'" style="text-decoration: none;font-size: 1.1em; ">'+data[i][0]+'</a></p>'
+                    chatbox.insertBefore(Frnd,Mess)
+                }
+            }
+            message.innerHTML='<p>'+data[i][1]+'<span>'+data[i][2]+'</span>'+'</p>';
+            chatbox.insertBefore(message,Mess);
+        }
+        if(Mess.classList.contains("frnd")){
+            let arr=$(Mess).prevUntil(document.getElementsByClassName("frnd"))
+            let del=true
+            for(var i=0;i<arr.length;i++){
+                if(arr[i].classList.contains("my_message")){
+                    del=false
+                }
+            }
+            if (del){
+                Mess.remove()
+            }
+        }})
     socket.on('notify', function(data) {
         // console.log(data+" has joinned the room -> "+"{{topic.name}}" )
     })
