@@ -185,16 +185,13 @@ def handle_join_channel():
     if prevChannel in room_dict:
         room_dict[prevChannel].remove(user.username)
     socketio.emit('notify',room_dict[prevChannel],room= prevChannel)    
-    
+
 @socketio.on('recieve_message')
 def handel_recieve_message(data):
     id=session.get("id")
-    channel_id=session.get("channel")
+    channel_name=session.get("channel")
     user = users.query.filter_by(id=id).first()
-    try:
-        current_channel=channel.query.filter_by(id=channel_id).first()
-    except:
-        return render_template("message.html",msg="channel not found")
+    current_channel=channel.query.filter_by(name=channel_name).first()
     post=posts(data=data,sender_id=user.id)
     post.topic.append(current_channel)
     db.session.add(post)
@@ -205,7 +202,7 @@ def handel_recieve_message(data):
     #     db.session.commit()
     last_posts=current_channel.posts.order_by(posts.id.desc()).limit(1)
     lastpost=last_posts[0]
-    socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = channel_id)
+    socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = channel_name)
 
 
     # socketio.emit('show_message',[data["user"],data["text"]], room =data['channel'])
@@ -235,9 +232,9 @@ def handel_recieve_private_message(data):
 @socketio.on('getHistory')
 def getHistory(post):
     id=session.get('id')
-    channel_id=session.get("channel")
+    channel_name=session.get("channel")
     # print("show history for: "+str(id))
-    current_channel=channel.query.filter_by(id=channel_id).first()
+    current_channel=channel.query.filter_by(name=channel_name).first()
     history=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<post).limit(30)
     History=[None]
     for i in history:
@@ -246,7 +243,7 @@ def getHistory(post):
         History.pop(0)
         messageID=history[-1].id
         History.append(messageID)
-    socketio.emit('showHistory',History[::-1],room=channel_id)
+    socketio.emit('showHistory',History[::-1],room=channel_name)
 
 
 
@@ -439,54 +436,26 @@ def application():
         # return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
         return render_template("searchresult.html",name=user,tables=channels)
 
-@app.route("/channel/<int:channel_id>",methods=["GET","POST"])
-def channel_chat(channel_id):
+@app.route("/channel/<channel_name>",methods=["GET"])
+def channel_chat(channel_name):
     if session.get("id")==None:
         return redirect("/login")
     id=session.get("id")
-    session["fun"]=request.form.get("hide")
-    post_data=request.form.get("post")
     user = users.query.filter_by(id=id).first()
     try:
-        current_channel=channel.query.filter_by(id=channel_id).first()
-        session["channel"]=current_channel.id
-    except:
-        return render_template("message.html",msg="channel not found")
-    if session.get("channel"):
-        # if post_data!=None:
-        #     if session.get("fun")=="True":
-        #         #add short messages#
-        #         msg=short_posts(data=post_data,sender_id=user.id,topic_id=channel_id)
-        #         db.session.add(msg)
-        #         db.session.commit()
-        #         session["body"]="darkbody"
-        #         session["fun"]="True"
-        #         print("send an friendly message")
-        #     else:
-        #         post=posts(data=post_data,sender_id=user.id)
-        #         post.topic.append(current_channel)
-        #         db.session.add(post)
-        #         db.session.commit()
-        #         funposts=short_posts.query.filter(and_(short_posts.topic_id==session.get("channel"),short_posts.sender_id==user.id)).all()
-        #         for i in funposts:
-        #             db.session.delete(i)
-        #             db.session.commit()
-        #         session["body"]=""
-        #         session["fun"]="False"
-        #         print("posted")
-                            
+        current_channel=channel.query.filter_by(name=channel_name).first()
+        session["channel"]=current_channel.name
         tables=channel.query.all()
-        current_channel=channel.query.filter_by(id=channel_id).first()    
         last_posts=current_channel.posts.order_by(posts.id.desc()).limit(30)
         if last_posts.count()!=0:
             topic_posts=last_posts[::-1]
         else:
             topic_posts=[]
-        shortPost=short_posts.query.filter_by(topic_id=channel_id).all()
+        shortPost=short_posts.query.filter_by(topic_id=channel_name).all()
         return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=shortPost,hide=session.get("fun"),body=session.get("body"),)
-                
-    else:
+    except:
         return render_template("message.html",msg="channel don't exist")
+        
 
 # @app.route("/<int:channel_id>/<action>=<int:post>",methods=["GET","POST"])
 # def post_history(channel_id,action,post):

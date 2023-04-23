@@ -42,7 +42,7 @@
                                 </div>
                                 <div class="message_p">
                                     <p>created by {{table.user.username}} </p>
-                                    <b onclick="location.href='/delete'"></b>
+                                    <b onclick="location.href='/delete'">x</b>
                                 </div>
                             </div>
                         </div>
@@ -51,14 +51,14 @@
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>
-                            <div class="details" onclick="location.href='/channel/{{table.id}}'">
+                            <div class="details" onclick="location.href='/channel/{{table.name}}'">
                                 <div class="name">
                                     <h4>{{table.name}}</h4>
                                     <p class="time"></p>
                                 </div>
                                 <div class="message_p">
                                     <p>created by {{table.user.username}} </p>
-                                    <b onclick="location.href='/delete'"></b>
+                                    <!-- <b onclick="location.href='/delete'"></b> -->
                                 </div>
                             </div>
                         </div>
@@ -316,6 +316,7 @@
         });
         let first3 =data[0];
         for(var i=1;i<3;i++){if(data[i]){first3+=' ,'+data[i];if(i==2){first3+='...'};}}
+        first3+=" ("+data.length +")"
         chatUsers.innerText=first3
     })
 </script>
