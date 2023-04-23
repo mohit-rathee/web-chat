@@ -14,7 +14,11 @@
             <div class="header">
                 <div class="imgtext">
                     
+<<<<<<< HEAD
                     <a class="arrow" href="/app" id="back" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
+=======
+                    <a href="/app" style="text-decoration: none;font-size: 1.1em; "><ion-icon name="arrow-back-outline"></ion-icon></a>
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
                     <div class="userimg">
                         <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                     </div>
@@ -76,6 +80,7 @@
                           </ul>
                 </div>
             </div>
+<<<<<<< HEAD
             <script>
                 const userList = document.getElementById("user-list");
                 const chatUsers = document.getElementById("user-names")
@@ -119,6 +124,11 @@
 
             <div class="chatbox" id="chats">
                 <div class="arrow" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div>
+=======
+
+            <div class="chatbox" id="chats">
+                <div id="up"><ion-icon name="arrow-up-outline"></ion-icon></a></div>
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
                 {% for post in posts: %}
                     {% if loop.previtem is not defined: %}
                         {% if post.user.id==name.id: %}
@@ -243,7 +253,11 @@
         chat.innerHTML='<p>'+data[1]+'<span>'+data[2]+'</span>'+'</p>';
         chatbox.insertBefore(chat, line);
         chat.scrollIntoView();
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
     });
     
     let message_form = document.getElementById('chatinput');
@@ -257,6 +271,7 @@
         }
         return false
     }
+<<<<<<< HEAD
     document.getElementById("UP").onclick = function() {
         socket.emit('getHistory',ID);
     }
@@ -266,6 +281,14 @@
     socket.on('showHistory', function(data){
         let chatbox = document.getElementById("chats");
         var top = document.getElementById("UP")
+=======
+    document.getElementById('up').onclick = function() {
+        socket.emit('getHistory',ID)
+    }
+    socket.on('showHistory', function(data){
+        let chatbox = document.getElementById("chats");
+        var top = document.getElementById("up")
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
         if (data.length==31){ID=data[0]}else{top.remove();} //to remove _-^-_ if data<21
         Mess=document.getElementsByClassName("message")[0]
         for(var i=1;i<data.length;i++){
@@ -304,6 +327,7 @@
         Mess.scrollIntoView();
     })
     socket.on('notify', function(data) {
+<<<<<<< HEAD
         console.log(data);
         userList.innerHTML="" 
         data.forEach(element => {
@@ -317,6 +341,8 @@
         let first3 =data[0];
         for(var i=1;i<3;i++){if(data[i]){first3+=' ,'+data[i];if(i==2){first3+='...'};}}
         chatUsers.innerText=first3
+=======
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
     })
 </script>
 </body>

@@ -19,8 +19,12 @@ app.config['SECRET_KEY'] ="secret!"  #os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"   #os.environ.get('DATABASE_URI')
 app.config.update(
     SESSION_COOKIE_SAMESITE='None',
+<<<<<<< HEAD
     SESSION_COOKIE_SECURE='True',
     SQLALCHEMY_TRACK_MODIFICATIONS='False'
+=======
+    SESSION_COOKIE_SECURE='True'
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
 )
 db = SQLAlchemy(app)
 
@@ -163,6 +167,7 @@ def index():
 
 @socketio.on('join_channel')
 def handle_join_channel():
+<<<<<<< HEAD
     id = session.get("id")
     curChannel=session.get("channel")
     join_room(curChannel)
@@ -186,6 +191,12 @@ def handle_join_channel():
         room_dict[prevChannel].remove(user.username)
     socketio.emit('notify',room_dict[prevChannel],room= prevChannel)    
 
+=======
+    join_room(session.get("channel"))
+    print(str(session.get("id"))+" joined the "+str(session.get("channel")))
+    socketio.emit('notify',session.get("id"),room= session.get("channel"))
+
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
 @socketio.on('prevChats')
 def sendPrevChats(data):
     id=session.get("id")
@@ -246,7 +257,10 @@ def handel_recieve_private_message(data):
 
 @socketio.on('getHistory')
 def getHistory(post):
+<<<<<<< HEAD
     print("got request")
+=======
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
     id=session.get('id')
     channel_id=session.get("channel")
     # print("show history for: "+str(id))
@@ -259,7 +273,11 @@ def getHistory(post):
         History.pop(0)
         messageID=history[-1].id
         History.append(messageID)
+<<<<<<< HEAD
     socketio.emit('showHistory',History[::-1],room=channel_id)
+=======
+    socketio.emit('showHistory',History[::-1])
+>>>>>>> 28efc2430f5537af299eeb505947af1273dc14c3
 
 
 
