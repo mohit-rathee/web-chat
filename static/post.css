@@ -24,7 +24,7 @@ body
 .container
 {
     position: relative;
-    width: 65%;
+    width: 75%;
     max-width: 100%;
     height: 90vh;
     background: rgb(97, 97, 97);
@@ -44,7 +44,8 @@ body
 {
     position: relative;
     flex: 70%;
-    background: white;
+    background: rgb(182, 149, 149);
+    overflow: auto;
 }
 .container .rightside::before
 {
@@ -70,7 +71,7 @@ body
 {
     cursor: pointer;
     background: red;
-    color: white;
+    color: rgb(224, 224, 224);
     min-width: 45px;
     height: 30px;
     border-radius: 20%;
@@ -98,9 +99,54 @@ body
     justify-content: center;
     align-items: center;
 }
+#chat-users {
+    display: inline-block;
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+}
+  
+#user-list {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    z-index: 9999;
+    display: none;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    width: 150px;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+#chat-users {
+    position: relative;
+    display: inline-block;
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+  
+#user-list li {
+    padding: 5px;
+    border-bottom: 1px solid #ccc;
+}
+
+#user-list li:last-child {
+    border-bottom: none;
+}
 #topic
 {
-    font-weight: 550;
+    color: #606060;
+    font-weight: 700;
     line-height: 1.2em;
     margin-left: 15px;
 }
@@ -130,7 +176,8 @@ body
     position: relative;
     width: 100%;
     height: 50px;
-    background: rgb(231, 231, 231);
+    border-color: black;
+    background: rgb(220, 220, 220);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -145,7 +192,7 @@ body
     width: 100%;
     outline: none;
     border: none;
-    background: white;
+    background: rgb(190, 190, 190);
     padding: 6px;
     height: 38px;
     border-radius: 30px;
@@ -154,7 +201,7 @@ body
 }
 .search_channel div input::placeholder
 {
-    color:rgb(252, 171, 66)
+    color:rgb(190, 38, 38);
 }
 .channel_list
 {
@@ -174,7 +221,7 @@ body
 }
 .channel_list .block.active
 {
-    background: #d4d4d4;
+    background: #a1a1a1;
 }
 
 .channel_list .block
@@ -185,11 +232,11 @@ body
     align-items: center;
     padding: 15px;
     border-bottom: 1px solid rgb(187, 184, 184);
-    background: white;
+    background: rgb(220, 220, 220);
 }
 .channel_list .block:hover
 {
-    background: #ebebeb;
+    background: #c0c0c0;
 }
 .channel_list .block .imgbx
 {
@@ -222,6 +269,10 @@ body
     font-size: 1.1em;
     color: black;
 }
+a{
+    text-decoration: none;
+    color:#555;
+}
 .channel_list .block .details .name a
 {
     font-size: 0.9em;
@@ -232,6 +283,12 @@ body
 {
     font-size: 0.75em;
     color: #aaa;
+}
+.arrow{
+    cursor: pointer;
+}
+#UP{
+    margin-left: 47%;
 }
 .message_p
 {
@@ -252,8 +309,8 @@ body
 .message_p b
 {
     cursor: pointer;
-    background: orange;
-    color: white;
+    background: rgb(236, 159, 100);
+    color: rgb(230, 230, 230);
     min-width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -265,9 +322,8 @@ body
 .chatbox
 {
     position: relative;
-    width: 104%;
     height: calc(100% - 130px);
-    padding: 50px;
+    padding: 5%;
     padding-bottom: 10px;
     overflow-y: scroll;
     overflow-x:hidden
@@ -325,13 +381,13 @@ body
 }
 .frnd p
 {
-    background: aqua;
+    background: #58b9b9;
     text-align: left;
 
 }
 .frnd_message p
 {
-    background-color: rgb(255, 255, 255);
+    background-color: rgb(233, 233, 233);
     text-align: left;
 }
 .shortBox
@@ -371,20 +427,23 @@ body
 {
     position: relative;
     width: 100%;
+    padding: 5%;
     
 }
 .chatbox_input .form input
 {
     cursor: pointer; 
     position: relative;
-    width: 95%;
-    margin: 0 30px;
+    width: 100%;
+    margin: auto;
     padding: 10px;
-    border: 1px solid lightgray;
+    background-color: rgb(215, 215, 215);
+    border: 1px solid rgb(148, 148, 148);
     outline: none;
     align-items: center;
     border-radius: 30px;
     font-size: 1em;
+    display: flex;
 
 }
 

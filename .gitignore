@@ -1,6 +1,5 @@
 venv/
-__pycache__
+__pycache__/
 flask_session
-test.py
-db.sqlite3
+test.sqlite3
 db/
