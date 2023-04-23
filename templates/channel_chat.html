@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{name.username}}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='post.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body class="{{body}}">
     <div class="container" >
@@ -91,7 +92,7 @@
                             </div>
                         {% endif %}
                         <script>
-                            let up = "{{post.id}}"
+                            let ID = "{{post.id}}"
 
                         </script>
                     {% else: %}
@@ -176,8 +177,8 @@
     });
     socket.on('show_message',function(data) {
         // TO ADD NEW CHILD OF MESSAGE //
-        let chatbox = document.getElementById("chats");
-        let line = document.getElementById("breaker")
+        var chatbox = document.getElementById("chats");
+        var line = document.getElementById("breaker")
         const chat = document.createElement("div");
         chat.classList.add("message");
         if (data[0]=="{{name.username}}"){
@@ -185,7 +186,7 @@
         }
         else {
             chat.classList.add("frnd_message");
-            let LM=document.getElementsByClassName("frnd")
+            var LM=document.getElementsByClassName("frnd")
             if(LM.length==0 || LM[LM.length-1].innerText!=data[0]){
                 const Frnd=document.createElement("div");
                 Frnd.classList.add("message")
@@ -196,7 +197,7 @@
         }
         chat.innerHTML='<p>'+data[1]+'<span>'+data[2]+'</span>'+'</p>';
         chatbox.insertBefore(chat, line);
-        chatbox.scrollTop = chatbox.scrollHeight;
+        chat.scrollIntoView();
 
     });
 
@@ -212,18 +213,15 @@
         return false
     }
     document.getElementById('up').onclick = function() {
-        socket.emit('getHistory',up)
+        socket.emit('getHistory',ID)
     }
     socket.on('showHistory', function(data){
         let chatbox = document.getElementById("chats");
-        let top = document.getElementById("up")
-        up=data[20]
-        if (!up){
-            top.remove();
-        }
+        var top = document.getElementById("up")
+        if (data.length==31){ID=data[0]}else{top.remove();} //to remove _-^-_ if data<21
         Mess=document.getElementsByClassName("message")[0]
-        for(let i=0;i<=data.length-2;i++){
-            let message=document.createElement("div")
+        for(var i=1;i<data.length;i++){
+            var message=document.createElement("div")
             message.classList.add("message")
             if(data[i][0]=="{{name.username}}"){
                 message.classList.add("my_message")
@@ -231,11 +229,11 @@
             else{
                 message.classList.add("frnd_message")
                 if(i==0 || data[i][0]!=data[i-1][0]){
-                    let Frnd=document.createElement("div")
+                    var Frnd=document.createElement("div")
                     Frnd.classList.add("message")
                     Frnd.classList.add("frnd")
                     Frnd.innerHTML='<p><a href="/chat/'+data[i][0]+'" style="text-decoration: none;font-size: 1.1em; ">'+data[i][0]+'</a></p>'
-                    chatbox.insertBefore(Frnd,Mess)
+                    Mess.scrollIntoView();
                 }
             }
             message.innerHTML='<p>'+data[i][1]+'<span>'+data[i][2]+'</span>'+'</p>';
@@ -243,7 +241,7 @@
         }
         if(Mess.classList.contains("frnd")){
             let arr=$(Mess).prevUntil(document.getElementsByClassName("frnd"))
-            let del=true
+            var del=true
             for(var i=0;i<arr.length;i++){
                 if(arr[i].classList.contains("my_message")){
                     del=false
@@ -252,6 +250,7 @@
             if (del){
                 Mess.remove()
             }
+            Mess.scrollIntoView();
         }})
     socket.on('notify', function(data) {
         // console.log(data+" has joinned the room -> "+"{{topic.name}}" )
