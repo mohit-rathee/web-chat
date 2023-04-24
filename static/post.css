@@ -364,6 +364,7 @@ a{
     border-radius: 10px;
     font-size: 0.9em;
     padding: 10px;
+    overflow: scroll;
 }
 .message p span
 {
