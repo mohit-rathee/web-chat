@@ -63,6 +63,127 @@
 
 
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+<style>
+    .chat-users {
+      display: inline-block;
+      background-color: #eee;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .user-list {
+        position: absolute;
+        top: 0;
+        left: 100%;
+        z-index: 9999;
+        display: none;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        width: 150px;
+        border-radius: 5px;
+        margin-left: 10px;
+    }
+
+        .chat-users {
+        position: relative;
+        display: inline-block;
+        background-color: #eee;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 1;
+    }
+
+    
+    .user-list li {
+      padding: 5px;
+      border-bottom: 1px solid #ccc;
+    }
+    
+    .user-list li:last-child {
+      border-bottom: none;
+    }
+  </style>
+  
+  <div class="chat-users">
+    Online: <span class="user-names">John, Jane, Tom</span>
+    <ul class="user-list">
+      <li>Mohit</li>
+      <li>Monti</li>
+      <li>Abhishek</li>
+      <li>Mohit</li>
+      <li>Monti</li>
+      <li>Abhishek</li>
+      <li>Mohit</li>
+      <li>Monti</li>
+      <li>Abhishek</li>
+      <li>Mohit</li>
+      <li>Monti</li>
+      <li>Abhishek</li>
+    </ul>
+  </div>
+  
+  <script>
+    let makevisible=true
+    const chatUsers = document.querySelector('.chat-users');
+    const userList = document.querySelector('.user-list');
+
+    let hideTimeout;
+
+    // Handle click event
+    chatUsers.addEventListener('click', () => {
+        clearTimeout(hideTimeout);
+        console.log(makevisible)
+        if(makevisible){
+            chatUsers.style.color = 'green';
+            userList.style.display = 'block';
+            makevisible=false
+        }
+        else{
+            chatUsers.style.color = 'white';
+            userList.style.display = 'none';
+            makevisible=true
+        }
+        
+    });
+
+    // Handle mouseleave event
+    chatUsers.addEventListener('mouseleave', () => {
+        hideTimeout = setTimeout(() => {
+            if (makevisible){
+            userList.style.display = 'none';}
+        }, 500);
+    });
+    chatUsers.addEventListener('mouseenter', () =>{
+        if (makevisible){
+            userList.style.display = userList.style.display === 'block' ? 'none' : 'block';
+    }})
+    // Handel mouseenter event for list
+    userList.addEventListener('mouseenter', () =>{
+        clearTimeout(hideTimeout);
+        userList.style.display = 'block';
+    })
+
+
+  </script>
+  
+</body>
+</html>
 
 
 
