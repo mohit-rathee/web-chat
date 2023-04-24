@@ -165,12 +165,12 @@ def index():
 def handle_join_channel():
     id = session.get("id")
     curChannel=session.get("channel")
-    join_room(curChannel)
     print(str(id)+" joined the "+str(curChannel))
     user=users.query.filter_by(id=id).first()
     if curChannel in room_dict:
         if user.username not in room_dict[curChannel]:
             room_dict[curChannel].append(user.username)
+            join_room(curChannel)
     else:
         room_dict[curChannel] = [user.username]
     socketio.emit('notify',room_dict[curChannel],room= curChannel)
@@ -184,8 +184,9 @@ def handle_leave_channel(data=True):
         session["channel"]=0
         user=users.query.filter_by(id=id).first()
         if prevChannel in room_dict:
-            leave_room(prevChannel)
-            room_dict[prevChannel].remove(user.username)
+            if user.username in room_dict[prevChannel]:
+                room_dict[prevChannel].remove(user.username)
+                leave_room(prevChannel)
         else:
             room_dict[prevChannel]=[]
     else:
@@ -246,7 +247,7 @@ def getHistory(post):
         History.pop(0)
         messageID=history[-1].id
         History.append(messageID)
-    socketio.emit('showHistory',History[::-1])
+    socketio.emit('showHistory',History[::-1],to=request.sid)
     
     
 @socketio.on("changeChannel")
@@ -265,7 +266,7 @@ def changeChannel(newChannel):
         Posts.pop(0)
         messageID=last_posts[-1].id
         Posts.append(messageID)
-    socketio.emit('showHistory',Posts[::-1])
+    socketio.emit('showHistory',Posts[::-1],to=request.sid)
 
 
 
