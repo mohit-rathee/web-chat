@@ -27,7 +27,7 @@
             <div class="channel_list">
                 {% for table in tables: %}
                     {% if table.name: %}
-                        <div class="block" onclick="location.href='/channel/{{table.name}}'">
+                        <div class="block" onclick="location.href='/channels'">
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>
