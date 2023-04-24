@@ -167,12 +167,13 @@ def handle_join_channel():
     curChannel=session.get("channel")
     print(str(id)+" joined the "+str(curChannel))
     user=users.query.filter_by(id=id).first()
+    join_room(curChannel)
     if curChannel in room_dict:
         if user.username not in room_dict[curChannel]:
             room_dict[curChannel].append(user.username)
-            join_room(curChannel)
     else:
         room_dict[curChannel] = [user.username]
+    print(room_dict)
     socketio.emit('notify',room_dict[curChannel],room= curChannel)
 
 @socketio.on('leave_channel')

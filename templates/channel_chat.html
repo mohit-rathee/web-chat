@@ -101,7 +101,7 @@
           <div class="imgtext">
             <h2 id="topic">{{topic.name}}&nbsp<br /></h2>
             &nbsp<small
-              style="font-style: italic; color: rgb(99, 164, 99)"
+              style="font-style: italic; color: rgb(99, 164, 99);font-size: 90%;"
               id="user-names"
             ></small>
             <ul id="user-list"></ul>
@@ -420,6 +420,7 @@
         Mess.scrollIntoView();
       });
       socket.on("notify", function (data) {
+        console.log(data)
         userList.innerHTML = "";
         data.forEach((element) => {
           let user = document.createElement("li");
@@ -429,10 +430,10 @@
           user.appendChild(link);
           userList.appendChild(user);
         });
-        let first3 = data[0];
-        for (var i = 1; i < 3; i++) {
+        let first3 = "you";
+        for (var i = 0; i < 3; i++) {
           if (data[i]) {
-            first3 += " ," + data[i];
+            if(data[i]!="{{name.username}}"){first3 += ", " + data[i];}
             if (i == 2) {
               first3 += "...";
             }
