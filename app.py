@@ -317,7 +317,6 @@ def logout():
     if session.get('channel'):
         if user.username in room_dict[session.get('channel')]:
             room_dict[session.get('channel')].remove(user.username)
-            leave_room(session.get('channel'))
             handle_leave_channel(False)
     session["id"]=None
     session["channel"]=None
