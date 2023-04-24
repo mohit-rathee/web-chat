@@ -247,6 +247,7 @@ def getHistory(post):
         History.pop(0)
         messageID=history[-1].id
         History.append(messageID)
+    print(request.sid)
     socketio.emit('showHistory',History[::-1],to=request.sid)
     
     
@@ -266,6 +267,7 @@ def changeChannel(newChannel):
         Posts.pop(0)
         messageID=last_posts[-1].id
         Posts.append(messageID)
+    print(request.sid)
     socketio.emit('showHistory',Posts[::-1],to=request.sid)
 
 
