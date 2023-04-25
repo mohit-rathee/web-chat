@@ -214,7 +214,7 @@
             </p>
           </div>
           {% endif %} {% endif %} {% endfor %}
-          <hr id="breaker" />
+          <hr id="breaker">
           <!-- <div  class="useless">
                     <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
                     <button onclick="location.href='/delete_short'" id="delete">Delete</button>
@@ -372,7 +372,7 @@
         if (data.length == 31) {
           ID = data[0];
         } else {
-          top.remove();
+          top.style.visibility="hidden";
         } //to remove _-^-_ if data<21
         Mess = document.getElementsByClassName("message")[0];
         if (!Mess) {

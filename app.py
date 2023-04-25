@@ -9,6 +9,8 @@ from sqlalchemy.sql import func
 from flask import send_file
 from passlib.hash import sha256_crypt
 import hashlib 
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import create_engine, MetaData, Column
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
 import gevent
 
@@ -22,7 +24,10 @@ app.config.update(
     SESSION_COOKIE_SECURE='True',
     SQLALCHEMY_TRACK_MODIFICATIONS='False'
 )
+app.config['SQLALCHEMY_BINDS']={}
 db = SQLAlchemy(app)
+engine=db.engine
+metadata=db.MetaData()
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
@@ -118,12 +123,13 @@ def upload_db():
         except:
             file.remove(os.path.join(uploads_dir,secure_filename(file.filename)))
             return render_template("message.html",msg="Coudn't set to this database.")
-        return redirect("/session")
+        return redirect("/servers")
     else:
         return render_template("message.html",msg="select a valid database file or rename it except db.sqlite3.")
 
-@app.route('/session',methods=["POST","GET"])
+@app.route('/servers',methods=["POST","GET"])
 def change_db():
+    
     if os.path.exists("db")==False:
         os.makedirs("db")
     databases=[]
@@ -133,25 +139,60 @@ def change_db():
         return render_template("database.html",databases=databases)
     if request.method=="POST":
         try:
-            data=request.form['database']
+            data=request.form['server']
         except:
             data=False
-        try:
-            deldb=request.form['deldb']
-        except:
-            deldb=False
-            
+        # try:
+        #     deldb=request.form['deldb']
+        # except:
+        #     deldb=False
         if data:
-            app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db/"+str(data)
-            return render_template("login.html",dbsession=data)
-        elif deldb:
-            os.remove("db/"+str(deldb).rsplit("-")[1])
-            app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
-            return redirect("/session")
+            if session.get('server')!=data:
+                # app.config['SQLALCHEMY_BINDS'][str(data)] = "sqlite:///db/"+str(data)
+                app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db/"+str(data)
+                # print(app.config['SQLALCHEMY_BINDS'])
+                # engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'] )
+                # engine = db.engine
+                # metadata = MetaData(bind=engine)
+                # print(db)
+                # print(metadata)
+                # engine2 = create_engine(app.config['SQLALCHEMY_BINDS'][str(data)])
+                # db2_session = scoped_session(sessionmaker(bind=engine2))
+                # metadata.reflect(bind=engine)
+                # print(db2_session)
+                # for i in db2_session:
+                #     print(i)
+                # for table in metadata.tables.values():
+                #     print(table)
+                #     table.tometadata(metadata)
+                #     table.create(bind=db2_session.bind)
+                # print(db2_session.all())
+                # nusers = db2_session.query(Column("chats")).all()
+                # for u in nusers:
+                #     print(u)
+                # users = db2_session.users.query.all()
+                # print(users)
+                # break
+                session["server"]=data
+                session["id"]=None
+            return redirect("/login")
+        # elif deldb:
+        #     os.remove("db/"+str(deldb).rsplit("-")[1])
+        #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
+        #     return redirect("/servers")
+        else:
+            if session.get('server')!="app":
+                app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"
+                session["server"]="app"
+                session["id"]=None
+            print(data,session.get("server"),session.get("id"))
+            return redirect("/login")
         
 
 @app.route('/',methods=["GET","POST"])
 def index():
+    if session.get("server")==None:
+        return redirect("/servers")
     if session.get("id")==None:
         return redirect("/login")
     if session.get("channel")!=None:
@@ -276,7 +317,13 @@ def changeChannel(newChannel):
 @app.route('/login',methods=["GET","POST"])
 def login():
     if request.method=="GET":
-        return render_template("login.html")
+        if session.get("server"):
+            if session.get("id"):
+                return redirect("/app")
+            else:
+                return render_template("login.html")
+        else:
+            return redirect("/servers")
     if request.method=="POST":
         name=str(request.form.get("username")).lower()
         password=str(request.form.get("password")).lower()
@@ -320,6 +367,7 @@ def logout():
             handle_leave_channel(False)
     session["id"]=None
     session["channel"]=None
+    session["server"]=None
     return redirect("login")
 
 

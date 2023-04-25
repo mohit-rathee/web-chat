@@ -45,7 +45,7 @@ body
     position: relative;
     flex: 70%;
     background: rgb(182, 149, 149);
-    overflow: auto;
+    overflow: -moz-hidden-unscrollable;
 }
 .container .rightside::before
 {
@@ -290,6 +290,9 @@ a{
 }
 #UP{
     margin-left: 47%;
+}
+#breaker{
+    visibility: hidden;
 }
 .message_p
 {

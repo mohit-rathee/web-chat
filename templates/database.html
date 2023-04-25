@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,86 @@
 <body>
     <a href="{{url_for('download_database')}}">Download the database</a>
     <br>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>server</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			height: 100%;
+		}
+		h2 {
+			font-size: 36px;
+			font-weight: bold;
+			color: #333;
+			text-align: center;
+			margin-top: 40px;
+		}
+		ul {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+		}
+
+		.form-list {
+			font-size: 24px;
+			font-weight: bold;
+			color: #333;
+			margin: 10px;
+			padding: 20px;
+			border: 2px solid #333;
+			border-radius: 10px;
+			text-align: center;
+			position: relative;
+			top: 40%;
+			transition: all 0.3s ease;
+			cursor: pointer;
+		}
+
+		.form-list :hover {
+			transform: scale(1.1);
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+			z-index: 1;
+		}
+
+		.form-list ::before {
+			content: "";
+			position: absolute;
+			top: -2px;
+			left: -2px;
+			right: -2px;
+			bottom: -2px;
+			border: 2px solid #fff;
+			border-radius: 10px;
+			z-index: -1;
+			transition: all 0.3s ease;
+			opacity: 0;
+		}
+
+		.form-list :hover::before {
+			opacity: 1;
+		}
+	</style>
+</head>
+<body>
+    <h2>Select the server</h2>
+    <ul>
+        <li><form action="/servers" method="post"><input class="form-list" type="submit" value="App"></form></li>
+        {% for db in databases: %}
+            <li><form action="/servers" method="post"><input type="hidden" name="server" value="{{db}}"><input class="form-list" type="submit" value="{{db}}"></form></li>
+        {% endfor %}
+	</ul>
+
     <form action="/upload" method="post" enctype="multipart/form-data">
         <dl>
             <p>
@@ -18,15 +98,11 @@
         <p>
             <input type="submit" value="Upload">
         </p>
-
+    
     </form>
     <form action="/session" method="post">
     <ol> 
-        {% for db in databases: %}
-            <li><input type="submit" name="database" value= {{db}} > <input type="submit" name="deldb" value=delete-{{db}}></li>
-        {% endfor %}
     </ol>
     </form>
-    <a href="/">back</a>
 </body>
 </html>
