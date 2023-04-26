@@ -9,6 +9,7 @@ from sqlalchemy.sql import func
 from flask import send_file
 from passlib.hash import sha256_crypt
 import hashlib 
+from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import create_engine, MetaData, Column
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
@@ -26,8 +27,6 @@ app.config.update(
 )
 app.config['SQLALCHEMY_BINDS']={}
 db = SQLAlchemy(app)
-engine=db.engine
-metadata=db.MetaData()
 
 class users(db.Model):
     id=db.Column(db.Integer,primary_key=True)                            #User ID
@@ -94,7 +93,10 @@ app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_TYPE"]="filesystem"
 Session(app)
 
-room_dict={}
+room_dict={"app":{}}
+server={
+    "app":db.session,
+}
 
 
 # Routes
@@ -113,81 +115,65 @@ room_dict={}
 @app.route('/upload',methods=["POST"])
 def upload_db():
     file=request.files['file']
-    if file and file.filename.rsplit(".")[1]=="sqlite3":
+    if file and file.filename.split(".")[1]=="sqlite3":
         uploads_dir = os.path.join('db')
         if os.path.exists(uploads_dir)==False:
             os.makedirs(uploads_dir)
-        file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
-        try:
-            app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
-        except:
-            file.remove(os.path.join(uploads_dir,secure_filename(file.filename)))
-            return render_template("message.html",msg="Coudn't set to this database.")
+        file.save(os.path.join(uploads_dir,secure_filename(file.filename))) 
+        data=secure_filename(file.filename).split(".")[0]
+        app.config['SQLALCHEMY_BINDS'][data] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
+        Engine = create_engine(app.config['SQLALCHEMY_BINDS'][str(data)])
+        metadata=MetaData()
+        metadata.reflect(Engine)
+        Base=automap_base(metadata=metadata)
+        Base.prepare()
+        Session=sessionmaker(bind=Engine)
+        server[data]=Session()
+        room_dict[data]={}
+        session["server"]=None
         return redirect("/servers")
     else:
         return render_template("message.html",msg="select a valid database file or rename it except db.sqlite3.")
 
 @app.route('/servers',methods=["POST","GET"])
 def change_db():
-    
     if os.path.exists("db")==False:
         os.makedirs("db")
     databases=[]
     for db in os.listdir("db"):
-        databases.append(db) 
+        databases.append(db.split(".")[0]) 
     if request.method=="GET":
-        return render_template("database.html",databases=databases)
-    if request.method=="POST":
         try:
-            data=request.form['server']
+            if session["server"]!=None:
+                return redirect("/login")
+            else:
+                return render_template("database.html",databases=databases)
         except:
-            data=False
-        # try:
-        #     deldb=request.form['deldb']
-        # except:
-        #     deldb=False
-        if data:
-            if session.get('server')!=data:
-                # app.config['SQLALCHEMY_BINDS'][str(data)] = "sqlite:///db/"+str(data)
-                app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db/"+str(data)
-                # print(app.config['SQLALCHEMY_BINDS'])
-                # engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'] )
-                # engine = db.engine
-                # metadata = MetaData(bind=engine)
-                # print(db)
-                # print(metadata)
-                # engine2 = create_engine(app.config['SQLALCHEMY_BINDS'][str(data)])
-                # db2_session = scoped_session(sessionmaker(bind=engine2))
-                # metadata.reflect(bind=engine)
-                # print(db2_session)
-                # for i in db2_session:
-                #     print(i)
-                # for table in metadata.tables.values():
-                #     print(table)
-                #     table.tometadata(metadata)
-                #     table.create(bind=db2_session.bind)
-                # print(db2_session.all())
-                # nusers = db2_session.query(Column("chats")).all()
-                # for u in nusers:
-                #     print(u)
-                # users = db2_session.users.query.all()
-                # print(users)
-                # break
-                session["server"]=data
-                session["id"]=None
-            return redirect("/login")
-        # elif deldb:
-        #     os.remove("db/"+str(deldb).rsplit("-")[1])
-        #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
-        #     return redirect("/servers")
-        else:
-            if session.get('server')!="app":
-                app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"
-                session["server"]="app"
-                session["id"]=None
-            print(data,session.get("server"),session.get("id"))
-            return redirect("/login")
-        
+            session["server"]=None
+    try:
+        data=request.form['server']
+    except:
+        data=False
+    # if not data:
+    #     return render_template("database.html",databases=databases)
+    if data:
+        session["server"]=data
+        session["id"]=None
+        session["channel"]=None
+        return redirect("/login")
+    else:
+        session["server"]=None
+        return render_template("database.html",databases=databases)
+    # try:
+    #     deldb=request.form['deldb']
+    # except:
+    #     deldb=False
+    # if deldb:
+    #     os.remove("db/"+str(deldb).rsplit("-")[1])
+    #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
+    #     return redirect("/servers")
+
+
 
 @app.route('/',methods=["GET","POST"])
 def index():
@@ -204,51 +190,52 @@ def index():
 
 @socketio.on('join_channel')
 def handle_join_channel():
+    curr=session.get("server")
     id = session.get("id")
     curChannel=session.get("channel")
-    print(str(id)+" joined the "+str(curChannel))
-    user=users.query.filter_by(id=id).first()
-    join_room(curChannel)
-    if curChannel in room_dict:
-        if user.username not in room_dict[curChannel]:
-            room_dict[curChannel].append(user.username)
+    user=server[curr].query(users).filter_by(id=id).first()
+    join_room(curr+curChannel)
+    if curChannel in room_dict[curr]:
+        if user.username not in room_dict[curr][curChannel]:
+            room_dict[curr][curChannel].append(user.username)
     else:
-        room_dict[curChannel] = [user.username]
-    print(room_dict)
-    socketio.emit('notify',room_dict[curChannel],room= curChannel)
+        room_dict[curr][curChannel] = [user.username]
+    socketio.emit('notify',room_dict[curr][curChannel],room= curr+curChannel)
 
 @socketio.on('leave_channel')
 def handle_leave_channel(data=True):
+    curr=session.get("server")
     prevChannel=session.get("channel")
     if data:
         id = session.get("id")
         leave_room(prevChannel)
         session["channel"]=0
-        user=users.query.filter_by(id=id).first()
-        if prevChannel in room_dict:
-            if user.username in room_dict[prevChannel]:
-                room_dict[prevChannel].remove(user.username)
-                leave_room(prevChannel)
+        user=server[curr].query(users).filter_by(id=id).first()
+        if prevChannel in room_dict[curr]:
+            if user.username in room_dict[curr][prevChannel]:
+                room_dict[curr][prevChannel].remove(user.username)
+                leave_room(curr+prevChannel)
         else:
-            room_dict[prevChannel]=[]
+            room_dict[curr][prevChannel]=[]
     else:
-        if prevChannel not in room_dict:
-            room_dict[prevChannel]=[]
-    socketio.emit('notify',room_dict[prevChannel],room= prevChannel)    
+        if prevChannel not in room_dict[curr]:
+            room_dict[curr][prevChannel]=[]
+    socketio.emit('notify',room_dict[curr][prevChannel],room= curr+prevChannel)    
 
 @socketio.on('recieve_message')
 def handel_recieve_message(data):
+    curr=session.get("server")
     id=session.get("id")
     channel_name=session.get("channel")
-    user = users.query.filter_by(id=id).first()
-    current_channel=channel.query.filter_by(name=channel_name).first()
+    user = server[curr].query(users).filter_by(id=id).first()
+    current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
     post=posts(data=data,sender_id=user.id)
     post.topic.append(current_channel)
-    db.session.add(post)
-    db.session.commit()
+    server[curr].add(post)
+    server[curr].commit()
     last_posts=current_channel.posts.order_by(posts.id.desc()).limit(1)
     lastpost=last_posts[0]
-    socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = channel_name)
+    socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = curr+channel_name)
 
 
     # socketio.emit('show_message',[data["user"],data["text"]], room =data['channel'])
@@ -277,10 +264,10 @@ def handel_recieve_private_message(data):
 
 @socketio.on('getHistory')
 def getHistory(post):
+    curr=session.get("server")
     id=session.get('id')
     channel_name=session.get("channel")
-    # print("show history for: "+str(id))
-    current_channel=channel.query.filter_by(name=channel_name).first()
+    current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
     history=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<post).limit(30)
     History=[None]
     for i in history:
@@ -289,16 +276,16 @@ def getHistory(post):
         History.pop(0)
         messageID=history[-1].id
         History.append(messageID)
-    print(request.sid)
     socketio.emit('showHistory',History[::-1],to=request.sid)
     
     
 @socketio.on("changeChannel")
 def changeChannel(newChannel):
+    curr=session.get("server")
     id = session.get('id')
     prevChannel = session.get('channel')
     handle_leave_channel()
-    current_channel=channel.query.filter_by(name=newChannel).first()
+    current_channel=server[curr].query(channel).filter_by(name=newChannel).first()
     session["channel"]=current_channel.name
     handle_join_channel()
     last_posts=current_channel.posts.order_by(posts.id.desc()).limit(30)
@@ -309,7 +296,6 @@ def changeChannel(newChannel):
         Posts.pop(0)
         messageID=last_posts[-1].id
         Posts.append(messageID)
-    print(request.sid)
     socketio.emit('showHistory',Posts[::-1],to=request.sid)
 
 
@@ -321,53 +307,48 @@ def login():
             if session.get("id"):
                 return redirect("/app")
             else:
-                return render_template("login.html")
+                return render_template("login.html",server=session.get("server"))
         else:
             return redirect("/servers")
-    if request.method=="POST":
+    else:
         name=str(request.form.get("username")).lower()
         password=str(request.form.get("password")).lower()
         operation=request.form.get("operation")
         coupon=request.form.get("coupon")
         power=request.form.get("power")
-        send=request.form.get("send")
+        curr=session.get("server")
+        user = server[curr].query(users).filter_by(username=name).first()
         if operation == "login":
-            try:
-                user = users.query.filter_by(username=name).first()
+            if user!=None:
                 if sha256_crypt.verify(str(name+password), user.password):
                     session["id"]=user.id
                     return  redirect("/")
                 else:    
                     return render_template("message.html",msg="incorrect password")
-            except:
+            else:        
                 return render_template("message.html",msg="Username doesn't exist")
 
         if operation == "register":
-            user = users.query.filter_by(username=name).first()
             if user!=None:
                 return render_template("message.html",msg="Username exist")
             user=users(username=name,password=sha256_crypt.encrypt(name+password),balance=0)
-            db.session.add(user)
-            db.session.commit()
-            user = users.query.filter_by(username=name).first()
+            server[session.get("server")].add(user)
+            server[session.get("server")].commit()
+            # user = users.query.filter_by(username=name).first()
             session["id"] =user.id
             return  redirect("/")
-        if send=="register":
-            return render_template("register.html")  
-        elif send=="login":
-            return redirect("/login")
 
             
 @app.route('/logout',methods=["GET","POST"])  
 def logout():
     user = users.query.filter_by(id=session.get('id')).first()
     if session.get('channel'):
-        if user.username in room_dict[session.get('channel')]:
-            room_dict[session.get('channel')].remove(user.username)
+        if user.username in room_dict[curr][session.get('channel')]:
+            room_dict[curr][session.get('channel')].remove(user.username)
             handle_leave_channel(False)
     session["id"]=None
     session["channel"]=None
-    session["server"]=None
+    # session["server"]=None
     return redirect("login")
 
 
@@ -470,13 +451,16 @@ def logout():
 
 @app.route("/app",methods=["GET","POST"])
 def application():
+    if session.get("server")==None:
+        return redirect("/servers")
     if session.get("id")==None:
         return redirect("/login")
+    curr=session.get("server")
     id=session.get("id")
-    user=users.query.filter_by(id=id).first()
-    if session.get("channel") in room_dict:
-        if user.username in  room_dict[session.get("channel")]:
-            room_dict[session.get('channel')].remove(user.username)
+    user=server[curr].query(users).filter_by(id=id).first()
+    if session.get("channel") in room_dict[curr]:
+        if user.username in  room_dict[curr][session.get("channel")]:
+            room_dict[curr][session.get('channel')].remove(user.username)
             handle_leave_channel(False)
     session["channel"]=None 
     session["frnd"]=None
@@ -484,62 +468,58 @@ def application():
     session["fun"]=None
     newChannel=request.form.get("channel_name")
     searchRequest=request.form.get("search")
+
     if searchRequest!=None:
         results=[]
         searching_for=searchRequest.strip()
-        try:
-            channel_list=channel.query.filter(channel.name.like("%"+searching_for+"%")).all()
-            results.extend(channel_list)
-        except:
-            print("error")
-        try:
-            user_list=users.query.filter(users.username.like("%"+searching_for+"%")).all()
-            results.extend(user_list)
-        except:
-            print("error")
+        channel_list=server[curr].query(channel).filter(channel.name.like("%"+searching_for+"%")).all()
+        user_list=server[curr].query(users).filter(users.username.like("%"+searching_for+"%")).all()
+        results.extend(channel_list)
+        results.extend(user_list)
         return render_template("searchresult.html",name=user,tables=results)
     
     elif newChannel!=None:
         str(newChannel).strip()
         try:
             topic=channel(name=newChannel,creator_id=user.id)
-            room_dict[newChannel]=[]
-            db.session.add(topic)
-            db.session.commit()
-            print("sucess")
+            server[curr].add(topic)
+            server[curr].commit()
+            room_dict[curr][newChannel]=[]
         except:
             return render_template("message.html",msg="can't add channel")
-        try:
-            channels=channel.query.all()
-        except:
-            print("can't show topics id")
-        # return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
-        return render_template("searchresult.html",name=user,tables=channels)
-    else:
-        channels=channel.query.all()
-        # return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
-        return render_template("searchresult.html",name=user,tables=channels)
+    channels=server[curr].query(channel).all()
+    # return render_template("user.html",name=user.username,balance=user.balance,tables=channels)
+    # if server:
+    #     print(DataBases)
+    #     print(DataBases[str(s)+"users"])
+    #     print(users)
+    #     user=server[str(s)+"session"].query(users).filter_by(id=id).first()
+    #     channels=server[str(s)+"session"].query(channel).all()
+    return render_template("searchresult.html",name=user,tables=channels,server=curr)
 
 @app.route("/channels",methods=["GET"])
 def channel_chat():
+    if session.get("server")==None:
+        return redirect("/servers")
     if session.get("id")==None:
         return redirect("/login")
     id=session.get("id")
-    user = users.query.filter_by(id=id).first()
+    curr=session.get("server")
+    user = server[curr].query(users).filter_by(id=id).first()
     channel_name = session.get('channel')
     if channel_name:
-        current_channel=channel.query.filter_by(name=channel_name).first()
+        current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
     else:
-        current_channel=channel.query.filter_by(id=1).first()
+        current_channel=server[curr].query(channel).filter_by(id=1).first()
+    tables=server[curr].query(channel).all()
     session["channel"]=current_channel.name
-    tables=channel.query.all()
     last_posts=current_channel.posts.order_by(posts.id.desc()).limit(30)
     if last_posts.count()!=0:
         topic_posts=last_posts[::-1]
     else:
         topic_posts=[]
-    shortPost=short_posts.query.filter_by(topic_id=channel_name).all()
-    return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=[],hide=session.get("fun"),body=session.get("body"),)
+    # shortPost=short_posts.query.filter_by(topic_id=channel_name).all()
+    return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=[],hide=session.get("fun"),body=session.get("body"),server=curr)
         
 
 # @app.route("/<int:channel_id>/<action>=<int:post>",methods=["GET","POST"])
@@ -665,9 +645,12 @@ def chat(frnd):
     return render_template("chat.html",name=me,chats=our_chats,frnd=friend,feelings=shortchat,hide=session.get("fun"),body=session.get("body"))
 
 
-@app.route('/download')
-def download_database():
-    path= str(app.config['SQLALCHEMY_DATABASE_URI']).rsplit("///")[1]
+@app.route('/download/<server>')
+def download_database(server):
+    if server=="app":
+        path= str(app.config['SQLALCHEMY_DATABASE_URI']).rsplit("///")[1]
+    else:
+        path =str(app.config['SQLALCHEMY_BINDS'][str(server)]).rsplit("///")[1]
     return send_file(path, as_attachment=True)
 
 
