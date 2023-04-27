@@ -43,10 +43,6 @@ class users(db.Model):
         self.password=password
         self.balance=balance
 
-channel_post=db.Table('channel_post',
-    db.Column('channel',db.Integer,db.ForeignKey('channel.id')),
-    db.Column('posts',db.Integer,db.ForeignKey('posts.id')))
-
 class channel(db.Model):
     id=db.Column(db.Integer,primary_key=True)                   #topic ID
     name=db.Column(db.String, nullable=False,unique=True)       #topic name
@@ -64,7 +60,7 @@ class posts(db.Model):
     data=db.Column(db.String, nullable=False)                               #actuall msg
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #User ID
     time = db.Column(db.DateTime, default=func.now())                       #time
-    topic=db.relationship('channel',secondary=channel_post,backref=db.backref('posts',lazy='dynamic'))      #Association table->channel_post
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
 
 class short_messages(db.Model):
     id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
@@ -194,7 +190,13 @@ def handle_join_channel():
     id = session.get("id")
     curChannel=session.get("channel")
     user=server[curr].query(users).filter_by(id=id).first()
+    # print("before joining")
+    # print(socketio.server.manager.rooms)
     join_room(curr+curChannel)
+    # print("after joining")
+    # print(socketio.server.manager.rooms["/"][None])
+    # print("Request id : "+str(request.sid))
+    # print("================================================")
     if curChannel in room_dict[curr]:
         if user.username not in room_dict[curr][curChannel]:
             room_dict[curr][curChannel].append(user.username)
@@ -208,7 +210,13 @@ def handle_leave_channel(data=True):
     prevChannel=session.get("channel")
     if data:
         id = session.get("id")
+        # print("before leaving")
+        # print(socketio.server.manager.rooms)
         leave_room(prevChannel)
+        # print("after leaving")
+        # print(socketio.server.manager.rooms)
+        # print("Request id : "+str(request.sid))
+        # print("================================================")
         session["channel"]=0
         user=server[curr].query(users).filter_by(id=id).first()
         if prevChannel in room_dict[curr]:
@@ -229,11 +237,10 @@ def handel_recieve_message(data):
     channel_name=session.get("channel")
     user = server[curr].query(users).filter_by(id=id).first()
     current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-    post=posts(data=data,sender_id=user.id)
-    post.topic.append(current_channel)
+    post=posts(data=data,sender_id=user.id,channel_id=current_channel.id)
     server[curr].add(post)
     server[curr].commit()
-    last_posts=current_channel.posts.order_by(posts.id.desc()).limit(1)
+    last_posts=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(1)
     lastpost=last_posts[0]
     socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = curr+channel_name)
 
@@ -268,7 +275,7 @@ def getHistory(post):
     id=session.get('id')
     channel_name=session.get("channel")
     current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-    history=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<post).limit(30)
+    history=server[curr].query(posts).order_by(posts.id.desc()).filter(and_(posts.channel_id==current_channel.id,posts.id<post)).limit(30)
     History=[None]
     for i in history:
         History.append([i.user.username,i.data,i.time.strftime("%D  %H:%M")])
@@ -288,7 +295,7 @@ def changeChannel(newChannel):
     current_channel=server[curr].query(channel).filter_by(name=newChannel).first()
     session["channel"]=current_channel.name
     handle_join_channel()
-    last_posts=current_channel.posts.order_by(posts.id.desc()).limit(30)
+    last_posts=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(30)
     Posts=[None]
     for i in last_posts:
         Posts.append([i.user.username,i.data,i.time.strftime("%D  %H:%M")])
@@ -513,7 +520,7 @@ def channel_chat():
         current_channel=server[curr].query(channel).filter_by(id=1).first()
     tables=server[curr].query(channel).all()
     session["channel"]=current_channel.name
-    last_posts=current_channel.posts.order_by(posts.id.desc()).limit(30)
+    last_posts=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(30)
     if last_posts.count()!=0:
         topic_posts=last_posts[::-1]
     else:
@@ -521,36 +528,6 @@ def channel_chat():
     # shortPost=short_posts.query.filter_by(topic_id=channel_name).all()
     return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=[],hide=session.get("fun"),body=session.get("body"),server=curr)
         
-
-# @app.route("/<int:channel_id>/<action>=<int:post>",methods=["GET","POST"])
-# def post_history(channel_id,action,post):
-#     if session.get("id")==None:
-#         return redirect("/login")
-#     id=session.get("id")
-#     user = users.query.filter_by(id=id).first()
-#     current_channel=channel.query.filter_by(id=channel_id).first()
-#     if action=="next":
-#         topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=post).limit(30)
-#         if topic_posts.count()<7:
-#             return redirect("/channels/"+str(channel_id))
-#     elif action=="prev":
-#         last_posts=current_channel.posts.order_by(posts.id.desc()).filter(posts.id<=post).limit(30)
-#         if last_posts.count()<7:
-#             topic_posts=current_channel.posts.limit(7)
-#         else:
-#             # new_post=last_posts[-1]
-#             # newstart=new_post.id
-#             # topic_posts=current_channel.posts.order_by(posts.id.asc()).filter(posts.id>=newstart).limit(7)
-#             topic_posts = last_posts[::-1]
-
-
-#     tables=channel.query.all()
-#     current_channel=channel.query.filter_by(id=channel_id).first()
-#     shortPost=[]
-#     fun=session.get("fun")
-#     body=session.get("body")
-#     print("my work is done")
-#     return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=shortPost,hide=fun,body=body)
                 
 
 @app.route("/chat/<int:frnd>/<action>=<int:chat>",methods=["GET","POST"])
