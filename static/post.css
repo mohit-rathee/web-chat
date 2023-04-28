@@ -11,7 +11,7 @@ body
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(#009688 0%, #009688 130px, #d9dbd5 130px, #d9dbd5 100%);;
+    background: #009688;
 }
 .darkbody
 {
@@ -32,11 +32,36 @@ body
     display: flex;
     overflow: hidden;
 }
+.text-block {
+    position: relative;
+    display:inline-block;
+    width: 80%;
+    height: 7%;
+    line-height: 30px;
+    text-align: center;
+    background-color: #497d33a2;
+    border-radius: 10%;
+    margin:10%;
+    margin-top: 0%;
+    margin-bottom: 20%;
+}
 
+.container .servers
+{
+    position: relative;
+    flex: 6%;
+    padding-top: 60px;
+    background-color: rgb(79, 168, 79);
+} 
+.text-block:hover 
+{
+    background-color: #1e4620;
+    color: #fff;
+}
 .container .leftside
 {
     position: relative;
-    flex: 30%;
+    flex: 23%;
     background: rgb(143, 143, 143);
     border-right: 1px solid rgba(0,0,0,0.2);
 }
@@ -44,7 +69,7 @@ body
 {
     position: relative;
     flex: 70%;
-    background: rgb(182, 149, 149);
+    background: #a3c08f;
     overflow: -moz-hidden-unscrollable;
 }
 .container .rightside::before
@@ -55,7 +80,7 @@ body
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgb(234, 204, 204);
+    background-color: #a3c08f;
     opacity: 0.6;
 }
 .useless
@@ -70,7 +95,7 @@ body
 #delete
 {
     cursor: pointer;
-    background: red;
+    background: #d24a4a;
     color: rgb(224, 224, 224);
     min-width: 45px;
     height: 30px;
@@ -85,7 +110,7 @@ body
     position: relative;
     width: 100%;
     height: 60px;
-    background: rgb(219, 221, 219);
+    background: rgb(79, 168, 79);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -137,6 +162,7 @@ body
   
 #user-list li {
     padding: 5px;
+    background-color: aliceblue;
     border-bottom: 1px solid #ccc;
 }
 
@@ -145,7 +171,7 @@ body
 }
 #topic
 {
-    color: #606060;
+    color: #262626;
     font-weight: 700;
     line-height: 1.2em;
     margin-left: 15px;
@@ -178,9 +204,8 @@ body
     width: 100%;
     height: 50px;
     border-color: black;
-    background: rgb(220, 220, 220);
+    background: rgb(163, 192, 143);
     display: flex;
-    justify-content: center;
     align-items: center;
 }
 .search_channel div
@@ -198,7 +223,7 @@ body
     height: 38px;
     border-radius: 30px;
     font-size: 14px;
-    padding-left: 40px;
+    text-align: center;
 }
 .search_channel div input::placeholder
 {
@@ -209,7 +234,7 @@ body
     position: relative;
     height: calc(100% - 110px);
     overflow-y: auto;
-    background: rgb(189, 189, 189);
+    background: #a3c08f;
     
 }
 .channel_list .block .btn .details .name button
@@ -222,7 +247,7 @@ body
 }
 .channel_list .block.active
 {
-    background: #a1a1a1;
+    background: rgb(89, 149, 87);
 }
 
 .channel_list .block
@@ -232,12 +257,14 @@ body
     display: flex;
     align-items: center;
     padding: 15px;
-    border-bottom: 1px solid rgb(187, 184, 184);
-    background: rgb(220, 220, 220);
+    border-bottom: 1px solid rgb(104, 113, 104);
 }
 .channel_list .block:hover
 {
-    background: #c0c0c0;
+    background: rgb(121, 187, 119);
+}
+.creator {
+    color: #2d2c2c;
 }
 .channel_list .block .imgbx
 {
@@ -272,11 +299,12 @@ body
 }
 a{
     text-decoration: none;
-    color:#555;
+    color: #555;
+    font-size: large;
 }
 .channel_list .block .details .name a
 {
-    font-size: 0.9em;
+    font-size: 1em;
     font-weight:bold ;
     color: rgb(58, 58, 58);
 }
@@ -326,7 +354,7 @@ a{
 .chatbox
 {
     position: relative;
-    height: calc(100% - 130px);
+    height: 70vh;
     padding: 5%;
     padding-bottom: 10px;
     overflow-y: scroll;
@@ -392,7 +420,7 @@ a{
 }
 .frnd_message p
 {
-    background-color: rgb(233, 233, 233);
+    background-color: #dde6d3;
     text-align: left;
 }
 .shortBox
@@ -442,7 +470,7 @@ a{
     width: 100%;
     margin: auto;
     padding: 10px;
-    background-color: rgb(215, 215, 215);
+    background-color: rgb(221, 230, 211);
     border: 1px solid rgb(148, 148, 148);
     outline: none;
     align-items: center;
@@ -453,7 +481,12 @@ a{
 }
 
 
-
+.container .servers {
+    position: relative;
+    flex: 7%;
+    padding-top: 60px;
+    background-color: rgb(79, 168, 79);
+}
 
 
 

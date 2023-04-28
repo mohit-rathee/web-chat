@@ -9,6 +9,16 @@
 </head>
 <body>
     <div class="container">
+        <div class="servers">
+            {% for srvr in mysrvr: %}
+            <div class="text-block"  onclick="this.querySelector('form').submit()">
+                {{srvr}}
+                <form action="/channels" method="post">
+                    <input type="hidden" name="server" value="{{srvr}}">
+                </form>
+            </div>
+            {% endfor %}
+        </div>
         <div class="leftside">
             <div class="header">
                 <div class="imgtext">
@@ -27,7 +37,10 @@
             <div class="channel_list">
                 {% for table in tables: %}
                     {% if table.name: %}
-                        <div class="block" onclick="location.href='/channels'">
+                        <div class="block" onclick="this.querySelector('form').submit()">
+                            <form action="/channels" method="post">
+                                <input type="hidden" name="newChannel" value="{{table.name}}">
+                            </form>
                             <div class="imgbx">
                                 <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover">
                             </div>

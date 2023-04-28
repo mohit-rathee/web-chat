@@ -58,6 +58,7 @@
         color: #333;
         text-align: center;
         margin-top: 40px;
+        margin-bottom: 15px;
       }
 
       ul {
@@ -65,10 +66,14 @@
         margin: 0;
         padding: 0;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
         height: 100%;
+      }
+      li {
+        margin: 1%;
+        padding: 5px;
       }
 
       .form-list {
@@ -76,12 +81,12 @@
         font-weight: bold;
         /* font-style: italic; */
         color: #333;
-        width: 100%;
         margin: 10px;
-        padding: 0px;
+        padding: 10px;
         border: 2px solid #333;
         border-radius: 10px;
         text-align: center;
+        font-size: x-large;
         position: relative;
         top: 40%;
         transition: all 0.3s ease;
@@ -107,42 +112,44 @@
         opacity: 0;
       }
 
+      .login {
+        background-color: #296d28;
+        text-decoration: None;
+        font-size: xx-large;
+      }
+      .login:hover {
+        background-color: #498b47;
+      }
+
       .form-list:hover::before {
         opacity: 1;
       }
     </style>
   </head>
   <body>
-    <h2>Select the server</h2>
+    <h2>Running Servers</h2>
     <ul>
-      <li>
-        <form action="/servers" method="post">
-          <input type="hidden" name="server" value="app" /><input
-            class="form-list"
-            type="submit"
-            value="App"
-          />
-        </form>
+      <li class="form-list">
+        app
       </li>
       {% for db in databases: %}
-      <li>
-        <form action="/servers" method="post">
-          <input type="hidden" name="server" value="{{db}}" /><input
-            class="form-list"
-            type="submit"
-            value="{{db}}"
-          />
-        </form>
+      <li class="form-list">
+        {{db}}
       </li>
       {% endfor %}
-      <li><br /><br /><br /></li>
-      <li>Wanna Add new server? just add the database</li>
     </ul>
-
+    <ul style="margin-top: 50px;">
+      <li>
+        <!-- <form action="/login" method="get">
+          <input style="font-size: xx-large;" class="form-list" type="submit" value="Login">
+        </form> -->
+      <a href="/login" class="form-list login">Login</a>
+      </li>
+    </ul>
+    <h4 style="text-align: center; padding: 0%; margin: 0%;">Wanna Add new server? just add the database</h4>
     <form action="/upload" method="post" enctype="multipart/form-data">
       <ul>
         <li><input type="file" name="file" autocomplete="off" /></li>
-        <li><br /></li>
         <li><input id="upload" type="submit" value="Upload" /></li>
       </ul>
     </form>

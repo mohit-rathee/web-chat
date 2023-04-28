@@ -1,165 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{name.username}}</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='post.css') }}"
-    />
-    <link
-      rel="shortcut icon"
-      href="{{ url_for('static', filename='favicon.ico') }}"
-    />
-  </head>
-  <body class="{{body}}">
-    <div class="container">
-      <div class="leftside">
-        <div class="header">
-          <div class="imgtext">
-            <a
-              class="arrow"
-              href="/app"
-              id="back"
-              style="text-decoration: none; font-size: 1.1em"
-              ><ion-icon name="arrow-back-outline"></ion-icon
-            ></a>
-            <div class="userimg">
-              <img
-                src="{{url_for('static',filename='profile.webp')}}"
-                alt="pic"
-                class="cover"
-              />
-            </div>
-            <h4>
-              {{name.username}}<br /><span>Server: {{server}}</span>
-            </h4>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{name.username}}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='post.css') }}" />
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="servers">
+      {% for srvr in mysrvr: %}
+      <div class="text-block" onclick='gotoserver("{{srvr}}")'>
+        {{srvr}}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="leftside">
+      <div class="header">
+        <div class="imgtext">
+          <a class="arrow" id="back"
+            style="text-decoration: none; font-size: 1.1em;display: none;"><ion-icon
+              name="arrow-back-outline"></ion-icon></a>
+          <div class="userimg">
+            <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
           </div>
-        </div>
-        <div class="search_channel">
-          <div>
-            <form action="/app" method="post">
-              <input
-                autocomplete="off"
-                name="search"
-                placeholder="Search channel/person"
-                type="text"
-                class="search_channel"
-              />
-            </form>
-          </div>
-        </div>
-        <div class="channel_list">
-          {% for table in tables: %} {% if table.id == topic.id: %}
-          <div class="block active" onclick="goto('{{table.name}}')">
-            <div class="imgbx">
-              <img
-                src="{{url_for('static',filename='profile.webp')}}"
-                alt="pic"
-                class="cover"
-              />
-            </div>
-            <div class="details">
-              <div class="name">
-                <h4>{{table.name}}</h4>
-                <p class="time"></p>
-              </div>
-              <div class="message_p">
-                <p>created by {{table.user.username}}</p>
-                <!-- <b onclick="location.href='/delete'">x</b> -->
-              </div>
-            </div>
-          </div>
-          {% else: %}
-          <div class="block" onclick="goto('{{table.name}}')">
-            <div class="imgbx">
-              <img
-                src="{{url_for('static',filename='profile.webp')}}"
-                alt="pic"
-                class="cover"
-              />
-            </div>
-            <div class="details">
-              <div class="name">
-                <h4>{{table.name}}</h4>
-                <p class="time"></p>
-              </div>
-              <div class="message_p">
-                <p>created by {{table.user.username}}</p>
-                <!-- <b onclick="location.href='/delete'"></b> -->
-              </div>
-            </div>
-          </div>
-          {% endif %} {% endfor %}
-          <!-- profile pic will be added later -->
+          <h4>{{name.username}}<br /><span>Server:</span>&nbsp;<span id="server">{{server}}</span></h4>
         </div>
       </div>
-      <div class="rightside" id="chatside">
+      <div class="search_channel">
+        <div>
+          <form action="/app" method="post">
+            <input autocomplete="off" name="search" placeholder="Search channel/person" type="text"
+              class="search_channel" />
+          </form>
+        </div>
+      </div>
+      <div class="channel_list" id="channel_list">
+        {% for table in tables: %}
+        <div class="block" onclick='if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("{{table.name}}")'>
+          <div class="imgbx">
+            <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
+          </div>
+          <div class="details">
+            <div class="name">
+              <h4>{{table.name}}</h4>
+              <p class="time"></p>
+            </div>
+            <div class="creator">
+              <p>created by {{table.user.username}}</p>
+              <!-- <b onclick="location.href='/delete'">x</b> -->
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <!-- profile pic will be added later -->
+      </div>
+    </div>
+    <div class="rightside">
+      <div id="userside" style="display: block;">
+        <div class="header">
+          <div class="useless">
+            <a id="download" href="download/{{server}}">Download State</a>
+            <p onclick="location.href='/logout'" id="delete">Logout</p>
+          </div>
+        </div>
+        <div class="chatbox" id="user" style="height: 68vh;">
+          <p>
+          <h2>Welcome {{name.username}}</h2><br>
+          <h3>Your balance: {{name.balance}}</h3>
+          </p>
+        </div>
+        <div class="chatbox_input">
+          <form action="/app" method="post" class="form">
+            <input autocomplete="off" name="channel_name" placeholder="Add channel" type="text" class="search_channel">
+            <input type="submit" value="Add Topic" >
+          </form>
+        </div>
+      </div>
+      <div id="chatside" style="display: none;">
         <div class="header">
           <div class="imgtext">
-            <h2 id="topic">{{topic.name}}&nbsp<br /></h2>
-            &nbsp<small
-              style="font-style: italic; color: rgb(99, 164, 99);font-size: 90%;"
-              id="user-names"
-            ></small>
+            <h2 id="topic">&nbsp<br /></h2>
+            &nbsp<small style="
+                  font-style: italic;
+                  color: rgb(59, 42, 181);
+                  font-size: 95%;
+                " id="user-names"></small>
             <ul id="user-list"></ul>
           </div>
         </div>
-        <script>
-          const userList = document.getElementById("user-list");
-          const chatUsers = document.getElementById("user-names");
-          let makevisible = true;
-          let hideTimeout;
-          // Handle click event
-          chatUsers.addEventListener("click", () => {
-            clearTimeout(hideTimeout);
-            if (makevisible) {
-              chatUsers.style.color = "green";
-              userList.style.display = "block";
-              makevisible = false;
-            } else {
-              chatUsers.style.color = "#72ad72";
-              userList.style.display = "none";
-              makevisible = true;
-            }
-          });
-
-          // Handle mouseleave event
-          chatUsers.addEventListener("mouseleave", () => {
-            hideTimeout = setTimeout(() => {
-              if (makevisible) {
-                userList.style.display = "none";
-              }
-            }, 500);
-          });
-          chatUsers.addEventListener("mouseenter", () => {
-            if (makevisible) {
-              userList.style.display =
-                userList.style.display === "block" ? "none" : "block";
-            }
-          });
-          // Handel mouseenter event for list
-          userList.addEventListener("mouseenter", () => {
-            clearTimeout(hideTimeout);
-            userList.style.display = "block";
-          });
-        // Handel mouseleave event for list  
-        userList.addEventListener("mouseleave", () => {
-            hideTimeout = setTimeout(() => {
-              if (makevisible) {
-                userList.style.display = "none";
-              }
-            }, 500);
-        });
-        </script>
-
         <div class="chatbox" id="chats">
           <div class="arrow" onclick="gethistory()" id="UP">
             <ion-icon name="arrow-up-outline"></ion-icon>
           </div>
-          {% for post in posts: %} {% if loop.previtem is not defined: %} {% if
+          <!-- {% for post in posts: %} {% if loop.previtem is not defined: %} {% if
           post.user.id==name.id: %}
 
           <div class="message my_message">
@@ -170,11 +108,8 @@
           {% else: %}
           <div class="message frnd">
             <p>
-              <a
-                href="/chat/{{post.user.username}}"
-                style="text-decoration: none; font-size: 1.1em"
-                >{{post.user.username}}</a
-              >
+              <a href="/chat/{{post.user.username}}"
+                style="text-decoration: none; font-size: 1.1em">{{post.user.username}}</a>
             </p>
           </div>
           <div class="message frnd_message">
@@ -201,11 +136,8 @@
           {% else: %}
           <div class="message frnd">
             <p>
-              <a
-                href="/chat/{{post.user.username}}"
-                style="text-decoration: none; font-size: 1.1em"
-                >{{post.user.username}}</a
-              >
+              <a href="/chat/{{post.user.username}}"
+                style="text-decoration: none; font-size: 1.1em">{{post.user.username}}</a>
             </p>
           </div>
           <div class="message frnd_message">
@@ -213,39 +145,39 @@
               {{post.data}}<br /><span>{{post.time.strftime("%D %H:%M")}}</span>
             </p>
           </div>
-          {% endif %} {% endif %} {% endfor %}
-          <hr id="breaker">
+          {% endif %} {% endif %} {% endfor %} -->
+          <hr id="breaker" />
           <!-- <div  class="useless">
-                    <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
-                    <button onclick="location.href='/delete_short'" id="delete">Delete</button>
-                </div>
-                <script>
-                    function darkfunction() {
-                        var mybody=document.body
-                        var hide=document.getElementById("inputfield")
-                        if (hide.value=="True"){
-                            mybody.classList.remove("darkbody");
-                            hide.value="False";
-                        }
-                        else {
-                            hide.value="True";
-                            mybody.classList.toggle("darkbody");
-                        }
-                    }
-                </script>
-                <div class="shortBox" id="shortBox"> <p>under maintainance...<z/p>
-                    {% for post in feelings: %}
-                        {% if post.sender_id==name.id: %}
-                            <div class="short my_short">
-                                <p>{{post.data}}</span> </p>
-                            </div>
-                        {% else: %}
-                            <div class="short frnd_short">
-                                <p >{{post.data}} - <span>{{post.sender.username}}</p>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div> -->
+                      <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
+                      <button onclick="location.href='/delete_short'" id="delete">Delete</button>
+                  </div>
+                  <script>
+                      function darkfunction() {
+                          var mybody=document.body
+                          var hide=document.getElementById("inputfield")
+                          if (hide.value=="True"){
+                              mybody.classList.remove("darkbody");
+                              hide.value="False";
+                          }
+                          else {
+                              hide.value="True";
+                              mybody.classList.toggle("darkbody");
+                          }
+                      }
+                  </script>
+                  <div class="shortBox" id="shortBox"> <p>under maintainance...<z/p>
+                      {% for post in feelings: %}
+                          {% if post.sender_id==name.id: %}
+                              <div class="short my_short">
+                                  <p>{{post.data}}</span> </p>
+                              </div>
+                          {% else: %}
+                              <div class="short frnd_short">
+                                  <p >{{post.data}} - <span>{{post.sender.username}}</p>
+                              </div>
+                          {% endif %}
+                      {% endfor %}
+                  </div> -->
           <script>
             // var objDiv1 = document.getElementById("shortBox");
             var objDiv2 = document.getElementById("chats");
@@ -256,192 +188,260 @@
 
         <div class="chatbox_input" id="chatinput">
           <form action="/channels" method="post" class="form">
-            <input
-              autofocus
-              autocomplete="off"
-              type="text"
-              name="post"
-              placeholder="Message "
-              id="text_message"
-            />
-            <input
-              type="hidden"
-              name="hide"
-              default="False"
-              value="{{hide}}"
-              id="inputfield"
-            />
+            <input autofocus autocomplete="off" type="text" name="post" placeholder="Message " id="text_message" />
+            <input type="hidden" name="hide" default="False" value="{{hide}}" id="inputfield" />
           </form>
         </div>
       </div>
     </div>
-    <script
-      type="module"
-      src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"
-    ></script>
-    <script
-      nomodule
-      src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"
-    ></script>
+  </div>
+  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 
-    <!-- adding socket -->
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
-      integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script type="text/javascript" charset="utf-8">
-      var socket = io({
-        transports: ["websocket"],
+  <!-- adding socket -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+    integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    var socket = io({
+      transports: ["websocket"],
+    });
+    socket.on("connect", function () {
+      socket.emit("changeServer",'{{server}}');
+    });
+    const chatbox = document.getElementById("chats");
+    const line = document.getElementById("breaker");
+    const channel_list=document.getElementById("channel_list")
+    socket.on("showNewServer", function(data) {
+      channel_list.innerHTML=""
+      console.log(data)
+      data.forEach(element => {
+        let channel=document.createElement("div")
+        channel.classList.add("block")
+        channel.innerHTML='<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>'+element[0]+'</h4><p class="time"></p></div><div class="creator"><p>created by '+element[1]+'</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.setAttribute('onclick','if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("'+element[0]+'")')
+        channel_list.appendChild(channel)
       });
-      socket.on("connect", function () {
-        socket.emit("join_channel");
-      });
+      show("userside")
+    })
 
-      socket.on("show_message", function (data) {
-        // TO ADD NEW CHILD OF MESSAGE //
-        const chatbox = document.getElementById("chats");
-        const line = document.getElementById("breaker");
-        const chat = document.createElement("div");
-        chat.classList.add("message");
-        if (data[0] == "{{name.username}}") {
-          chat.classList.add("my_message");
+    socket.on("show_message", function (data) {
+      // TO ADD NEW CHILD OF MESSAGE //
+      let chat = document.createElement("div");
+      chat.classList.add("message");
+      if (data[0] == "{{name.username}}") {
+        chat.classList.add("my_message");
+      } else {
+        chat.classList.add("frnd_message");
+        var LM = document.getElementsByClassName("frnd");
+        if (LM.length == 0 || LM[LM.length - 1].innerText != data[0]) {
+          const Frnd = document.createElement("div");
+          Frnd.classList.add("message");
+          Frnd.classList.add("frnd");
+          Frnd.innerHTML =
+            '<p><a href="/chat/' +
+            data[0] +
+            '" style="text-decoration: none;font-size: 1.1em; ">' +
+            data[0] +
+            "</a></p>";
+          chatbox.appendChild(Frnd);
+        }
+      }
+      chat.innerHTML =
+        "<p>" + data[1] + "<span>" + data[2] + "</span>" + "</p>";
+      chatbox.appendChild(chat);
+      chat.scrollIntoView();
+    });
+
+    let message_form = document.getElementById("chatinput");
+    let message_input = document.getElementById("text_message");
+
+    document.getElementById("chatinput").onsubmit = function () {
+      let message = message_input.value.trim();
+      if (message.length) {
+        socket.emit("recieve_message", String(message));
+        message_input.value = "";
+      }
+      return false;
+    };
+    function gethistory() {
+      socket.emit("getHistory", ID);
+    }
+    document.getElementById("back").onclick = function () {
+      console.log("back clicked")
+      show("userside")
+      socket.emit("leave_channel",document.getElementById("topic").innerText); // soon we will not send topic.id
+    };
+    function show(side) {
+      if (side === "chatside") {
+        if (document.getElementById("chatside").style.display === "none") {
+          document.getElementById("userside").style.display = "none"
+          document.getElementById("chatside").style.display = "block"
+          document.getElementById("back").style.display = "block"
+        }
+      } else {
+        if (document.getElementById("userside").style.display === "none") {
+          document.getElementById("chatside").style.display = "none"
+          document.getElementById("userside").style.display = "block"
+          document.getElementById("back").style.display = "none"
+          document.getElementsByClassName("active")[0].classList.remove("active")
+      }
+    }
+    }
+    function goto(Newchannel) {
+      show("chatside")
+      if (document.getElementById("topic").innerText != Newchannel) {
+        let active = document.getElementsByClassName("active")[0];
+        active.classList.remove("active");
+        chatbox.innerHTML =
+          '<div class="arrow" onclick="gethistory()" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div><hr id="breaker">';
+        let blocks = document.getElementsByClassName("name");
+        for (var i = 0; i < blocks.length; i++) {
+          if (blocks[i].innerText == Newchannel) {
+            blocks[i].parentElement.parentElement.classList.add("active");
+            document.getElementById("topic").innerText = Newchannel;
+          }
+        }
+        socket.emit("changeChannel", Newchannel);
+      } else {
+        return false;
+      }
+    }
+    function gotoserver(Newserver) {
+      if (document.getElementById("server").innerText != Newserver) {
+        console.log("sending gotoserver()")
+        document.getElementById("server").innerText=Newserver
+        document.getElementById("download").href="/download/"+Newserver
+        socket.emit("changeServer", Newserver)
+      }
+    }
+
+    socket.on("showHistory", function (data) {
+      let chatbox = document.getElementById("chats");
+      var top = document.getElementById("UP");
+      if (data.length == 31) {
+        ID = data[0];
+      } else {
+        top.style.visibility = "hidden";
+      } //to remove _-^-_ if data<21
+      Mess = document.getElementsByClassName("message")[0];
+      if (!Mess) {
+        Mess = document.getElementById("breaker");
+      }
+      for (var i = 1; i < data.length; i++) {
+        var message = document.createElement("div");
+        message.classList.add("message");
+        if (data[i][0] == "{{name.username}}") {
+          message.classList.add("my_message");
         } else {
-          chat.classList.add("frnd_message");
-          var LM = document.getElementsByClassName("frnd");
-          if (LM.length == 0 || LM[LM.length - 1].innerText != data[0]) {
-            const Frnd = document.createElement("div");
+          message.classList.add("frnd_message");
+          if (i == 0 || data[i][0] != data[i - 1][0]) {
+            var Frnd = document.createElement("div");
             Frnd.classList.add("message");
             Frnd.classList.add("frnd");
             Frnd.innerHTML =
               '<p><a href="/chat/' +
-              data[0] +
+              data[i][0] +
               '" style="text-decoration: none;font-size: 1.1em; ">' +
-              data[0] +
+              data[i][0] +
               "</a></p>";
-            chatbox.insertBefore(Frnd, line);
+            chatbox.insertBefore(Frnd, Mess);
           }
         }
-        chat.innerHTML =
-          "<p>" + data[1] + "<span>" + data[2] + "</span>" + "</p>";
-        chatbox.insertBefore(chat, line);
-        chat.scrollIntoView();
-      });
-
-      let message_form = document.getElementById("chatinput");
-      let message_input = document.getElementById("text_message");
-
-      document.getElementById("chatinput").onsubmit = function () {
-        let message = message_input.value.trim();
-        if (message.length) {
-          socket.emit("recieve_message", String(message));
-          message_input.value = "";
-        }
-        return false;
-      };
-      function gethistory() {
-        socket.emit("getHistory", ID);
+        message.innerHTML =
+          "<p>" + data[i][1] + "<span>" + data[i][2] + "</span>" + "</p>";
+        chatbox.insertBefore(message, Mess);
       }
-      document.getElementById("back").onclick = function () {
-        socket.emit("leave_channel"); // soon we will not send topic.id
-      };
-      function goto(Newchannel) {
-        let active = document.getElementsByClassName("active")[0];
-        if (active.lastElementChild.firstElementChild.innerText != Newchannel) {
-          active.classList.remove("active");
-          const chatbox = document.getElementById("chats");
-          chatbox.innerHTML =
-            '<div class="arrow" onclick="gethistory()" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div><hr id="breaker">';
-          let blocks = document.getElementsByClassName("name");
-          for (var i = 0; i < blocks.length; i++) {
-            if (blocks[i].innerText == Newchannel) {
-              blocks[i].parentElement.parentElement.classList.add("active");
+      if (Mess.classList.contains("frnd")) {
+        let arr = $(Mess).prevUntil(document.getElementsByClassName("frnd"));
+        var del = true;
+        if (arr.length != 0) {
+          for (var i = 0; i < arr.length; i++) {
+            if (arr[i].classList.contains("my_message")) {
+              del = false;
             }
-            document.getElementById("topic").innerText = Newchannel;
           }
-        } else {
-          return false;
+          if (del) {
+            Mess.scrollIntoView();
+            Mess.remove();
+          }
         }
-
-        socket.emit("changeChannel", Newchannel);
       }
-      socket.on("showHistory", function (data) {
-        let chatbox = document.getElementById("chats");
-        var top = document.getElementById("UP");
-        if (data.length == 31) {
-          ID = data[0];
-        } else {
-          top.style.visibility="hidden";
-        } //to remove _-^-_ if data<21
-        Mess = document.getElementsByClassName("message")[0];
-        if (!Mess) {
-          Mess = document.getElementById("breaker");
-        }
-        for (var i = 1; i < data.length; i++) {
-          var message = document.createElement("div");
-          message.classList.add("message");
-          if (data[i][0] == "{{name.username}}") {
-            message.classList.add("my_message");
-          } else {
-            message.classList.add("frnd_message");
-            if (i == 0 || data[i][0] != data[i - 1][0]) {
-              var Frnd = document.createElement("div");
-              Frnd.classList.add("message");
-              Frnd.classList.add("frnd");
-              Frnd.innerHTML =
-                '<p><a href="/chat/' +
-                data[i][0] +
-                '" style="text-decoration: none;font-size: 1.1em; ">' +
-                data[i][0] +
-                "</a></p>";
-              chatbox.insertBefore(Frnd, Mess);
-            }
-          }
-          message.innerHTML =
-            "<p>" + data[i][1] + "<span>" + data[i][2] + "</span>" + "</p>";
-          chatbox.insertBefore(message, Mess);
-        }
-        if (Mess.classList.contains("frnd")) {
-          let arr = $(Mess).prevUntil(document.getElementsByClassName("frnd"));
-          var del = true;
-          if (arr.length != 0) {
-            for (var i = 0; i < arr.length; i++) {
-              if (arr[i].classList.contains("my_message")) {
-                del = false;
-              }
-            }
-            if (del) {
-              Mess.scrollIntoView();
-              Mess.remove();
-            }
-          }
-        }
-        Mess.scrollIntoView();
+      Mess.scrollIntoView();
+    });
+    socket.on("notify", function (data) {
+      console.log(data);
+      userList.innerHTML = "";
+      data.forEach((element) => {
+        let user = document.createElement("li");
+        let link = document.createElement("a");
+        link.href = "/chat/" + element;
+        link.innerText = element;
+        user.appendChild(link);
+        userList.appendChild(user);
       });
-      socket.on("notify", function (data) {
-        console.log(data)
-        userList.innerHTML = "";
-        data.forEach((element) => {
-          let user = document.createElement("li");
-          let link = document.createElement("a");
-          link.href = "/chat/" + element;
-          link.innerText = element;
-          user.appendChild(link);
-          userList.appendChild(user);
-        });
-        let first3 = "you";
-        for (var i = 0; i < 3; i++) {
-          if (data[i]) {
-            if(data[i]!="{{name.username}}"){first3 += ", " + data[i];}
-            if (i == 2) {
-              first3 += "...";
-            }
+      let first3 = "you";
+      for (var i = 0; i < 3; i++) {
+        if (data[i]) {
+          if (data[i] != "{{name.username}}") {
+            first3 += ", " + data[i];
+          }
+          if (i == 2) {
+            first3 += "...";
           }
         }
-        first3 += " (" + data.length + ")";
-        chatUsers.innerText = first3;
-      });
-    </script>
-  </body>
+      }
+      first3 += " (" + data.length + ")";
+      chatUsers.innerText = first3;
+    });
+    const userList = document.getElementById("user-list");
+    const chatUsers = document.getElementById("user-names");
+    let makevisible = true;
+    let hideTimeout;
+    // Handle click event
+    chatUsers.addEventListener("click", () => {
+      clearTimeout(hideTimeout);
+      if (makevisible) {
+        // chatUsers.style.color = "#004f00";
+        userList.style.display = "block";
+        makevisible = false;
+      } else {
+        // chatUsers.style.color = "rgb(59, 42, 181);";
+        userList.style.display = "none";
+        makevisible = true;
+      }
+    });
+
+    // Handle mouseleave event
+    chatUsers.addEventListener("mouseleave", () => {
+      hideTimeout = setTimeout(() => {
+        if (makevisible) {
+          userList.style.display = "none";
+        }
+      }, 500);
+    });
+    chatUsers.addEventListener("mouseenter", () => {
+      if (makevisible) {
+        userList.style.display =
+          userList.style.display === "block" ? "none" : "block";
+      }
+    });
+    // Handel mouseenter event for list
+    userList.addEventListener("mouseenter", () => {
+      clearTimeout(hideTimeout);
+      userList.style.display = "block";
+    });
+    // Handel mouseleave event for list
+    userList.addEventListener("mouseleave", () => {
+      hideTimeout = setTimeout(() => {
+        if (makevisible) {
+          userList.style.display = "none";
+        }
+      }, 500);
+    });
+
+  </script>
+</body>
+
 </html>

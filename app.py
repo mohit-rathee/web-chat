@@ -177,24 +177,42 @@ def index():
         return redirect("/servers")
     if session.get("id")==None:
         return redirect("/login")
-    if session.get("channel")!=None:
-        return redirect("/channels")
+    # if session.get("channel")!=None:
+    #     return redirect("/channels")
     elif session.get("chat")!=None:
         return redirect("/chat/"+str(session.get("frnd")))
     else:
         return redirect("/app")
 
+# @socketio.on('join_server')
+# def handel_join_server():
+#     join_room(session.get("server"))
+#     print("Joined server name: "+session.get("server"))
+
+@socketio.on("changeServer")
+def changeServer(newServer):
+    oldServer=session.get("server")
+    if oldServer:
+        leave_room(oldServer)
+    session["server"]=newServer
+    join_room(newServer)
+    curr=newServer
+    channels=server[curr].query(channel).all()
+    channel_list=[]
+    for i in channels:
+        channel_list.append([i.name,i.user.username])
+    socketio.emit("showNewServer",channel_list)    
+
 @socketio.on('join_channel')
-def handle_join_channel():
+def handle_join_channel(curChannel):
     curr=session.get("server")
-    id = session.get("id")
-    curChannel=session.get("channel")
+    id = session.get(curr+"id")
     user=server[curr].query(users).filter_by(id=id).first()
     # print("before joining")
     # print(socketio.server.manager.rooms)
     join_room(curr+curChannel)
     # print("after joining")
-    # print(socketio.server.manager.rooms["/"][None])
+    # print(socketio.server.manager.rooms)
     # print("Request id : "+str(request.sid))
     # print("================================================")
     if curChannel in room_dict[curr]:
@@ -205,41 +223,34 @@ def handle_join_channel():
     socketio.emit('notify',room_dict[curr][curChannel],room= curr+curChannel)
 
 @socketio.on('leave_channel')
-def handle_leave_channel(data=True):
+def handle_leave_channel(prevChannel):
     curr=session.get("server")
-    prevChannel=session.get("channel")
-    if data:
-        id = session.get("id")
-        # print("before leaving")
-        # print(socketio.server.manager.rooms)
-        leave_room(prevChannel)
-        # print("after leaving")
-        # print(socketio.server.manager.rooms)
-        # print("Request id : "+str(request.sid))
-        # print("================================================")
-        session["channel"]=0
-        user=server[curr].query(users).filter_by(id=id).first()
-        if prevChannel in room_dict[curr]:
-            if user.username in room_dict[curr][prevChannel]:
-                room_dict[curr][prevChannel].remove(user.username)
-                leave_room(curr+prevChannel)
-        else:
-            room_dict[curr][prevChannel]=[]
+    id = session.get(curr+"id")
+    # print("before leaving")
+    # print(socketio.server.manager.rooms)
+    leave_room(curr+prevChannel)
+    # print("after leaving")
+    # print(socketio.server.manager.rooms)
+    # print("Request id : "+str(request.sid))
+    # print("================================================")
+    session[curr+"channel"]=None
+    user=server[curr].query(users).filter_by(id=id).first()
+    if prevChannel in room_dict[curr]:
+        if user.username in room_dict[curr][prevChannel]:
+            room_dict[curr][prevChannel].remove(user.username)
+            leave_room(curr+prevChannel)
     else:
-        if prevChannel not in room_dict[curr]:
-            room_dict[curr][prevChannel]=[]
+        room_dict[curr][prevChannel]=[]
     socketio.emit('notify',room_dict[curr][prevChannel],room= curr+prevChannel)    
 
 @socketio.on('recieve_message')
 def handel_recieve_message(data):
     curr=session.get("server")
-    id=session.get("id")
-    channel_name=session.get("channel")
+    id=session.get(curr+"id")
+    channel_name=session.get(curr+"channel")
     user = server[curr].query(users).filter_by(id=id).first()
     current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
     post=posts(data=data,sender_id=user.id,channel_id=current_channel.id)
-    server[curr].add(post)
-    server[curr].commit()
     last_posts=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(1)
     lastpost=last_posts[0]
     socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = curr+channel_name)
@@ -255,7 +266,8 @@ def handle_enter_private(data):
 
 @socketio.on('recieve_private_message')
 def handel_recieve_private_message(data):
-    id = session.get("id")
+    curr=session.get("server")
+    id = session.get(curr+"id")
     frndId = session.get("frnd")
     key = private_key_string(id, frndId)
     prvt_key = private_key(id, frndId)
@@ -273,7 +285,7 @@ def handel_recieve_private_message(data):
 def getHistory(post):
     curr=session.get("server")
     id=session.get('id')
-    channel_name=session.get("channel")
+    channel_name=session.get(curr+"channel")
     current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
     history=server[curr].query(posts).order_by(posts.id.desc()).filter(and_(posts.channel_id==current_channel.id,posts.id<post)).limit(30)
     History=[None]
@@ -289,12 +301,13 @@ def getHistory(post):
 @socketio.on("changeChannel")
 def changeChannel(newChannel):
     curr=session.get("server")
-    id = session.get('id')
-    prevChannel = session.get('channel')
-    handle_leave_channel()
+    id = session.get(curr+'id')
+    prevChannel = session.get(curr+'channel')
+    if prevChannel:
+        handle_leave_channel(prevChannel)
     current_channel=server[curr].query(channel).filter_by(name=newChannel).first()
-    session["channel"]=current_channel.name
-    handle_join_channel()
+    session[curr+"channel"]=current_channel.name
+    handle_join_channel(current_channel.name)
     last_posts=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(30)
     Posts=[None]
     for i in last_posts:
@@ -310,53 +323,66 @@ def changeChannel(newChannel):
 @app.route('/login',methods=["GET","POST"])
 def login():
     if request.method=="GET":
-        if session.get("server"):
-            if session.get("id"):
-                return redirect("/app")
-            else:
-                return render_template("login.html",server=session.get("server"))
+        if session.get("login")==None:
+            allServers=[]
+            for srvr in server.keys():
+                if srvr!="app":
+                    allServers.append(srvr)
+            return render_template("login.html",servers=allServers)
         else:
-            return redirect("/servers")
+            return redirect("/channels")
     else:
         name=str(request.form.get("username")).lower()
         password=str(request.form.get("password")).lower()
         operation=request.form.get("operation")
-        coupon=request.form.get("coupon")
-        power=request.form.get("power")
-        curr=session.get("server")
-        user = server[curr].query(users).filter_by(username=name).first()
         if operation == "login":
-            if user!=None:
-                if sha256_crypt.verify(str(name+password), user.password):
-                    session["id"]=user.id
-                    return  redirect("/")
-                else:    
-                    return render_template("message.html",msg="incorrect password")
-            else:        
-                return render_template("message.html",msg="Username doesn't exist")
+            myServer=[]
+            for srvr in server.keys():
+                user = server[srvr].query(users).filter_by(username=name).first()
+                if user!=None:
+                    if sha256_crypt.verify(str(name+password), user.password):
+                        session["login"]=True
+                        myServer.append(srvr)
+                        session[srvr+"id"]=user.id
+                        if session["server"]==None:
+                            session["server"]=srvr
+            session["myserver"]=myServer[:]
+            return redirect("/channels")
+            # return render_template("searchresult.html",name=realuser,tables=tables,mysrvr=myServer,server=srvr)
+                #        return  redirect("/")
+                #     else:    
+                #         return render_template("message.html",msg="incorrect password")
+                # else:        
+                #     return render_template("message.html",msg="Username doesn't exist")
 
         if operation == "register":
-            if user!=None:
-                return render_template("message.html",msg="Username exist")
-            user=users(username=name,password=sha256_crypt.encrypt(name+password),balance=0)
-            server[session.get("server")].add(user)
-            server[session.get("server")].commit()
-            # user = users.query.filter_by(username=name).first()
-            session["id"] =user.id
+            serverList=request.form.getlist("server[]")
+            if len(serverList)==0:
+                return render_template("message.html",msg="Select atleast one server")
+            for srvr in serverList:
+                user=server[srvr].query(users).filter_by(username=name).first()
+                if user!=None:
+                    return render_template("message.html",msg="Username exist")
+            for srvr in serverList:
+                user=users(username=name,password=sha256_crypt.encrypt(name+password),balance=0)
+                server[srvr].add(user)
+                server[srvr].commit()
+                session["login"]=True
+                session[srvr+"id"] =user.id
+                if session.get("server")==None:
+                    session["server"]=srvr
+            session["myserver"]=serverList[:]
             return  redirect("/")
 
             
 @app.route('/logout',methods=["GET","POST"])  
 def logout():
-    user = users.query.filter_by(id=session.get('id')).first()
-    if session.get('channel'):
-        if user.username in room_dict[curr][session.get('channel')]:
-            room_dict[curr][session.get('channel')].remove(user.username)
-            handle_leave_channel(False)
+    session["login"]=None
+    session["myserver"]=None
+    session["server"]=None
     session["id"]=None
     session["channel"]=None
-    # session["server"]=None
-    return redirect("login")
+    return redirect("/servers")
 
 
 # @app.route('/delete' ,methods=["GET"])
@@ -456,23 +482,19 @@ def logout():
 #         return render_template("message.html",msg="can't delete plz check your data")
 
 
-@app.route("/app",methods=["GET","POST"])
+@app.route("/app",methods=["POST"])
 def application():
-    if session.get("server")==None:
-        return redirect("/servers")
-    if session.get("id")==None:
-        return redirect("/login")
     curr=session.get("server")
-    id=session.get("id")
+    id=session.get(curr+"id")
     user=server[curr].query(users).filter_by(id=id).first()
-    if session.get("channel") in room_dict[curr]:
-        if user.username in  room_dict[curr][session.get("channel")]:
-            room_dict[curr][session.get('channel')].remove(user.username)
-            handle_leave_channel(False)
-    session["channel"]=None 
-    session["frnd"]=None
-    session["body"]=None
-    session["fun"]=None
+    # if session.get(curr+"channel") in room_dict[curr]:
+    #     if user.username in  room_dict[curr][session.get(curr+"channel")]:
+    #         room_dict[curr][session.get('channel')].remove(user.username)
+    #         handle_leave_channel(False)
+    # session["channel"]=None 
+    # session["frnd"]=None
+    # session["body"]=None
+    # session["fun"]=None
     newChannel=request.form.get("channel_name")
     searchRequest=request.form.get("search")
 
@@ -504,29 +526,15 @@ def application():
     #     channels=server[str(s)+"session"].query(channel).all()
     return render_template("searchresult.html",name=user,tables=channels,server=curr)
 
-@app.route("/channels",methods=["GET"])
+@app.route("/channels",methods=["GET","POST"])
 def channel_chat():
-    if session.get("server")==None:
-        return redirect("/servers")
-    if session.get("id")==None:
+    if session.get("login")!=True:
         return redirect("/login")
-    id=session.get("id")
     curr=session.get("server")
+    id=session.get(curr+"id")
     user = server[curr].query(users).filter_by(id=id).first()
-    channel_name = session.get('channel')
-    if channel_name:
-        current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-    else:
-        current_channel=server[curr].query(channel).filter_by(id=1).first()
     tables=server[curr].query(channel).all()
-    session["channel"]=current_channel.name
-    last_posts=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(30)
-    if last_posts.count()!=0:
-        topic_posts=last_posts[::-1]
-    else:
-        topic_posts=[]
-    # shortPost=short_posts.query.filter_by(topic_id=channel_name).all()
-    return render_template("channel_chat.html",name=user,posts=topic_posts,topic=current_channel,tables=tables,feelings=[],hide=session.get("fun"),body=session.get("body"),server=curr)
+    return render_template("channel_chat.html",name=user,tables=tables,server=curr,mysrvr=session.get("myserver"))
         
                 
 
