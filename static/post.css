@@ -70,6 +70,7 @@ body
     position: relative;
     flex: 70%;
     background: #a3c08f;
+    width: 0%;
     overflow: -moz-hidden-unscrollable;
 }
 .container .rightside::before
