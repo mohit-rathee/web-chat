@@ -339,7 +339,7 @@ def login():
             for srvr in server.keys():
                 user = server[srvr].query(users).filter_by(username=name).first()
                 if user!=None:
-                    if pswdHash!=None:
+                    if pswdHash==None:
                         if sha256_crypt.verify(str(name+password), user.password):
                             pswdHash=user.password
                     if pswdHash == user.password:
