@@ -201,7 +201,7 @@ def changeServer(newServer):
     channel_list=[]
     for i in channels:
         channel_list.append([i.name,i.user.username])
-    socketio.emit("showNewServer",channel_list)    
+    socketio.emit("showNewServer",channel_list,to=request.sid)    
 
 @socketio.on('join_channel')
 def handle_join_channel(curChannel):
