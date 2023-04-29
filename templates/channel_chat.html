@@ -22,8 +22,7 @@
     <div class="leftside">
       <div class="header">
         <div class="imgtext">
-          <a class="arrow" id="back"
-            style="text-decoration: none; font-size: 1.1em;display: none;"><ion-icon
+          <a class="arrow" id="back" style="text-decoration: none; font-size: 1.1em;display: none;"><ion-icon
               name="arrow-back-outline"></ion-icon></a>
           <div class="userimg">
             <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
@@ -41,7 +40,8 @@
       </div>
       <div class="channel_list" id="channel_list">
         {% for table in tables: %}
-        <div class="block" onclick='if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("{{table.name}}")'>
+        <div class="block"
+          onclick='if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("{{table.name}}")'>
           <div class="imgbx">
             <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
           </div>
@@ -77,7 +77,7 @@
         <div class="chatbox_input">
           <form action="/app" method="post" class="form">
             <input autocomplete="off" name="channel_name" placeholder="Add channel" type="text" class="search_channel">
-            <input type="submit" value="Add Topic" >
+            <input type="submit" value="Add Topic">
           </form>
         </div>
       </div>
@@ -208,24 +208,27 @@
       transports: ["websocket"],
     });
     socket.on("connect", function () {
-      socket.emit("changeServer",'{{server}}');
+      socket.emit("changeServer", '{{server}}');
     });
     const chatbox = document.getElementById("chats");
     const line = document.getElementById("breaker");
-    const channel_list=document.getElementById("channel_list")
-    socket.on("showNewServer", function(data) {
-      channel_list.innerHTML=""
-      console.log(data)
-      data.forEach(element => {
-        let channel=document.createElement("div")
+    const channel_list = document.getElementById("channel_list")
+    socket.on("showNewServer", function (data) {
+      document.getElementById("server").innerText = data[0]
+      document.getElementById("download").href = "/download/" + data[0]
+      channel_list.innerHTML = ""
+      for (let i = 1; i < data.length; i++) {
+        let channel = document.createElement("div")
         channel.classList.add("block")
-        channel.innerHTML='<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>'+element[0]+'</h4><p class="time"></p></div><div class="creator"><p>created by '+element[1]+'</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
-        channel.setAttribute('onclick','if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("'+element[0]+'")')
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + data[i][0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + data[i][1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.setAttribute('onclick', 'if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("' + data[i][0] + '")')
         channel_list.appendChild(channel)
-      });
+      };
       show("userside")
     })
-
+    socket.on("refresh", function(){
+      location.reload
+    })
     socket.on("show_message", function (data) {
       // TO ADD NEW CHILD OF MESSAGE //
       let chat = document.createElement("div");
@@ -271,7 +274,7 @@
     document.getElementById("back").onclick = function () {
       console.log("back clicked")
       show("userside")
-      socket.emit("leave_channel",document.getElementById("topic").innerText); // soon we will not send topic.id
+      socket.emit("leave_channel", document.getElementById("topic").innerText); // soon we will not send topic.id
     };
     function show(side) {
       if (side === "chatside") {
@@ -285,9 +288,12 @@
           document.getElementById("chatside").style.display = "none"
           document.getElementById("userside").style.display = "block"
           document.getElementById("back").style.display = "none"
-          document.getElementsByClassName("active")[0].classList.remove("active")
+          chatbox.innerHTML=""
+          if (document.getElementsByClassName("active").length != 0) {
+            document.getElementsByClassName("active")[0].classList.remove("active")
+          }
+        }
       }
-    }
     }
     function goto(Newchannel) {
       show("chatside")
@@ -310,9 +316,6 @@
     }
     function gotoserver(Newserver) {
       if (document.getElementById("server").innerText != Newserver) {
-        console.log("sending gotoserver()")
-        document.getElementById("server").innerText=Newserver
-        document.getElementById("download").href="/download/"+Newserver
         socket.emit("changeServer", Newserver)
       }
     }

@@ -111,26 +111,27 @@ server={
 
 @app.route('/upload',methods=["POST"])
 def upload_db():
-    file=request.files['file']
-    if file and file.filename.split(".")[1]=="sqlite3":
-        uploads_dir = os.path.join('db')
-        if os.path.exists(uploads_dir)==False:
-            os.makedirs(uploads_dir)
-        file.save(os.path.join(uploads_dir,secure_filename(file.filename))) 
-        data=secure_filename(file.filename).split(".")[0]
-        app.config['SQLALCHEMY_BINDS'][data] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
-        Engine = create_engine(app.config['SQLALCHEMY_BINDS'][str(data)])
-        metadata=MetaData()
-        metadata.reflect(Engine)
-        Base=automap_base(metadata=metadata)
-        Base.prepare()
-        Session=sessionmaker(bind=Engine)
-        server[data]=Session()
-        room_dict[data]={}
-        session["server"]=None
-        return redirect("/servers")
-    else:
-        return render_template("message.html",msg="select a valid database file or rename it except db.sqlite3.")
+    files=request.files.getlist('files')
+    for file in files:
+        if file and file.filename.split(".")[1]=="sqlite3":
+            uploads_dir = os.path.join('db')
+            if os.path.exists(uploads_dir)==False:
+                os.makedirs(uploads_dir)
+            file.save(os.path.join(uploads_dir,secure_filename(file.filename))) 
+            data=secure_filename(file.filename).split(".")[0]
+            app.config['SQLALCHEMY_BINDS'][data] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
+            Engine = create_engine(app.config['SQLALCHEMY_BINDS'][str(data)])
+            metadata=MetaData()
+            metadata.reflect(Engine)
+            Base=automap_base(metadata=metadata)
+            Base.prepare()
+            Session=sessionmaker(bind=Engine)
+            server[data]=Session()
+            room_dict[data]={}
+            session["server"]=None
+        else:
+            return render_template("message.html",msg="select a valid database file or rename it except db.sqlite3.")
+    return redirect("/servers")
 
 @app.route('/servers',methods=["POST","GET"])
 def change_db():
@@ -183,10 +184,13 @@ def changeServer(newServer):
     oldServer=session.get("server")
     if oldServer:
         leave_room(oldServer)
+    try:
+        channels=server[newServer].query(channel).all()
+        channel_list=[newServer]
+    except:
+        socketio.emit("refresh",to=request.sid)
     session["server"]=newServer
     join_room(newServer)
-    channels=server[newServer].query(channel).all()
-    channel_list=[]
     for i in channels:
         channel_list.append([i.name,i.user.username])
     socketio.emit("showNewServer",channel_list,to=request.sid)    
@@ -316,7 +320,7 @@ def index():
     elif session.get("chat")!=None:
         return redirect("/chat/"+str(session.get("frnd")))
     else:
-        return redirect("/channel")
+        return redirect("/channels")
 
 @app.route('/login',methods=["GET","POST"])
 def login():
@@ -363,7 +367,7 @@ def login():
                     return render_template("message.html",msg="Username exist")
             pswdHash=sha256_crypt.encrypt(name+password)
             for srvr in serverList:
-                user=users(username=name,password=passHash,balance=0)
+                user=users(username=name,password=pswdHash,balance=0)
                 server[srvr].add(user)
                 server[srvr].commit()
                 session["login"]=True
@@ -371,7 +375,7 @@ def login():
                 if session.get("server")==None:
                     session["server"]=srvr
             session["myserver"]=serverList[:]
-            return  redirect("/")
+            return  redirect("/channels")
 
             
 @app.route('/logout',methods=["GET","POST"])  

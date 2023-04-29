@@ -37,7 +37,9 @@ body
     display:inline-block;
     width: 80%;
     height: 7%;
-    line-height: 30px;
+    max-height: 100px;
+    line-height: 32px;
+    font-size: 95%;
     text-align: center;
     background-color: #497d33a2;
     border-radius: 10%;
@@ -195,7 +197,6 @@ body
     width: 45px;
     height: 45px;
     overflow: hidden;
-    border-radius: 50%;
     margin-right: 10px;
     margin-left: 7px;
 }
@@ -283,7 +284,7 @@ body
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 .channel_list .block .details
 {
