@@ -172,18 +172,6 @@ def change_db():
 
 
 
-@app.route('/',methods=["GET","POST"])
-def index():
-    if session.get("server")==None:
-        return redirect("/servers")
-    if session.get("id")==None:
-        return redirect("/login")
-    # if session.get("channel")!=None:
-    #     return redirect("/channels")
-    elif session.get("chat")!=None:
-        return redirect("/chat/"+str(session.get("frnd")))
-    else:
-        return redirect("/app")
 
 # @socketio.on('join_server')
 # def handel_join_server():
@@ -197,8 +185,7 @@ def changeServer(newServer):
         leave_room(oldServer)
     session["server"]=newServer
     join_room(newServer)
-    curr=newServer
-    channels=server[curr].query(channel).all()
+    channels=server[newServer].query(channel).all()
     channel_list=[]
     for i in channels:
         channel_list.append([i.name,i.user.username])
@@ -320,6 +307,16 @@ def changeChannel(newChannel):
     socketio.emit('showHistory',Posts[::-1],to=request.sid)
 
 
+@app.route('/',methods=["GET","POST"])
+def index():
+    if session.get("server")==None:
+        return redirect("/servers")
+    if session.get("login")==None:
+        return redirect("/login")
+    elif session.get("chat")!=None:
+        return redirect("/chat/"+str(session.get("frnd")))
+    else:
+        return redirect("/channel")
 
 @app.route('/login',methods=["GET","POST"])
 def login():
@@ -333,28 +330,28 @@ def login():
         else:
             return redirect("/channels")
     else:
-        name=str(request.form.get("username")).lower()
-        password=str(request.form.get("password")).lower()
+        name=str(request.form.get("username"))
+        password=str(request.form.get("password"))
         operation=request.form.get("operation")
         if operation == "login":
             myServer=[]
+            pswdHash=None
             for srvr in server.keys():
                 user = server[srvr].query(users).filter_by(username=name).first()
                 if user!=None:
-                    if sha256_crypt.verify(str(name+password), user.password):
+                    if pswdHash!=None:
+                        if sha256_crypt.verify(str(name+password), user.password):
+                            pswdHash=user.password
+                    if pswdHash == user.password:
                         session["login"]=True
                         myServer.append(srvr)
                         session[srvr+"id"]=user.id
                         if session["server"]==None:
                             session["server"]=srvr
+            if len(myServer)==0:
+                    return render_template("message.html",msg="Username or password are incorrect")
             session["myserver"]=myServer[:]
             return redirect("/channels")
-            # return render_template("searchresult.html",name=realuser,tables=tables,mysrvr=myServer,server=srvr)
-                #        return  redirect("/")
-                #     else:    
-                #         return render_template("message.html",msg="incorrect password")
-                # else:        
-                #     return render_template("message.html",msg="Username doesn't exist")
 
         if operation == "register":
             serverList=request.form.getlist("server[]")
@@ -364,8 +361,9 @@ def login():
                 user=server[srvr].query(users).filter_by(username=name).first()
                 if user!=None:
                     return render_template("message.html",msg="Username exist")
+            pswdHash=sha256_crypt.encrypt(name+password)
             for srvr in serverList:
-                user=users(username=name,password=sha256_crypt.encrypt(name+password),balance=0)
+                user=users(username=name,password=passHash,balance=0)
                 server[srvr].add(user)
                 server[srvr].commit()
                 session["login"]=True
