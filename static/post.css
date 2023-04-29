@@ -321,6 +321,7 @@ a{
 }
 #breaker{
     visibility: hidden;
+    height: 5px;
 }
 .message_p
 {

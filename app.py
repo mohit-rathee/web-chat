@@ -251,9 +251,9 @@ def handel_recieve_message(data):
     user = server[curr].query(users).filter_by(id=id).first()
     current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
     post=posts(data=data,sender_id=user.id,channel_id=current_channel.id)
-    last_posts=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(1)
-    lastpost=last_posts[0]
-    socketio.emit('show_message',[lastpost.user.username,lastpost.data,lastpost.time.strftime("%D  %H:%M")], room = curr+channel_name)
+    server[curr].add(post)
+    server[curr].commit()
+    socketio.emit('show_message',[post.user.username,post.data,post.time.strftime("%D  %H:%M")], room = curr+channel_name)
 
 
     # socketio.emit('show_message',[data["user"],data["text"]], room =data['channel'])
