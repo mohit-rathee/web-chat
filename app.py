@@ -14,10 +14,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import create_engine, MetaData, Column
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
 import gevent
-import warnings
-
-# Filter out MonkeyPatchWarning
-warnings.filterwarnings('ignore', category=MonkeyPatchWarning)
 
 
 app = Flask(__name__)
