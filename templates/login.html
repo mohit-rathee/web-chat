@@ -177,17 +177,17 @@
     <div class="registration form">
       <header>Signup</header>
       <form action="/login" method="post" id="my-form">
-        <input name="username"  required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
-        <input name="password"  required type="password" placeholder="Create a password" />
+        <input name="username" required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
+        <input name="password" required type="password" placeholder="Create a password" />
         <div class="server-container">
-          <input class="server" type="checkbox" name="server[]" value="app"  > app
+          <input class="server" type="checkbox" name="server[]" value="app"> app
           {% for server in servers: %}
-            <input class="server" type="checkbox" name="server[]" value="{{server}}" > {{server}}
+          <input class="server" type="checkbox" name="server[]" value="{{server}}"> {{server}}
           {% endfor %}
         </div>
         <input type="hidden" name="operation" value="register" />
         <!-- <input type="password" placeholder="Confirm your password" /> -->
-        <input type="submit"  class="button" value="Signup" />
+        <input type="submit" class="button" value="Signup" />
       </form>
       <div class="signup">
         <span class="signup">Already have an account?
@@ -202,5 +202,7 @@
     </div>
   </div>
 </body>
+   
+<!-- document.getElementById("container")="<header>We found different password in "+data+" </header>"+'<input type="button" class="button" value="Use given password" onclick="socket.emit("change",True)"><input type="button" class="button" value="Keep new password" onclick="socket.emit("change",False)">' -->
 
 </html>

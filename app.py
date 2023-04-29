@@ -340,21 +340,44 @@ def login():
         if operation == "login":
             myServer=[]
             pswdHash=None
+            done=[]
+            undone=[]
             for srvr in server.keys():
                 user = server[srvr].query(users).filter_by(username=name).first()
                 if user!=None:
                     if pswdHash==None:
                         if sha256_crypt.verify(str(name+password), user.password):
                             pswdHash=user.password
-                    if pswdHash == user.password:
-                        session["login"]=True
+                            session["login"]=True
+                        else:
+                            undone.append(srvr)
+                    if pswdHash:            
+                        if pswdHash != user.password:
+                            if sha256_crypt.verify(str(name+password), user.password):
+                                user.password=pswdHash
+                                server[srvr].commit()
+                            else:
+                                user.password=pswdHash
+                                server[srvr].commit()
+                                done.append(srvr)
                         myServer.append(srvr)
                         session[srvr+"id"]=user.id
                         if session["server"]==None:
                             session["server"]=srvr
             if len(myServer)==0:
                     return render_template("message.html",msg="Username or password are incorrect")
+            for srvr in undone:
+                user = server[srvr].query(users).filter_by(username=name).first()
+                user.password=pswdHash
+                server[srvr].commit()
+                myServer.append(srvr)
+                session[srvr+"id"]=user.id
+                if session["server"]==None:
+                    session["server"]=srvr
+                done.append(srvr)
             session["myserver"]=myServer[:]
+            if done:
+                return render_template("message.html",msg="YOUR PASSWORD IN "+" ".join(done)+" IS UPDATED")
             return redirect("/channels")
 
         if operation == "register":
@@ -370,21 +393,22 @@ def login():
                 user=users(username=name,password=pswdHash,balance=0)
                 server[srvr].add(user)
                 server[srvr].commit()
-                session["login"]=True
-                session[srvr+"id"] =user.id
-                if session.get("server")==None:
-                    session["server"]=srvr
-            session["myserver"]=serverList[:]
-            return  redirect("/channels")
+            return redirect("/login")
 
-            
+            #     session["login"]=True
+            #     session[srvr+"id"] =user.id
+            #     if session.get("server")==None:
+            #         session["server"]=srvr
+            # session["myserver"]=serverList[:]
+            # return  redirect("/channels")
+
+
+
+
+
 @app.route('/logout',methods=["GET","POST"])  
 def logout():
-    session["login"]=None
-    session["myserver"]=None
-    session["server"]=None
-    session["id"]=None
-    session["channel"]=None
+    session.clear()
     return redirect("/servers")
 
 
