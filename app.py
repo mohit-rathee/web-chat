@@ -36,7 +36,7 @@ class users(db.Model):
     balance=db.Column(db.Integer, nullable=True, default=0)              #user balance
     post=db.relationship('posts',backref='user')                         #relation#
     topic=db.relationship('channel',backref='user')
-    chat=db.relationship('chats',backref='sender')
+    chat=db.relationship('chats',backref='user')
     short_message=db.relationship('short_messages',backref='sender')
     short_post=db.relationship('short_posts',backref='sender')
     def __init__(self, username, password, balance):
@@ -195,18 +195,30 @@ def changeServer(newServer):
         channel_list.append([i.name,i.user.username])
     socketio.emit("showNewServer",channel_list,to=request.sid)    
 
+@socketio.on("search_text")
+def search(text):
+    curr=session.get("server")
+    channel_list=server[curr].query(channel).filter(channel.name.like("%"+text+"%")).all()
+    user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
+    result=[curr]
+    for item in channel_list:
+        result.append([item.name,item.user.username])
+    for item in user_list:
+        result.append([item.username,None])
+    socketio.emit("showNewServer",result,to=request.sid)
+
 @socketio.on('join_channel')
 def handle_join_channel(curChannel):
     curr=session.get("server")
     id = session.get(curr+"id")
     user=server[curr].query(users).filter_by(id=id).first()
-    # print("before joining")
-    # print(socketio.server.manager.rooms)
+    print("before joining")
+    print(socketio.server.manager.rooms)
     join_room(curr+curChannel)
-    # print("after joining")
-    # print(socketio.server.manager.rooms)
-    # print("Request id : "+str(request.sid))
-    # print("================================================")
+    print("after joining")
+    print(socketio.server.manager.rooms)
+    print("Request id : "+str(request.sid))
+    print("================================================")
     if curChannel in room_dict[curr]:
         if user.username not in room_dict[curr][curChannel]:
             room_dict[curr][curChannel].append(user.username)
@@ -218,13 +230,13 @@ def handle_join_channel(curChannel):
 def handle_leave_channel(prevChannel):
     curr=session.get("server")
     id = session.get(curr+"id")
-    # print("before leaving")
-    # print(socketio.server.manager.rooms)
+    print("before leaving")
+    print(socketio.server.manager.rooms)
     leave_room(curr+prevChannel)
-    # print("after leaving")
-    # print(socketio.server.manager.rooms)
-    # print("Request id : "+str(request.sid))
-    # print("================================================")
+    print("after leaving")
+    print(socketio.server.manager.rooms)
+    print("Request id : "+str(request.sid))
+    print("================================================")
     session[curr+"channel"]=None
     user=server[curr].query(users).filter_by(id=id).first()
     if prevChannel in room_dict[curr]:
@@ -240,47 +252,74 @@ def handel_recieve_message(data):
     curr=session.get("server")
     id=session.get(curr+"id")
     channel_name=session.get(curr+"channel")
-    user = server[curr].query(users).filter_by(id=id).first()
-    current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-    post=posts(data=data,sender_id=user.id,channel_id=current_channel.id)
-    server[curr].add(post)
-    server[curr].commit()
-    socketio.emit('show_message',[post.user.username,post.data,post.time.strftime("%D  %H:%M")], room = curr+channel_name)
+    key=session.get(curr+"key")
+    if channel_name:
+        current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
+        msg=posts(data=data,sender_id=id,channel_id=current_channel.id)
+        server[curr].add(msg)
+        server[curr].commit()
+        socketio.emit('show_message',[msg.user.username,msg.data,msg.time.strftime("%D  %H:%M")], room = curr+channel_name)
+    else:
+        msg=chats(data=data,key=key,sender_id=id)
+        db.session.add(msg)
+        db.session.commit()
+        socketio.emit('show_message',[msg.sender.username,msg.data,msg.time.strftime("%D  %H:%M")], room = curr+key)
 
+
+# @socketio.on('recieve_private_message')
+# def handel_recieve_private_message(data):
+#     curr=session.get("server")
+#     id = session.get(curr+"id")
+#     prvt_key=session.get("key")
+#     socketio.emit('show_private_message',[data,chat.data,chat.time.strftime("%D  %H:%M")], room=key)
 
     # socketio.emit('show_message',[data["user"],data["text"]], room =data['channel'])
+# @socketio.on("changeFrnd")
+# def handel_change_Frnd(Frnd):
+#     curr=session.get("server")
+#     id=session.get(curr+"id")
+#     frnd_id
 
 @socketio.on('enter_private')
 def handle_enter_private(data):
-    key=private_key_string(data['myId'], data['frndId'])
-    join_room(key)
-    socketio.emit('notify',data['name'],room=key)
-
-@socketio.on('recieve_private_message')
-def handel_recieve_private_message(data):
     curr=session.get("server")
-    id = session.get(curr+"id")
-    frndId = session.get("frnd")
-    key = private_key_string(id, frndId)
-    prvt_key = private_key(id, frndId)
-    try:
-        chat=chats(data=data['text'],key=prvt_key,sender_id=id)
-        db.session.add(chat)
-        db.session.commit()
-    except:
-        return render_template("message.html",msg="can't post in chats")
-    last_chat=chats.query.order_by(chats.id.desc()).filter(chats.key==prvt_key).limit(1)
-    lastchat=last_chat[0]
-    socketio.emit('show_private_message',[data["name"],lastchat.data,lastchat.time.strftime("%D  %H:%M")], room=key)
+    if session.get(curr+"channel"):
+        handle_leave_channel(session.get(curr+"channel"))
+    id=session.get(curr+"id")
+    user=server[curr].query(users).filter_by(id=id).first()
+    frnd=server[curr].query(users).filter_by(username=data).first()
+    key=private_key(id,frnd.id)
+    session[curr+"key"]=key
+    join_room(curr+key)
+    live=[user.username]
+    print(id,frnd.id)
+    print(socketio.server.manager.rooms["/"][curr+key])
+    if len(socketio.server.manager.rooms["/"][curr+key])==2:
+        live.append(frnd.username)
+    history=server[curr].query(chats).order_by(chats.id.desc()).filter_by(key=key).limit(30)
+    History=[None]
+    for i in history:
+        History.append([i.user.username,i.data,i.time.strftime("%D  %H:%M")])
+    if len(History)>1:
+        History.pop(0)
+        messageID=history[-1].id
+        History.append(messageID)
+    socketio.emit("showHistory",History[::-1],to=request.sid)
+    print(live,key)
+    socketio.emit('notify',live,room=curr+key)
+
 
 @socketio.on('getHistory')
-def getHistory(post):
+def getHistory(last):
     curr=session.get("server")
     id=session.get('id')
     channel_name=session.get(curr+"channel")
-    current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-    history=server[curr].query(posts).order_by(posts.id.desc()).filter(and_(posts.channel_id==current_channel.id,posts.id<post)).limit(30)
     History=[None]
+    if channel_name:
+        current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
+        history=server[curr].query(posts).order_by(posts.id.desc()).filter(and_(posts.channel_id==current_channel.id,posts.id<last)).limit(30)
+    else:
+        history=server[curr].query(chats).order_by(chats.id.desc()).filter(and_(chats.id<last,chats.key==session.get(curr+"key"))).limit(30)
     for i in history:
         History.append([i.user.username,i.data,i.time.strftime("%D  %H:%M")])
     if len(History)>1:

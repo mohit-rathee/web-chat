@@ -31,9 +31,9 @@
         </div>
       </div>
       <div class="search_channel">
-        <div>
-          <form action="/app" method="post">
-            <input autocomplete="off" name="search" placeholder="Search channel/person" type="text"
+        <div id="search_form">
+          <form>
+            <input autocomplete="off" id="search_input" placeholder="Search channel/person" type="text"
               class="search_channel" />
           </form>
         </div>
@@ -187,9 +187,9 @@
         </div>
 
         <div class="chatbox_input" id="chatinput">
-          <form action="/channels" method="post" class="form">
+          <form class="form">
             <input autofocus autocomplete="off" type="text" name="post" placeholder="Message " id="text_message" />
-            <input type="hidden" name="hide" default="False" value="{{hide}}" id="inputfield" />
+            <!-- <input type="hidden" name="hide" default="False" value="{{hide}}" id="inputfield" /> -->
           </form>
         </div>
       </div>
@@ -219,13 +219,18 @@
       for (let i = 1; i < data.length; i++) {
         let channel = document.createElement("div")
         channel.classList.add("block")
-        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + data[i][0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + data[i][1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
-        channel.setAttribute('onclick', 'if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("' + data[i][0] + '")')
+        if (data[i][1] != null) {
+          channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + data[i][0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + data[i][1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+          channel.setAttribute('onclick', 'if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("' + data[i][0] + '")')
+        } else {
+          channel.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + data[i][0] + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>' 
+          channel.setAttribute('onclick', 'if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};gotofrnd("' + data[i][0] + '")')
+        }
         channel_list.appendChild(channel)
       };
       show("userside")
     })
-    socket.on("refresh", function(){
+    socket.on("refresh", function () {
       location.reload
     })
     socket.on("show_message", function (data) {
@@ -256,10 +261,11 @@
       chat.scrollIntoView();
     });
 
-    let message_form = document.getElementById("chatinput");
-    let message_input = document.getElementById("text_message");
-
-    document.getElementById("chatinput").onsubmit = function () {
+    const message_form = document.getElementById("chatinput");
+    const message_input = document.getElementById("text_message");
+    const search_form = document.getElementById("search_form");
+    const search_input = document.getElementById("search_input");
+    message_form.onsubmit = function () {
       let message = message_input.value.trim();
       if (message.length) {
         socket.emit("recieve_message", String(message));
@@ -267,6 +273,13 @@
       }
       return false;
     };
+    search_form.onsubmit = function () {
+      let search = search_input.value.trim();
+      socket.emit("search_text", String(search));
+      search_input.value = "";
+      return false;
+    };
+
     function gethistory() {
       socket.emit("getHistory", ID);
     }
@@ -287,14 +300,15 @@
           document.getElementById("chatside").style.display = "none"
           document.getElementById("userside").style.display = "block"
           document.getElementById("back").style.display = "none"
-          chatbox.innerHTML=""
+          chatbox.innerHTML = ""
           if (document.getElementsByClassName("active").length != 0) {
             document.getElementsByClassName("active")[0].classList.remove("active")
           }
         }
       }
     }
-    function goto(Newchannel) {
+
+    function emphasize(Newchannel) {
       show("chatside")
       if (document.getElementById("topic").innerText != Newchannel) {
         let active = document.getElementsByClassName("active")[0];
@@ -308,8 +322,23 @@
             document.getElementById("topic").innerText = Newchannel;
           }
         }
+      } else { return 0; }
+    }
+    function goto(Newchannel) {
+      x = emphasize(Newchannel)
+      if (x != 0) {
         socket.emit("changeChannel", Newchannel);
-      } else {
+      }
+      else {
+        return false;
+      }
+    }
+    function gotofrnd(Frnd) {
+      x = emphasize(Frnd)
+      if (x != 0) {
+        socket.emit("enter_private", Frnd);
+      }
+      else {
         return false;
       }
     }
