@@ -227,8 +227,9 @@ def changeChannel(newChannel):
     curr=session.get("server")
     id = session.get(curr+'id')
     prevChannel = session.get('channel')
-    if prevChannel:
-        handle_leave_channel(prevChannel)
+    if not prevChannel:
+        prevChannel=session.get("key")
+    handle_leave_channel(prevChannel)
     current_channel=server[curr].query(channel).filter_by(name=newChannel).first()
     session["channel"]=current_channel.name
     handle_join_channel(current_channel.name)
