@@ -291,10 +291,12 @@
       socket.emit("getHistory", ID);
     }
     document.getElementById("back").onclick = function () {
+      userList.innerHTML = "";
       document.getElementById("topic").innerText=""
       document.getElementById("chats").innerHTML=""
+
       show("userside")
-      socket.emit("leave_channel", document.getElementById("topic").innerText); // soon we will not send topic.id
+      socket.emit("leave_channel", false); // soon we will not send topic.id
     };
     function show(side) {
       if (side === "chatside") {

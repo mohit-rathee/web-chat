@@ -246,6 +246,10 @@ def changeChannel(newChannel):
 def handle_leave_channel(prevChannel):
     curr=session.get("server")
     name=session.get("name")
+    if not prevChannel:
+        prevChannel=session.get("channel")
+    if not prevChannel:
+        prevChannel=session.get("key")
     # print("before leaving")
     # print(socketio.server.manager.rooms)
     leave_room(curr+prevChannel)
@@ -254,6 +258,7 @@ def handle_leave_channel(prevChannel):
     # print("Request id : "+str(request.sid))
     # print("================================================")
     session["channel"]=None
+    session["key"]=None
     if prevChannel in room_dict[curr]:
         if name in room_dict[curr][prevChannel]:
             room_dict[curr][prevChannel].remove(name)
