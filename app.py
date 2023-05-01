@@ -127,8 +127,7 @@ def upload_db():
             Base.prepare()
             Session=sessionmaker(bind=Engine)
             server[data]=Session()
-            room_dict[data]={}
-            session["server"]=None
+            session.clear()
             room_dict[data]={"/":[]}
         else:
             return render_template("message.html",msg="select a valid database file or rename it except db.sqlite3.",goto="/servers")
@@ -230,7 +229,8 @@ def changeChannel(newChannel):
     prevChannel = session.get('channel')
     if not prevChannel:
         prevChannel=session.get("key")
-    handle_leave_channel(prevChannel)
+    if prevChannel:
+        handle_leave_channel(prevChannel)
     current_channel=server[curr].query(channel).filter_by(name=newChannel).first()
     session["channel"]=current_channel.name
     handle_join_channel(current_channel.name)
@@ -284,8 +284,8 @@ def handel_recieve_message(data):
         socketio.emit('show_message',[name,data,msg.time.strftime("%D  %H:%M")], room = curr+channel_name)
     else:
         msg=chats(data=data,key=key,sender_id=id)
-        db.session.add(msg)
-        db.session.commit()
+        server[curr].add(msg)
+        server[curr].commit()
         socketio.emit('show_message',[name,data,msg.time.strftime("%D  %H:%M")], room = curr+key)
 
 
@@ -452,7 +452,7 @@ def login():
             myserver=[]
             serverList=request.form.getlist("server[]")
             if len(serverList)==0:
-                return render_template("message.html",msg="Select atleast one server")
+                return render_template("message.html",msg="Select atleast one server", goto="/login")
             for srvr in serverList:
                 user=server[srvr].query(users).filter_by(username=name).first()
                 if user!=None:
@@ -462,7 +462,7 @@ def login():
                         myserver.append(srvr)
                         session["name"]=user.username
                     else:
-                        return render_template("message.html",msg="Username exist")
+                        return render_template("message.html",msg="Username exist",goto="/login")
             if not pswdHash:
                 pswdHash=sha256_crypt.encrypt(str(name+password))
             for srvr in serverList:
@@ -475,7 +475,7 @@ def login():
                     myserver.append(srvr)
             session["myserver"]=myserver[:]
             if len(serverList)==len(server):
-                return "/channels"
+                return redirect("/channels")
             done=loginlogic(name, password)
             if done:
                 return redirect("/channels")
