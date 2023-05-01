@@ -161,10 +161,11 @@ def change_db():
 @socketio.on("changeServer")
 def changeServer(newServer):
     oldServer=session.get("server")
-    leave_room(oldServer)
-    if session.get("name") in room_dict[oldServer]["/"]:
-        room_dict[oldServer]["/"].remove(session.get("name"))
-        socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
+    if oldServer:
+        leave_room(oldServer)
+        if session.get("name") in room_dict[oldServer]["/"]:
+            room_dict[oldServer]["/"].remove(session.get("name"))
+            socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
     if newServer:
         try:
             channels=server[newServer].query(channel).all()
@@ -375,12 +376,18 @@ def index():
         return redirect("/channels")
 
 def loginlogic(name,password):
-    myServer=[]
+    myServer=session.get("myserver")
     pswdHash=None
+    if myServer!=None:
+        session["server"]=myServer[0]
+        user=server[myServer[0]].query(users).filter_by(id=session.get(myServer[0])).first()
+        pswdHash=user.password
+    else:
+        myServer=[]
     done=[]
     undone=[]
     for srvr in server.keys():
-        if not session.get(srvr):
+        if srvr not in myServer:
             user = server[srvr].query(users).filter_by(username=name).first()
             if user!=None:
                 if pswdHash==None:
@@ -441,21 +448,31 @@ def login():
             else:
                 return render_template("message.html",msg="Username or password are incorrect",goto="/login")
         if operation == "register":
+            pswdHash=""
+            myserver=[]
             serverList=request.form.getlist("server[]")
             if len(serverList)==0:
                 return render_template("message.html",msg="Select atleast one server")
             for srvr in serverList:
                 user=server[srvr].query(users).filter_by(username=name).first()
                 if user!=None:
-                    return render_template("message.html",msg="Username exist")
-            pswdHash=sha256_crypt.encrypt(name+password)
-            myserver=[]
+                    if sha256_crypt.verify(str(name+password), user.password):
+                        pswdHash=user.password
+                        session[srvr]=user.id
+                        myserver.append(srvr)
+                        session["name"]=user.username
+                    else:
+                        return render_template("message.html",msg="Username exist")
+            if not pswdHash:
+                pswdHash=sha256_crypt.encrypt(str(name+password))
             for srvr in serverList:
-                user=users(username=name,password=pswdHash,balance=0)
-                server[srvr].add(user)
-                server[srvr].commit()
-                session[srvr]=user.id
-                myserver.append(srvr)
+                if srvr not in myserver:
+                    user=users(username=name,password=pswdHash,balance=0)
+                    server[srvr].add(user)
+                    server[srvr].commit()
+                    session[srvr]=user.id
+                    session["name"]=user.username
+                    myserver.append(srvr)
             session["myserver"]=myserver[:]
             if len(serverList)==len(server):
                 return "/channels"
@@ -561,8 +578,10 @@ def channel_chat():
     curr=session.get("server")
     name=session.get("name")
     myserver=session.get("myserver")
-    return render_template("channel_chat.html",name=name,server=curr,mysrvr=myserver)
-        
+    if myserver!=None:
+        return render_template("channel_chat.html",name=name,server=curr,mysrvr=myserver)
+    session.clear()
+    return redirect("/login")    
                 
 
 # @app.route("/chat/<int:frnd>/<action>=<int:chat>",methods=["GET","POST"])
@@ -664,6 +683,19 @@ def download_database(server):
 
 # @app.route('/test',methods=['GET'])
 # def test():
+#     testA="$5$rounds=535000$geol8OJlueagKggX$yfCV4SDlZJTzjCy4gOhUBqmO5uOArL.QzHjx6NXY4L1"
+#     testB="$5$rounds=535000$UJ4XGia5irCQ6V1f$JK4MLGqMgFnsb8OxYqebFgxCCafLHpWhJHC9mpFwCAA"
+#     if sha256_crypt.verify("montirathee",testA):
+#         print("testA")
+#     else:
+#         print("Not testA")
+#     if sha256_crypt.verify("montirathee",testB):
+#         print("testB")
+#     else:
+#         print("Not testB")
+#     return render_template("message.html",msg="test",goto="/test")
+
+
 #     # file=request.files['file']
     # if file and file.filename!="db.sqlite3" and file.filename.rsplit(".")[1]=="sqlite3":
     #     uploads_dir = os.path.join('db')
@@ -682,3 +714,6 @@ def download_database(server):
 
 if __name__ == '__main__':
     socketio.run(app)
+
+
+
