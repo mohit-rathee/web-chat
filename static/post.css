@@ -119,7 +119,10 @@ body
     align-items: center;
     padding: 0 15px;
 }
-
+#chats 
+{
+    min-height: 105%;
+}
 .imgtext
 {
     position: relative;
@@ -150,6 +153,7 @@ body
     width: 150px;
     border-radius: 5px;
     margin-left: 10px;
+
 }
 
 #chat-users {
@@ -167,6 +171,7 @@ body
     padding: 5px;
     background-color: aliceblue;
     border-bottom: 1px solid #ccc;
+    cursor: pointer;
 }
 
 #user-list li:last-child {
@@ -419,6 +424,7 @@ a{
 {
     background: #58b9b9;
     text-align: left;
+    cursor: pointer;
 
 }
 .frnd_message p

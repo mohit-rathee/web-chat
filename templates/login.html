@@ -180,7 +180,6 @@
         <input name="username" required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
         <input name="password" required type="password" placeholder="Create a password" />
         <div class="server-container">
-          <input class="server" type="checkbox" name="server[]" value="app"> app
           {% for server in servers: %}
           <input class="server" type="checkbox" name="server[]" value="{{server}}"> {{server}}
           {% endfor %}
@@ -196,9 +195,7 @@
       </div>
     </div>
     <div style="align-items: center; display: block;">
-      <form action="/servers" method="post">
-        <input type="submit" value="Back" class="backbutton" />
-      </form>
+        <a href="/servers">Back</a>
     </div>
   </div>
 </body>

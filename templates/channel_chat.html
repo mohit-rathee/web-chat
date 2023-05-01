@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{name.username}}</title>
+  <title>{{name}}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='post.css') }}" />
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" />
 </head>
@@ -27,7 +27,7 @@
           <div class="userimg">
             <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
           </div>
-          <h4>{{name.username}}<br /><span>Server:</span>&nbsp;<span id="server">{{server}}</span></h4>
+          <h4>{{name}}<br /><span>Server:</span>&nbsp;<span id="server">{{server}}</span></h4>
         </div>
       </div>
       <div class="search_channel">
@@ -39,7 +39,7 @@
         </div>
       </div>
       <div class="channel_list" id="channel_list">
-        {% for table in tables: %}
+        <!-- {% for table in tables: %}
         <div class="block"
           onclick='if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("{{table.name}}")'>
           <div class="imgbx">
@@ -52,11 +52,11 @@
             </div>
             <div class="creator">
               <p>created by {{table.user.username}}</p>
-              <!-- <b onclick="location.href='/delete'">x</b> -->
+              <!-- <b onclick="location.href='/delete'">x</b> 
             </div>
           </div>
         </div>
-        {% endfor %}
+        {% endfor %} -->
         <!-- profile pic will be added later -->
       </div>
     </div>
@@ -65,14 +65,18 @@
         <div class="header">
           <div class="useless">
             <a id="download" href="download/{{server}}">Download State</a>
-            <p onclick="location.href='/logout'" id="delete">Logout</p>
+            <p onclick='socket.emit("changeServer",false)' id="delete">Logout</p>
+            <form id="logout" action="/servers" method="post" style="display: none;"></form>
           </div>
         </div>
         <div class="chatbox" id="user" style="height: 68vh;">
           <p>
-          <h2>Welcome {{name.username}}</h2><br>
-          <h3>Your balance: {{name.balance}}</h3>
+          <h2>Welcome {{name}}</h2><br>
           </p>
+          <h4>People live in <span id="server2">{{server}}</span>:</h4>
+          <ul style="cursor: pointer;" type="bullet" id="userlive">
+            <br>
+          </ul>
         </div>
         <div class="chatbox_input">
           <form action="/app" method="post" class="form">
@@ -89,6 +93,7 @@
                   font-style: italic;
                   color: rgb(59, 42, 181);
                   font-size: 95%;
+                  cursor: pointer;
                 " id="user-names"></small>
             <ul id="user-list"></ul>
           </div>
@@ -212,22 +217,28 @@
     const chatbox = document.getElementById("chats");
     const line = document.getElementById("breaker");
     const channel_list = document.getElementById("channel_list")
+
+    
+
     socket.on("showNewServer", function (data) {
       document.getElementById("server").innerText = data[0]
+      document.getElementById("server2").innerText = data[0]
       document.getElementById("download").href = "/download/" + data[0]
       channel_list.innerHTML = ""
-      for (let i = 1; i < data.length; i++) {
+      data[1].forEach(element => {
         let channel = document.createElement("div")
         channel.classList.add("block")
-        if (data[i][1] != null) {
-          channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + data[i][0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + data[i][1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
-          channel.setAttribute('onclick', 'if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("' + data[i][0] + '")')
-        } else {
-          channel.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + data[i][0] + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>' 
-          channel.setAttribute('onclick', 'if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};gotofrnd("' + data[i][0] + '")')
-        }
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + element[0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + element[1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.setAttribute('onclick', 'goto(this)')
         channel_list.appendChild(channel)
-      };
+      });
+      data[2].forEach(element => {
+        let channel = document.createElement("div")
+        channel.classList.add("block")
+        channel.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + element[0] + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.setAttribute('onclick', 'gotofrnd(this)')
+        channel_list.appendChild(channel)
+      });
       show("userside")
     })
     socket.on("refresh", function () {
@@ -237,7 +248,7 @@
       // TO ADD NEW CHILD OF MESSAGE //
       let chat = document.createElement("div");
       chat.classList.add("message");
-      if (data[0] == "{{name.username}}") {
+      if (data[0] == "{{name}}") {
         chat.classList.add("my_message");
       } else {
         chat.classList.add("frnd_message");
@@ -246,12 +257,8 @@
           const Frnd = document.createElement("div");
           Frnd.classList.add("message");
           Frnd.classList.add("frnd");
-          Frnd.innerHTML =
-            '<p><a href="/chat/' +
-            data[0] +
-            '" style="text-decoration: none;font-size: 1.1em; ">' +
-            data[0] +
-            "</a></p>";
+          Frnd.innerHTML ='<p>'+data[0] +'</p>';
+          Frnd.setAttribute('onclick','GOTOfrnd("'+data[0]+'")')
           chatbox.appendChild(Frnd);
         }
       }
@@ -284,7 +291,8 @@
       socket.emit("getHistory", ID);
     }
     document.getElementById("back").onclick = function () {
-      console.log("back clicked")
+      document.getElementById("topic").innerText=""
+      document.getElementById("chats").innerHTML=""
       show("userside")
       socket.emit("leave_channel", document.getElementById("topic").innerText); // soon we will not send topic.id
     };
@@ -308,44 +316,40 @@
       }
     }
 
-    function emphasize(Newchannel) {
+    function emphasize() {
       show("chatside")
-      if (document.getElementById("topic").innerText != Newchannel) {
-        let active = document.getElementsByClassName("active")[0];
-        active.classList.remove("active");
-        chatbox.innerHTML =
-          '<div class="arrow" onclick="gethistory()" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div><hr id="breaker">';
-        let blocks = document.getElementsByClassName("name");
-        for (var i = 0; i < blocks.length; i++) {
-          if (blocks[i].innerText == Newchannel) {
-            blocks[i].parentElement.parentElement.classList.add("active");
-            document.getElementById("topic").innerText = Newchannel;
-          }
-        }
-      } else { return 0; }
+      chatbox.innerHTML =
+        '<div class="arrow" onclick="gethistory()" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div><hr id="breaker">';
     }
+
     function goto(Newchannel) {
-      x = emphasize(Newchannel)
-      if (x != 0) {
+      let active=document.getElementsByClassName("active")
+      if (active[0] != Newchannel) {
+        if (active.length!=0) {
+          active[0].classList.remove("active");
+        }
+        Newchannel.classList.add("active")
+        Newchannel=Newchannel.innerText.split('\n')[0]
+        document.getElementsByClassName("active")
+        document.getElementById("topic").innerText = Newchannel
+        emphasize()
         socket.emit("changeChannel", Newchannel);
-      }
-      else {
-        return false;
       }
     }
     function gotofrnd(Frnd) {
-      x = emphasize(Frnd)
-      if (x != 0) {
-        socket.emit("enter_private", Frnd);
-      }
-      else {
-        return false;
+      let active=document.getElementsByClassName("active")
+      if (active[0] != Frnd) {
+        if (active.length!=0) {
+          active[0].classList.remove("active");
+        }
+        Frnd.classList.add("active")
+        document.getElementById("topic").innerText = Frnd.innerText
+        emphasize()
+        socket.emit("enter_private", Frnd.innerText);
       }
     }
     function gotoserver(Newserver) {
-      if (document.getElementById("server").innerText != Newserver) {
-        socket.emit("changeServer", Newserver)
-      }
+      socket.emit("changeServer", Newserver)
     }
 
     socket.on("showHistory", function (data) {
@@ -363,7 +367,7 @@
       for (var i = 1; i < data.length; i++) {
         var message = document.createElement("div");
         message.classList.add("message");
-        if (data[i][0] == "{{name.username}}") {
+        if (data[i][0] == "{{name}}") {
           message.classList.add("my_message");
         } else {
           message.classList.add("frnd_message");
@@ -371,12 +375,8 @@
             var Frnd = document.createElement("div");
             Frnd.classList.add("message");
             Frnd.classList.add("frnd");
-            Frnd.innerHTML =
-              '<p><a href="/chat/' +
-              data[i][0] +
-              '" style="text-decoration: none;font-size: 1.1em; ">' +
-              data[i][0] +
-              "</a></p>";
+            Frnd.innerHTML ='<p>' +data[i][0]+'</p>';
+            Frnd.setAttribute('onclick','GOTOfrnd("'+data[i][0]+'")')
             chatbox.insertBefore(Frnd, Mess);
           }
         }
@@ -401,21 +401,46 @@
       }
       Mess.scrollIntoView();
     });
-    socket.on("notify", function (data) {
-      console.log(data);
-      userList.innerHTML = "";
-      data.forEach((element) => {
+    function GOTOfrnd(user){
+      let block = document.getElementsByClassName("block") 
+      let create=true;
+      for(let i=0;i<block.length;i++){
+        if (block[i].innerText==user){
+          gotofrnd(block[i])
+          create=false;
+        }
+      }
+      if (create){
+        let plate=document.createElement("div")
+        plate.classList.add("block")
+        plate.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + user + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        plate.setAttribute('onclick', 'gotofrnd(this)')
+        channel_list.appendChild(plate)
+        gotofrnd(plate);
+      }
+    }
+    const userlive=document.getElementById("userlive")
+    socket.on("serverlive", function(data) {
+      userlive.innerHTML="";
+      data.forEach(element => {
         let user = document.createElement("li");
-        let link = document.createElement("a");
-        link.href = "/chat/" + element;
-        link.innerText = element;
-        user.appendChild(link);
+        user.innerText=element;
+        user.setAttribute('onclick','GOTOfrnd("'+element+'")')
+        userlive.appendChild(user);
+      })
+    })
+    socket.on("notify", function (data) {
+      userList.innerHTML = "";
+      data.forEach(element => {
+        let user = document.createElement("li");
+        user.innerText = element;
+        user.setAttribute('onclick','GOTOfrnd("'+element+'")')
         userList.appendChild(user);
       });
       let first3 = "you";
       for (var i = 0; i < 3; i++) {
         if (data[i]) {
-          if (data[i] != "{{name.username}}") {
+          if (data[i] != "{{name}}") {
             first3 += ", " + data[i];
           }
           if (i == 2) {
@@ -471,7 +496,9 @@
         }
       }, 500);
     });
-
+    socket.on("Logout",function(){
+      document.getElementById("logout").submit()
+    })
   </script>
 </body>
 
