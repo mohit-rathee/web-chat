@@ -39,25 +39,6 @@
         </div>
       </div>
       <div class="channel_list" id="channel_list">
-        <!-- {% for table in tables: %}
-        <div class="block"
-          onclick='if(document.getElementsByClassName("active").length==0){this.classList.add("active");console.log("reached")};goto("{{table.name}}")'>
-          <div class="imgbx">
-            <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
-          </div>
-          <div class="details">
-            <div class="name">
-              <h4>{{table.name}}</h4>
-              <p class="time"></p>
-            </div>
-            <div class="creator">
-              <p>created by {{table.user.username}}</p>
-              <!-- <b onclick="location.href='/delete'">x</b> 
-            </div>
-          </div>
-        </div>
-        {% endfor %} -->
-        <!-- profile pic will be added later -->
       </div>
     </div>
     <div class="rightside">
@@ -78,9 +59,9 @@
             <br>
           </ul>
         </div>
-        <div class="chatbox_input">
-          <form action="/app" method="post" class="form">
-            <input autocomplete="off" name="channel_name" placeholder="Add channel" type="text" class="search_channel">
+        <div id="newform" class="chatbox_input">
+          <form class="form">
+            <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel">
             <input type="submit" value="Add Topic">
           </form>
         </div>
@@ -98,11 +79,12 @@
             <ul id="user-list"></ul>
           </div>
         </div>
-        <div class="chatbox" id="chats">
+        <div id="box" class="chatbox">
           <div class="arrow" onclick="gethistory()" id="UP">
             <ion-icon name="arrow-up-outline"></ion-icon>
           </div>
-          <!-- {% for post in posts: %} {% if loop.previtem is not defined: %} {% if
+          <div id="chats">
+            <!-- {% for post in posts: %} {% if loop.previtem is not defined: %} {% if
           post.user.id==name.id: %}
 
           <div class="message my_message">
@@ -151,8 +133,8 @@
             </p>
           </div>
           {% endif %} {% endif %} {% endfor %} -->
-          <hr id="breaker" />
-          <!-- <div  class="useless">
+            <hr id="breaker" />
+            <!-- <div  class="useless">
                       <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
                       <button onclick="location.href='/delete_short'" id="delete">Delete</button>
                   </div>
@@ -183,12 +165,13 @@
                           {% endif %}
                       {% endfor %}
                   </div> -->
-          <script>
-            // var objDiv1 = document.getElementById("shortBox");
-            var objDiv2 = document.getElementById("chats");
-            // objDiv1.scrollTop = objDiv1.scrollHeight;
-            objDiv2.scrollTop = objDiv2.scrollHeight;
-          </script>
+            <!-- <script>
+              // var objDiv1 = document.getElementById("shortBox");
+              var objDiv2 = document.getElementById("box");
+              // objDiv1.scrollTop = objDiv1.scrollHeight;
+              objDiv2.scrollTop = objDiv2.scrollHeight;
+            </script> -->
+          </div>
         </div>
 
         <div class="chatbox_input" id="chatinput">
@@ -211,93 +194,37 @@
     var socket = io({
       transports: ["websocket"],
     });
-    socket.on("connect", function () {
-      socket.emit("changeServer", '{{server}}');
-    });
     const chatbox = document.getElementById("chats");
     const line = document.getElementById("breaker");
     const channel_list = document.getElementById("channel_list")
-
-    
-
-    socket.on("showNewServer", function (data) {
-      document.getElementById("server").innerText = data[0]
-      document.getElementById("server2").innerText = data[0]
-      document.getElementById("download").href = "/download/" + data[0]
-      channel_list.innerHTML = ""
-      data[1].forEach(element => {
-        let channel = document.createElement("div")
-        channel.classList.add("block")
-        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + element[0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + element[1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
-        channel.setAttribute('onclick', 'goto(this)')
-        channel_list.appendChild(channel)
-      });
-      data[2].forEach(element => {
-        let channel = document.createElement("div")
-        channel.classList.add("block")
-        channel.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + element[0] + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
-        channel.setAttribute('onclick', 'gotofrnd(this)')
-        channel_list.appendChild(channel)
-      });
-      show("userside")
-    })
-    socket.on("refresh", function () {
-      location.reload
-    })
-    socket.on("show_message", function (data) {
-      // TO ADD NEW CHILD OF MESSAGE //
-      let chat = document.createElement("div");
-      chat.classList.add("message");
-      if (data[0] == "{{name}}") {
-        chat.classList.add("my_message");
-      } else {
-        chat.classList.add("frnd_message");
-        var LM = document.getElementsByClassName("frnd");
-        if (LM.length == 0 || LM[LM.length - 1].innerText != data[0]) {
-          const Frnd = document.createElement("div");
-          Frnd.classList.add("message");
-          Frnd.classList.add("frnd");
-          Frnd.innerHTML ='<p>'+data[0] +'</p>';
-          Frnd.setAttribute('onclick','GOTOfrnd("'+data[0]+'")')
-          chatbox.appendChild(Frnd);
-        }
-      }
-      chat.innerHTML =
-        "<p>" + data[1] + "<span>" + data[2] + "</span>" + "</p>";
-      chatbox.appendChild(chat);
-      chat.scrollIntoView();
-    });
-
     const message_form = document.getElementById("chatinput");
     const message_input = document.getElementById("text_message");
     const search_form = document.getElementById("search_form");
     const search_input = document.getElementById("search_input");
-    message_form.onsubmit = function () {
-      let message = message_input.value.trim();
-      if (message.length) {
-        socket.emit("recieve_message", String(message));
-        message_input.value = "";
-      }
-      return false;
-    };
-    search_form.onsubmit = function () {
-      let search = search_input.value.trim();
-      socket.emit("search_text", String(search));
-      search_input.value = "";
-      return false;
-    };
+    const userlive = document.getElementById("userlive")
+    const userList = document.getElementById("user-list");
+    const chatUsers = document.getElementById("user-names");
+    const Top = document.getElementById("UP");
+    const box = document.getElementById("box");
+    const Newform = document.getElementById("newform")
+    const newChannel = document.getElementById("newchannel")
+    let makevisible = true;
+    let hideTimeout;
+
+    function rearrange() {
+      search = search_input.value.toLowerCase();
+      search_input.value = ""
+      Array.from(document.getElementsByClassName("name")).forEach(name => {
+        if (name.innerText.toLowerCase().includes(search)) {
+          channel_list.insertAdjacentElement("afterbegin", name.parentElement.parentElement)
+        }
+      })
+    }
 
     function gethistory() {
-      socket.emit("getHistory", ID);
+      socket.emit("getHistory");
     }
-    document.getElementById("back").onclick = function () {
-      userList.innerHTML = "";
-      document.getElementById("topic").innerText=""
-      document.getElementById("chats").innerHTML=""
 
-      show("userside")
-      socket.emit("leave_channel", false); // soon we will not send topic.id
-    };
     function show(side) {
       if (side === "chatside") {
         if (document.getElementById("chatside").style.display === "none") {
@@ -320,158 +247,59 @@
 
     function emphasize() {
       show("chatside")
-      chatbox.innerHTML =
-        '<div class="arrow" onclick="gethistory()" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div><hr id="breaker">';
+      chatbox.innerHTML = ""
+      userList.innerHTML = "";
+      chatUsers.innerText = "";
+      // '<div class="arrow" onclick="gethistory()" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div><hr id="breaker">';
     }
 
     function goto(Newchannel) {
-      let active=document.getElementsByClassName("active")
+      let active = document.getElementsByClassName("active")
       if (active[0] != Newchannel) {
-        if (active.length!=0) {
+        if (active.length != 0) {
           active[0].classList.remove("active");
         }
         Newchannel.classList.add("active")
-        Newchannel=Newchannel.innerText.split('\n')[0]
+        Newchannel = Newchannel.innerText.split('\n')[0]
         document.getElementsByClassName("active")
         document.getElementById("topic").innerText = Newchannel
         emphasize()
-        socket.emit("changeChannel", Newchannel);
+        chatUsers.innerText = "";
+        socket.emit("change", { "channel": Newchannel });
       }
     }
+
     function gotofrnd(Frnd) {
-      let active=document.getElementsByClassName("active")
+      let active = document.getElementsByClassName("active")
       if (active[0] != Frnd) {
-        if (active.length!=0) {
+        if (active.length != 0) {
           active[0].classList.remove("active");
         }
         Frnd.classList.add("active")
         document.getElementById("topic").innerText = Frnd.innerText
         emphasize()
-        socket.emit("enter_private", Frnd.innerText);
+        socket.emit("change", { "Frnd": Frnd.innerText });
       }
     }
+
     function gotoserver(Newserver) {
+      userlive.innerHTML = "";
+      userList.innerHTML = "";
+      chatUsers.innerText = "";
       socket.emit("changeServer", Newserver)
     }
 
-    socket.on("showHistory", function (data) {
-      let chatbox = document.getElementById("chats");
-      var top = document.getElementById("UP");
-      if (data.length == 31) {
-        ID = data[0];
-      } else {
-        top.style.visibility = "hidden";
-      } //to remove _-^-_ if data<21
-      Mess = document.getElementsByClassName("message")[0];
-      if (!Mess) {
-        Mess = document.getElementById("breaker");
-      }
-      for (var i = 1; i < data.length; i++) {
-        var message = document.createElement("div");
-        message.classList.add("message");
-        if (data[i][0] == "{{name}}") {
-          message.classList.add("my_message");
-        } else {
-          message.classList.add("frnd_message");
-          if (i == 0 || data[i][0] != data[i - 1][0]) {
-            var Frnd = document.createElement("div");
-            Frnd.classList.add("message");
-            Frnd.classList.add("frnd");
-            Frnd.innerHTML ='<p>' +data[i][0]+'</p>';
-            Frnd.setAttribute('onclick','GOTOfrnd("'+data[i][0]+'")')
-            chatbox.insertBefore(Frnd, Mess);
-          }
-        }
-        message.innerHTML =
-          "<p>" + data[i][1] + "<span>" + data[i][2] + "</span>" + "</p>";
-        chatbox.insertBefore(message, Mess);
-      }
-      if (Mess.classList.contains("frnd")) {
-        let arr = $(Mess).prevUntil(document.getElementsByClassName("frnd"));
-        var del = true;
-        if (arr.length != 0) {
-          for (var i = 0; i < arr.length; i++) {
-            if (arr[i].classList.contains("my_message")) {
-              del = false;
-            }
-          }
-          if (del) {
-            Mess.scrollIntoView();
-            Mess.remove();
-          }
-        }
-      }
-      Mess.scrollIntoView();
-    });
-    function GOTOfrnd(user){
-      let block = document.getElementsByClassName("block") 
-      let create=true;
-      for(let i=0;i<block.length;i++){
-        if (block[i].innerText==user){
-          gotofrnd(block[i])
-          create=false;
-        }
-      }
-      if (create){
-        let plate=document.createElement("div")
-        plate.classList.add("block")
-        plate.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + user + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
-        plate.setAttribute('onclick', 'gotofrnd(this)')
-        channel_list.appendChild(plate)
-        gotofrnd(plate);
-      }
-    }
-    const userlive=document.getElementById("userlive")
-    socket.on("serverlive", function(data) {
-      userlive.innerHTML="";
-      data.forEach(element => {
-        let user = document.createElement("li");
-        user.innerText=element;
-        user.setAttribute('onclick','GOTOfrnd("'+element+'")')
-        userlive.appendChild(user);
-      })
-    })
-    socket.on("notify", function (data) {
-      userList.innerHTML = "";
-      data.forEach(element => {
-        let user = document.createElement("li");
-        user.innerText = element;
-        user.setAttribute('onclick','GOTOfrnd("'+element+'")')
-        userList.appendChild(user);
-      });
-      let first3 = "you";
-      for (var i = 0; i < 3; i++) {
-        if (data[i]) {
-          if (data[i] != "{{name}}") {
-            first3 += ", " + data[i];
-          }
-          if (i == 2) {
-            first3 += "...";
-          }
-        }
-      }
-      first3 += " (" + data.length + ")";
-      chatUsers.innerText = first3;
-    });
-    const userList = document.getElementById("user-list");
-    const chatUsers = document.getElementById("user-names");
-    let makevisible = true;
-    let hideTimeout;
-    // Handle click event
     chatUsers.addEventListener("click", () => {
       clearTimeout(hideTimeout);
       if (makevisible) {
-        // chatUsers.style.color = "#004f00";
         userList.style.display = "block";
         makevisible = false;
       } else {
-        // chatUsers.style.color = "rgb(59, 42, 181);";
         userList.style.display = "none";
         makevisible = true;
       }
     });
 
-    // Handle mouseleave event
     chatUsers.addEventListener("mouseleave", () => {
       hideTimeout = setTimeout(() => {
         if (makevisible) {
@@ -485,12 +313,10 @@
           userList.style.display === "block" ? "none" : "block";
       }
     });
-    // Handel mouseenter event for list
     userList.addEventListener("mouseenter", () => {
       clearTimeout(hideTimeout);
       userList.style.display = "block";
     });
-    // Handel mouseleave event for list
     userList.addEventListener("mouseleave", () => {
       hideTimeout = setTimeout(() => {
         if (makevisible) {
@@ -498,9 +324,211 @@
         }
       }, 500);
     });
-    socket.on("Logout",function(){
+
+    socket.on("connect", function () {
+      socket.emit("changeServer", '{{server}}')
+    });
+
+    socket.on("showNewServer", function (data) {
+      document.getElementById("server").innerText = data[0]
+      document.getElementById("server2").innerText = data[0]
+      document.getElementById("download").href = "/download/" + data[0]
+      show("userside")
+      channel_list.innerHTML = ""
+      data[1].forEach(element => {
+        let channel = document.createElement("div")
+        channel.classList.add("block")
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + element[1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.setAttribute('onclick', 'goto(this)')
+        channel_list.appendChild(channel)
+      });
+    })
+
+    document.getElementById("back").onclick = function () {
+      userList.innerHTML = "";
+      chatUsers.innerText = "";
+      document.getElementById("topic").innerText = ""
+      document.getElementById("chats").innerHTML = ""
+
+      show("userside")
+      socket.emit("change", 0);
+    };
+
+    socket.on("showMessages", function (Msgs) {
+      ID = Msgs.pop();
+      if (ID == 0) {
+        Top.style.visibility = "hidden";
+      } else { Top.style.visibility = "visible" }
+      Mess = document.getElementsByClassName("message")[0];
+      for (var i = 0; i < Msgs.length; i++) {
+        var message = document.createElement("div");
+        message.classList.add("message");
+        if (Msgs[i][0] == "{{name}}") {
+          message.classList.add("my_message");
+          message.innerHTML =
+            "<p>" + Msgs[i][1] + "<span>" + Msgs[i][2] + "</span>" + "</p>";
+          chatbox.insertAdjacentElement('afterbegin', message)
+        } else {
+          message.classList.add("frnd_message");
+          message.innerHTML =
+            "<p>" + Msgs[i][1] + "<span>" + Msgs[i][2] + "</span>" + "</p>";
+          if (i == Msgs.length - 1 || Msgs[i][0] != Msgs[i + 1][0]) {
+            var Frnd = document.createElement("div");
+            Frnd.classList.add("message");
+            Frnd.classList.add("frnd");
+            Frnd.innerHTML = '<p>' + Msgs[i][0] + '</p>';
+            Frnd.setAttribute('onclick', 'GOTOfrnd("' + Msgs[i][0] + '")')
+            // chatbox.insertBefore(message, Top);
+            chatbox.insertAdjacentElement('afterbegin', message)
+            chatbox.insertAdjacentElement('afterbegin', Frnd)
+            // chatbox.insertBefore(Frnd, Top);
+          }
+          else {
+            chatbox.insertAdjacentElement('afterbegin', message)
+          }
+        }
+
+      }
+      if (Mess) {
+        Mess.scrollIntoView();
+        if (Mess.classList.contains("frnd") && Mess.innerText == Msgs[0][0]) {
+          Mess.remove();
+        }
+      } else { box.scrollTop = box.scrollHeight }
+    });
+
+    function GOTOfrnd(user, GOTO = true) {
+      let block = document.getElementsByClassName("block")
+      let create = true;
+      for (let i = 0; i < block.length; i++) {
+        if (block[i].innerText == user) {
+          if (GOTO) {
+            gotofrnd(block[i])
+          }
+          create = false;
+        }
+      }
+      if (create) {
+        let plate = document.createElement("div")
+        plate.classList.add("block")
+        plate.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + user + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        plate.setAttribute('onclick', 'gotofrnd(this)')
+        channel_list.insertAdjacentElement("afterbegin", plate)
+        if (GOTO) {
+          gotofrnd(plate);
+        }
+        return
+      }
+    }
+    socket.on("show_message", function (data) {
+      // TO ADD NEW CHILD OF MESSAGE //
+      let chat = document.createElement("div");
+      chat.classList.add("message");
+      if (data[0] == "{{name}}") {
+        chat.classList.add("my_message");
+      } else {
+        chat.classList.add("frnd_message");
+        var LM = document.getElementsByClassName("frnd");
+        if (LM.length == 0 || LM[LM.length - 1].innerText != data[0]) {
+          var Frnd = document.createElement("div");
+          Frnd.classList.add("message");
+          Frnd.classList.add("frnd");
+          Frnd.innerHTML = '<p>' + data[0] + '</p>';
+          Frnd.setAttribute('onclick', 'GOTOfrnd("' + data[0] + '")')
+          chatbox.appendChild(Frnd);
+        }
+      }
+      chat.innerHTML =
+        "<p>" + data[1] + "<span>" + data[2] + "</span>" + "</p>";
+      chatbox.appendChild(chat);
+      chat.scrollIntoView();
+    });
+    message_form.onsubmit = function () {
+      let message = message_input.value.trim();
+      if (message.length) {
+        channel_list.insertAdjacentElement("afterbegin", document.getElementsByClassName("active")[0])
+        socket.emit("recieve_message", String(message));
+        message_input.value = "";
+      }
+      return false;
+    };
+
+    socket.on("serverlive", function (userObj) {
+      userlive.innerHTML = ""
+      for (const key in userObj) {
+        let user = document.createElement("li");
+        user.innerText = key;
+        user.setAttribute('onclick', 'GOTOfrnd("' + key + '")')
+        userlive.appendChild(user);
+      }
+    })
+
+    socket.on("notify", function (userObj) {
+      console.log(userObj)
+      console.log(userObj)
+      userList.innerHTML = ""
+      chatUsers.innerHTML = ""
+      let first3 = "you";
+      for (const key in userObj) {
+        console.log("hi " + key)
+        let user = document.createElement("li");
+        user.innerText = key;
+        user.setAttribute('onclick', 'GOTOfrnd("' + key + '")')
+        userList.appendChild(user);
+        if (key != '{{name}}') {
+          first3 += " " + key
+        }
+      }
+      first3 += " (" + Object.keys(userObj).length + ")";
+      chatUsers.innerText = first3;
+    });
+
+
+    socket.on("Logout", function () {
       document.getElementById("logout").submit()
     })
+
+    search_form.onsubmit = function () {
+      let search = search_input.value.trim();
+      socket.emit("search_text", String(search));
+      rearrange();
+      return false;
+    };
+
+    Newform.onsubmit = function () {
+      let chnl = newchannel.value.trim();
+      console.log(chnl)
+      if (chnl.length) {
+        let match = false;
+        console.log("here")
+        Array.from(document.getElementsByClassName("chnl")).forEach(element => {
+          if (element.innerText == chnl) {
+            match = true
+          }
+        })
+        if (!match) {
+          socket.emit("create", chnl)
+          newchannel.value = ""
+        }
+      }
+      return false;
+    }
+    socket.on("show_this", function (data) {
+      if (data.hasOwnProperty("users")) {
+        data["users"].forEach(user => {
+          GOTOfrnd(user, GOTO = false);
+        });
+      } else {
+        let channel = document.createElement("div")
+        channel.classList.add("block")
+        let NewName = Object.keys(data["channel"])[0]
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + NewName + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + data["channel"][NewName] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.setAttribute('onclick', 'goto(this)')
+        channel_list.insertAdjacentElement("afterbegin", channel)
+        console.log("addep to top")
+      }
+    })
+
   </script>
 </body>
 
