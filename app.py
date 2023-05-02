@@ -173,9 +173,6 @@ def changeServer(newServer):
     if oldServer:
         leave_room(oldServer)
         if room_dict[oldServer]["/"].pop(session.get("name"),None):
-            print("server leaved")
-            for i in room_dict:
-                print(i+" : "+str(room_dict[i]))
             socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
     # GOTO NEWSERVER IF ANY ELSE LOGOUT
     if newServer:
@@ -183,9 +180,6 @@ def changeServer(newServer):
         session["server"]=newServer
         join_room(newServer)
         room_dict[newServer]["/"].update({session.get("name"):1})
-        print("server changed")
-        for i in room_dict:
-            print(i+" : "+str(room_dict[i]))
         socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
         channel_list=[session.get("server")]
         channel_list.append([[channel.name,channel.user.username] for channel in channels])
@@ -196,7 +190,6 @@ def changeServer(newServer):
 
 @socketio.on("create")
 def create(newchannel):
-    print(newchannel)
     curr=session.get("server")
     id=session.get(curr)
     Topic=channel(name=newchannel,creator_id=id)
@@ -207,7 +200,6 @@ def create(newchannel):
         return
     room_dict[curr][newchannel]={}
     new={"channel":{Topic.name:Topic.user.username}}
-    print(new)
     socketio.emit("show_this",new,room=curr)
 
 
@@ -238,9 +230,6 @@ def change(To):
     if prev:
         leave_room(curr+prev)
         if room_dict[curr][prev].pop(name,None):
-            print("leaved"+str(prev))
-            for i in room_dict:
-                print(i+" : "+str(room_dict[i]))
             socketio.emit("notify",room_dict[curr][prev],room=curr+prev)
 
     # CLEAR
@@ -253,9 +242,6 @@ def change(To):
         session["channel"]=to
         last_msgs=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(30)
         room_dict[curr][to].update({name:1})
-        print("joined channel")
-        for i in room_dict:
-            print(i+" : "+str(room_dict[i]))
     if "Frnd" in To:
         to=To["Frnd"]
         frnd=server[curr].query(users).filter_by(username=to).first()
@@ -268,9 +254,6 @@ def change(To):
             room_dict[curr][to].update({name:1})
         else:
             room_dict[curr].update({to:{name:1}})
-        print("joined prvt session")
-        for i in room_dict:
-            print(i+" : "+str(room_dict[i]))
     # JOIN ROOM AND NOTIFY
     join_room(curr+to)
     socketio.emit("notify",room_dict[curr][to],to=curr+to)
@@ -284,7 +267,6 @@ def change(To):
         Msgs.append(0)
     else:
         Msgs.append(1)
-    # print(Msgs)
     socketio.emit('showMessages',Msgs,to=request.sid)
 
 
@@ -331,7 +313,6 @@ def getHistory():
         Msgs.append(0)
     else:
         Msgs.append(1)
-    # print(Msgs)
     socketio.emit('showMessages',Msgs,to=request.sid)
     
 

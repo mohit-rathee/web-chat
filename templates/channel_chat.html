@@ -286,6 +286,7 @@
       userlive.innerHTML = "";
       userList.innerHTML = "";
       chatUsers.innerText = "";
+      channel_list.innerHTML = "";
       socket.emit("changeServer", Newserver)
     }
 
@@ -464,13 +465,10 @@
     })
 
     socket.on("notify", function (userObj) {
-      console.log(userObj)
-      console.log(userObj)
       userList.innerHTML = ""
       chatUsers.innerHTML = ""
       let first3 = "you";
       for (const key in userObj) {
-        console.log("hi " + key)
         let user = document.createElement("li");
         user.innerText = key;
         user.setAttribute('onclick', 'GOTOfrnd("' + key + '")')
@@ -497,10 +495,8 @@
 
     Newform.onsubmit = function () {
       let chnl = newchannel.value.trim();
-      console.log(chnl)
       if (chnl.length) {
         let match = false;
-        console.log("here")
         Array.from(document.getElementsByClassName("chnl")).forEach(element => {
           if (element.innerText == chnl) {
             match = true
@@ -525,7 +521,6 @@
         channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + NewName + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + data["channel"][NewName] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
         channel.setAttribute('onclick', 'goto(this)')
         channel_list.insertAdjacentElement("afterbegin", channel)
-        console.log("addep to top")
       }
     })
 
