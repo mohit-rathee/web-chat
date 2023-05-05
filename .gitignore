@@ -3,3 +3,4 @@ __pycache__/
 flask_session
 db/
 test.sqlite3
+templates/webRTC.html

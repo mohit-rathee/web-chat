@@ -164,6 +164,17 @@ def change_db():
     #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
     #     return redirect("/servers")
 
+# @app.after_request
+# def add_header(response):
+#     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+#     response.headers['Pragma'] = 'no-cache'
+#     response.headers['Expires'] = '0'
+#     response.headers['Cache-Control'] = 'public, max-age=0'
+#     # response.headers['Last-Modified'] = DateTime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+#     return response
+@socketio.on('disconnect')
+def on_disconnect():
+    changeServer(False)
 
 @socketio.on("changeServer")
 def changeServer(newServer):
@@ -171,21 +182,30 @@ def changeServer(newServer):
     change(False)
     oldServer=session.get("server")
     if oldServer:
+        # print(socketio.server.manager.rooms)
         leave_room(oldServer)
+        # print("after leaving")
+        # print(socketio.server.manager.rooms)
         if room_dict[oldServer]["/"].pop(session.get("name"),None):
             socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
     # GOTO NEWSERVER IF ANY ELSE LOGOUT
     if newServer:
+        # print("joining new server")
+        print()
         channels=server[newServer].query(channel).all()
         session["server"]=newServer
         join_room(newServer)
+        # print(socketio.server.manager.rooms)
         room_dict[newServer]["/"].update({session.get("name"):1})
         socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
         channel_list=[session.get("server")]
         channel_list.append([[channel.name,channel.user.username] for channel in channels])
         socketio.emit("showNewServer",channel_list,to=request.sid)    
     else:
+        print("logging out")
+        
         session.clear()
+        session["name"]=None
         socketio.emit("Logout",to=request.sid)
 
 @socketio.on("create")
@@ -315,8 +335,7 @@ def getHistory():
         Msgs.append(1)
     socketio.emit('showMessages',Msgs,to=request.sid)
     
-
-
+    
 @app.route('/',methods=["GET","POST"])
 def index():
     if session.get("name")==None:
@@ -481,3 +500,6 @@ if __name__ == '__main__':
 # ---^---   /====      /--------' ---^---
 #    |     /====     /------/        |
 #    |    /====  ,-------/           |
+@app.route("/test")
+def test():
+    return render_template("webRTC.html")

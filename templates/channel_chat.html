@@ -48,6 +48,8 @@
             <a id="download" href="download/{{server}}">Download State</a>
             <p onclick='socket.emit("changeServer",false)' id="delete">Logout</p>
             <form id="logout" action="/servers" method="post" style="display: none;"></form>
+            <input style="display: none;" id="listen_call" onclick="listencall()" type="button" value="Listen for calls">
+            <input type="button" onclick="sendOffer()" value="Make Call">
           </div>
         </div>
         <div class="chatbox" id="user" style="height: 68vh;">
@@ -210,7 +212,7 @@
     const newChannel = document.getElementById("newchannel")
     let makevisible = true;
     let hideTimeout;
-
+    
     function rearrange() {
       search = search_input.value.toLowerCase();
       search_input.value = ""
@@ -523,6 +525,12 @@
         channel_list.insertAdjacentElement("afterbegin", channel)
       }
     })
+      // window.addEventListener("beforeunload", function (event) {
+      //   const confirmed = confirm("Are you sure you want to log out?");
+      //   if (confirmed) {
+      //     socket.emit("changeServer", false);
+      //   }
+      // });
 
   </script>
 </body>
