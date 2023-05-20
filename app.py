@@ -4,23 +4,24 @@ from werkzeug.utils import secure_filename
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_
-from datetime import timezone
 from sqlalchemy.sql import func
 from flask import send_file
 from passlib.hash import sha256_crypt
 import hashlib 
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy import create_engine, MetaData, Column
+from sqlalchemy.orm import scoped_session, sessionmaker, relationship
+from sqlalchemy import create_engine, MetaData, Column, func, text, Table, String
+from sqlalchemy.ext.declarative import declared_attr
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
 import gevent
+from pytz import timezone
 
 
 app = Flask(__name__)
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
-app.config['SECRET_KEY'] ="alsdkjfoldsjoidsvjoismoid479583749583405934085039"  #os.environ.get('SECRET_KEY')
+app.config['SECRET_KEY'] ="!!!"  #os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"   #os.environ.get('DATABASE_URI')
 app.config.update(
     SESSION_COOKIE_SAMESITE='None',
@@ -35,11 +36,10 @@ class users(db.Model):
     username=db.Column(db.String(20), unique=True, nullable=False)       #user name
     password=db.Column(db.String(30), nullable=False)                    #user password
     balance=db.Column(db.Integer, nullable=True, default=0)              #user balance
-    post=db.relationship('posts',backref='user')                         #relation#
     topic=db.relationship('channel',backref='user')
     chat=db.relationship('chats',backref='user')
-    short_message=db.relationship('short_messages',backref='sender')
-    short_post=db.relationship('short_posts',backref='sender')
+    # short_message=db.relationship('short_messages',backref='sender')
+    # short_post=db.relationship('short_posts',backref='sender')
     def __init__(self, username, password, balance):
         self.username=username
         self.password=password
@@ -55,28 +55,34 @@ class chats(db.Model):
     key=db.Column(db.String,nullable=False)                                 #Private Key
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #Sender ID
     data=db.Column(db.String, nullable=False)                               #actuall msg
-    time = db.Column(db.DateTime, default=func.now())                       #time
+    time = db.Column(db.DateTime, default=func.now(timezone('Asia/Kolkata')))#time
+ 
+# class posts(db.Model):
+#     __abstract__ = True
+#     id = db.Column(db.Integer, primary_key=True)
+#     data = db.Column(db.String, nullable=False)
+#     # sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+#     time = db.Column(db.DateTime, server_default=func.now(timezone('Asia/Kolkata')))
+#     @declared_attr
+#     def post_id(cls):
+#         return Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+#     user=db.relationship('users')
 
-class posts(db.Model):
-    id=db.Column(db.Integer,primary_key=True)                               #msg/post ID
-    data=db.Column(db.String, nullable=False)                               #actuall msg
-    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #User ID
-    time = db.Column(db.DateTime, default=func.now())                       #time
-    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
 
-class short_messages(db.Model):
-    id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
-    key=db.Column(db.String,nullable=False)                                  #Private Key
-    data=db.Column(db.String, nullable=False)                                #actuall msg
-    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
-    time = db.Column(db.DateTime, default=func.now()) 
 
-class short_posts(db.Model):
-    id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
-    data=db.Column(db.String, nullable=False)                                #actuall msg
-    sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
-    topic_id=db.Column(db.Integer, db.ForeignKey('channel.id')) 
-    time = db.Column(db.DateTime, default=func.now()) 
+# class short_messages(db.Model):
+#     id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
+#     key=db.Column(db.String,nullable=False)                                  #Private Key
+#     data=db.Column(db.String, nullable=False)                                #actuall msg
+#     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
+#     time = db.Column(db.DateTime, default=func.now(timezone('Asia/Kolkata'))) 
+
+# class short_posts(db.Model):
+#     id=db.Column(db.Integer,primary_key=True)                                #msg/post ID
+#     data=db.Column(db.String, nullable=False)                                #actuall msg
+#     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))              #User ID
+#     topic_id=db.Column(db.Integer, db.ForeignKey('channel.id')) 
+#     time = db.Column(db.DateTime, default=func.now(timezone('Asia/Kolkata'))) 
 
 
 
@@ -92,10 +98,27 @@ app.config["SESSION_TYPE"]="filesystem"
 Session(app)
 
 # SAVING APP's SESSION OBJECT INTO DICTIONARY
-room_dict={"app":{"/":{}}}
+room_dict={
+    # "/":{}, i think will use room_dict[#server]["/"] to get everyone 
+    #         so i don't have to store them in multiple places places
+    "app":{
+        "/":{}
+        }
+    }
 server={
     "app":db.session
 }
+engine={
+    "app":db.engine
+}
+base={
+    "app":db.Model
+}
+Tables={
+    # models of channels
+}
+
+
 # FOR DEVELOPMENT ONLY
 channels=server["app"].query(channel).all()
 for x in channels:
@@ -123,17 +146,28 @@ def upload_db():
                 Base.prepare()
                 Session=sessionmaker(bind=Engine)
                 server[data]=Session()
+                engine[data]=Engine
+                tables=server[data].query(channel).all()
+                room_dict[data]={'/':{}}
+                for tb in tables:
+                    try:
+                        tab = Base.classes[tb.name]
+                        setattr(tab, 'user', relationship('users'))
+                        # Base.prepare()
+                        Tables[tb.name]=tab
+                        room_dict[data].update({tb.name:{}})
+                    except:
+                        continue
+                base[data]=Base
             except:
                 app.config['SQLALCHEMY_BINDS'].pop(data,None)
                 os.remove("db/"+data+".sqlite3")
                 server.pop(data,None)
                 return render_template("message.html",msg="NOT A VALID DATABASE",goto="/servers")
             # UPDATING ROOM_DICT WITH NEW SERVER
-            room_dict[data]={"/":{}}
             session.clear()
-            channels=server[data].query(channel).all()
-            for x in channels:
-                room_dict[data].update({x.name:{}})
+
+                
         else:
             return render_template("message.html",msg="select a valid database file (*.sqlite3)",goto="/servers")
     return redirect("/servers")
@@ -191,19 +225,16 @@ def changeServer(newServer):
     # GOTO NEWSERVER IF ANY ELSE LOGOUT
     if newServer:
         # print("joining new server")
-        print()
         channels=server[newServer].query(channel).all()
         session["server"]=newServer
         join_room(newServer)
         # print(socketio.server.manager.rooms)
-        room_dict[newServer]["/"].update({session.get("name"):1})
+        room_dict[newServer]["/"].update({session.get("name"):request.sid})
         socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
         channel_list=[session.get("server")]
         channel_list.append([[channel.name,channel.user.username] for channel in channels])
         socketio.emit("showNewServer",channel_list,to=request.sid)    
     else:
-        print("logging out")
-        
         session.clear()
         session["name"]=None
         socketio.emit("Logout",to=request.sid)
@@ -218,18 +249,50 @@ def create(newchannel):
         server[curr].commit()
     except IntegrityError:
         return
+    Base=base[curr]
+
+    class Channel(Base):
+        __tablename__ = newchannel
+        id = db.Column(db.Integer, primary_key=True)
+        data = db.Column(db.String, nullable=False)
+        sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+        time = db.Column(db.DateTime, server_default=func.now())
+        user = db.relationship('users')  
+
+    Base.metadata.create_all(engine[curr])
+    # Base.prepare(engine[curr], reflect=True)
+    # print(Base.metadata.tables)
+    # print(Channel)
+    # base[curr]=Base
+
+# Channel = Table(
+#     newchannel,
+#     Base.metadata,
+#     Column('id', Integer, primary_key=True),
+#     Column('data', String, nullable=False),
+#     Column('sender_id', Integer, ForeignKey('users.id')),
+#     Column('time', DateTime, server_default=func.now(timezone('Asia/Kolkata'))),
+# )
+
+    # print(base[curr].metadata)
+    metadata=MetaData()
+    metadata.reflect(engine[curr])
+    Base=automap_base(metadata=metadata)
+    Base.prepare()
+    NEWChannel=Base.classes[newchannel]
+    setattr(NEWChannel, 'user', relationship('users'))
+    Tables.update({newchannel:NEWChannel})
+    base[curr]=Base
     room_dict[curr][newchannel]={}
     new={"channel":{Topic.name:Topic.user.username}}
     socketio.emit("show_this",new,room=curr)
-
+    # print(Tables)
 
 
 @socketio.on("search_text")
 def search(text):
     curr=session.get("server")
-    # channel_list=server[curr].query(channel).filter(channel.name.like("%"+text+"%")).all()
     user_list=server[curr].query(users).filter(users.username.like(text+"%")).all()
-    # channels.append([[channel.name,channel.user.username] for channel in channel_list])
     Users={"users":[user.username for user in user_list]}
     socketio.emit("show_this",Users,to=request.sid)
 
@@ -241,11 +304,11 @@ def change(To):
     name = session.get("name")
     id = session.get(curr)
     # CLEAR PREV IF ANY AND NOTIFY THAT ROOM
-    session['history']=1
     prev = session.get('channel')
     if not prev:
         prev=session.get("key")
         session["key"]=None
+        session["friend"]=None
     session["channel"]=None
     if prev:
         leave_room(curr+prev)
@@ -258,9 +321,10 @@ def change(To):
     # GOTO CHANNEL/FRND IF ANY
     if "channel" in To:
         to=To["channel"]
-        current_channel=server[curr].query(channel).filter_by(name=to).first()
+        # current_channel=server[curr].query(channel).filter_by(name=to).first()
         session["channel"]=to
-        last_msgs=server[curr].query(posts).order_by(posts.id.desc()).filter_by(channel_id=current_channel.id).limit(30)
+        # print(Tables)
+        last_msgs=server[curr].query(Tables[to]).order_by(Tables[to].id.desc()).limit(30)
         room_dict[curr][to].update({name:1})
     if "Frnd" in To:
         to=To["Frnd"]
@@ -269,6 +333,7 @@ def change(To):
             return 
         to=private_key(id,frnd.id)
         session["key"]=to
+        session["friend"]=frnd.username
         last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter_by(key=to).limit(30)
         if to in room_dict[curr]:
             room_dict[curr][to].update({name:1})
@@ -281,12 +346,12 @@ def change(To):
     Msgs=[]
     for msg in last_msgs:
         Msgs.append([msg.user.username,msg.data,msg.time.strftime("%D  %H:%M")])
-    if len(Msgs)!=0:
-        session["history"]=last_msgs[-1].id
     if len(Msgs)!=30:
         Msgs.append(0)
+        session["history"]=0
     else:
         Msgs.append(1)
+        session["history"]=1
     socketio.emit('showMessages',Msgs,to=request.sid)
 
 
@@ -300,18 +365,36 @@ def handel_recieve_message(data):
     key=session.get("key")
     # FOR CHANNEL
     if channel_name:
-        current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-        msg=posts(data=data,sender_id=id,channel_id=current_channel.id)
+        # current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
+        msg=Tables[channel_name](data=data,sender_id=id)
         server[curr].add(msg)
         server[curr].commit()
         socketio.emit('show_message',[name,data,msg.time.strftime("%D  %H:%M")], room = curr+channel_name)
+        for srvr in room_dict.keys():
+            if srvr==curr:
+                for usr in room_dict[srvr]["/"].keys():
+                    if usr not in room_dict[srvr][channel_name].keys():    
+                        socketio.emit('currupdate',channel_name,to=room_dict[curr]["/"][usr])
+            else:
+                for usr in room_dict[srvr]["/"].keys():
+                    socketio.emit('otherupdate',curr,to=room_dict[srvr]["/"][usr])
     # FOR DM's
     else:
         msg=chats(data=data,key=key,sender_id=id)
         server[curr].add(msg)
         server[curr].commit()
         socketio.emit('show_message',[name,data,msg.time.strftime("%D  %H:%M")], room = curr+key)
-
+        if len(room_dict[curr][key])==1 and not session.get("friend")==name:
+            for srvr in room_dict.keys():
+                if srvr==curr:
+                    for usr in room_dict[srvr]["/"]:
+                        if usr == session.get("friend"):
+                            socketio.emit('dm',[name],to=room_dict[srvr]["/"][usr])
+                else:
+                    for usr in room_dict[srvr]["/"]:
+                        if usr == session.get('friend'):
+                            socketio.emit('otherupdate',curr,to=room_dict[srvr]["/"][usr])
+            
 
 @socketio.on('getHistory')
 def getHistory():
@@ -319,16 +402,16 @@ def getHistory():
     # id=session.get('id')
     history=session.get("history")
     channel_name=session.get("channel")
-    postID=session.get("history")
+    times=session.get("history")
     if channel_name:
-        current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-        last_msgs=server[curr].query(posts).order_by(posts.id.desc()).filter(and_(posts.id<postID,posts.channel_id==current_channel.id)).limit(30)
+        # current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
+        last_msgs=server[curr].query(Tables[channel_name]).order_by(Tables[channel_name].id.desc()).offset(30*times).limit(30)
     else:
         last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter(and_(chats.id<postID,chats.key==session.get("key"))).limit(30)
     Msgs=[]
     for msg in last_msgs:
         Msgs.append([msg.user.username,msg.data,msg.time.strftime("%D  %H:%M")])
-    session["history"]=last_msgs[-1].id
+    session["history"]+=1
     if len(Msgs)!=30:
         Msgs.append(0)
     else:

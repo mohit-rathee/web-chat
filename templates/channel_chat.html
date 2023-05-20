@@ -14,8 +14,8 @@
   <div class="container">
     <div class="servers">
       {% for srvr in mysrvr: %}
-      <div class="text-block" onclick='gotoserver("{{srvr}}")'>
-        {{srvr}}
+      <div class="text-block" onclick='gotoserver(this)'>
+        <div class="SERVER">{{srvr}}</div>
       </div>
       {% endfor %}
     </div>
@@ -48,7 +48,8 @@
             <a id="download" href="download/{{server}}">Download State</a>
             <p onclick='socket.emit("changeServer",false)' id="delete">Logout</p>
             <form id="logout" action="/servers" method="post" style="display: none;"></form>
-            <input style="display: none;" id="listen_call" onclick="listencall()" type="button" value="Listen for calls">
+            <input style="display: none;" id="listen_call" onclick="listencall()" type="button"
+              value="Listen for calls">
             <input type="button" onclick="sendOffer()" value="Make Call">
           </div>
         </div>
@@ -64,7 +65,7 @@
         <div id="newform" class="chatbox_input">
           <form class="form">
             <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel">
-            <input type="submit" value="Add Topic">
+            <!-- <input type="submit" value="Add Topic"> -->
           </form>
         </div>
       </div>
@@ -86,55 +87,6 @@
             <ion-icon name="arrow-up-outline"></ion-icon>
           </div>
           <div id="chats">
-            <!-- {% for post in posts: %} {% if loop.previtem is not defined: %} {% if
-          post.user.id==name.id: %}
-
-          <div class="message my_message">
-            <p>
-              {{post.data}}<br /><span>{{post.time.strftime("%D %H:%M")}}</span>
-            </p>
-          </div>
-          {% else: %}
-          <div class="message frnd">
-            <p>
-              <a href="/chat/{{post.user.username}}"
-                style="text-decoration: none; font-size: 1.1em">{{post.user.username}}</a>
-            </p>
-          </div>
-          <div class="message frnd_message">
-            <p>
-              {{post.data}}<br /><span>{{post.time.strftime("%D %H:%M")}}</span>
-            </p>
-          </div>
-          {% endif %}
-          <script>
-            let ID = "{{post.id}}";
-          </script>
-          {% else: %} {% if post.user.id==name.id: %}
-          <div class="message my_message">
-            <p>
-              {{post.data}}<br /><span>{{post.time.strftime("%D %H:%M")}}</span>
-            </p>
-          </div>
-          {% elif post.user.id==loop.previtem.user.id: %}
-          <div class="message frnd_message">
-            <p>
-              {{post.data}}<br /><span>{{post.time.strftime("%D %H:%M")}}</span>
-            </p>
-          </div>
-          {% else: %}
-          <div class="message frnd">
-            <p>
-              <a href="/chat/{{post.user.username}}"
-                style="text-decoration: none; font-size: 1.1em">{{post.user.username}}</a>
-            </p>
-          </div>
-          <div class="message frnd_message">
-            <p>
-              {{post.data}}<br /><span>{{post.time.strftime("%D %H:%M")}}</span>
-            </p>
-          </div>
-          {% endif %} {% endif %} {% endfor %} -->
             <hr id="breaker" />
             <!-- <div  class="useless">
                       <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
@@ -179,6 +131,7 @@
         <div class="chatbox_input" id="chatinput">
           <form class="form">
             <input autofocus autocomplete="off" type="text" name="post" placeholder="Message " id="text_message" />
+            <!-- <button class="emoji" onclick="handleEmojiButtonClick()">&#x1F603;</button> -->
             <!-- <input type="hidden" name="hide" default="False" value="{{hide}}" id="inputfield" /> -->
           </form>
         </div>
@@ -212,7 +165,7 @@
     const newChannel = document.getElementById("newchannel")
     let makevisible = true;
     let hideTimeout;
-    
+
     function rearrange() {
       search = search_input.value.toLowerCase();
       search_input.value = ""
@@ -262,8 +215,11 @@
           active[0].classList.remove("active");
         }
         Newchannel.classList.add("active")
-        Newchannel = Newchannel.innerText.split('\n')[0]
         document.getElementsByClassName("active")
+        if (Newchannel.children[1].children[0].childElementCount == 2) {
+          Newchannel.children[1].children[0].children[1].remove()
+        }
+        Newchannel = Newchannel.innerText.split('\n')[0]
         document.getElementById("topic").innerText = Newchannel
         emphasize()
         chatUsers.innerText = "";
@@ -278,6 +234,9 @@
           active[0].classList.remove("active");
         }
         Frnd.classList.add("active")
+        if (Frnd.children[1].children[0].childElementCount==2){
+          Frnd.children[1].children[0].children[1].remove()
+        }
         document.getElementById("topic").innerText = Frnd.innerText
         emphasize()
         socket.emit("change", { "Frnd": Frnd.innerText });
@@ -289,7 +248,8 @@
       userList.innerHTML = "";
       chatUsers.innerText = "";
       channel_list.innerHTML = "";
-      socket.emit("changeServer", Newserver)
+      if(Newserver.childElementCount==2){Newserver.children[1].remove()}
+      socket.emit("changeServer", Newserver.innerText)
     }
 
     chatUsers.addEventListener("click", () => {
@@ -341,7 +301,7 @@
       data[1].forEach(element => {
         let channel = document.createElement("div")
         channel.classList.add("block")
-        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + element[1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4></div><div class="creator"><p>created by ' + element[1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
         channel.setAttribute('onclick', 'goto(this)')
         channel_list.appendChild(channel)
       });
@@ -414,7 +374,7 @@
       if (create) {
         let plate = document.createElement("div")
         plate.classList.add("block")
-        plate.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4>' + user + '</h4><p class="time"></p></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        plate.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="friend">' + user + '</h4></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
         plate.setAttribute('onclick', 'gotofrnd(this)')
         channel_list.insertAdjacentElement("afterbegin", plate)
         if (GOTO) {
@@ -483,6 +443,33 @@
       chatUsers.innerText = first3;
     });
 
+    function shownotification(to, name) {
+      let ls = document.getElementsByClassName(to)
+      for (let i = 0; i < ls.length; i++) {
+        if (ls[i].innerText == name) {
+          if (ls[i].parentElement.childElementCount == 1) {
+            let num = document.createElement('p')
+            num.classList.add("update")
+            num.innerText = "1";
+            ls[i].parentElement.appendChild(num);
+          } else {
+            let num=parseInt(ls[i].parentElement.children[1].innerText)
+            ls[i].parentElement.children[1].innerText = num + 1;
+          }
+        }
+      }
+    }
+
+    socket.on("dm", function (data) {
+      GOTOfrnd(data, GOTO = false)
+      shownotification('friend', data)
+    })
+    socket.on("otherupdate", function (data) {
+      shownotification('SERVER', data)
+    })
+    socket.on("currupdate", function (data) {
+      shownotification('chnl', data)
+    })
 
     socket.on("Logout", function () {
       document.getElementById("logout").submit()
@@ -520,18 +507,11 @@
         let channel = document.createElement("div")
         channel.classList.add("block")
         let NewName = Object.keys(data["channel"])[0]
-        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + NewName + '</h4><p class="time"></p></div><div class="creator"><p>created by ' + data["channel"][NewName] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + NewName + '</h4></div><div class="creator"><p>created by ' + data["channel"][NewName] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
         channel.setAttribute('onclick', 'goto(this)')
         channel_list.insertAdjacentElement("afterbegin", channel)
       }
     })
-      // window.addEventListener("beforeunload", function (event) {
-      //   const confirmed = confirm("Are you sure you want to log out?");
-      //   if (confirmed) {
-      //     socket.emit("changeServer", false);
-      //   }
-      // });
-
   </script>
 </body>
 

@@ -315,10 +315,14 @@ a{
     font-weight:bold ;
     color: rgb(58, 58, 58);
 }
-.channel_list .block .details .name .time
+.update
 {
     font-size: 0.75em;
-    color: #aaa;
+    width: 22px;
+    background-color: #00cd46;
+    color: #ff6000;
+    text-align: center;
+    border-radius: 50%;
 }
 .arrow{
     cursor: pointer;
@@ -470,7 +474,17 @@ a{
     position: relative;
     width: 100%;
     padding: 5%;
+    /* padding-right: 0%; */
+    display:flex;
     
+}
+.form button
+{
+    min-width: 7%;
+    background-color: #a5e4e4;
+    /* border: none; */
+    border-radius: 45%;
+    cursor: pointer;
 }
 .chatbox_input .form input
 {
