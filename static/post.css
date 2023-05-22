@@ -64,6 +64,7 @@ body
 {
     position: relative;
     flex: 23%;
+    width: 30%;
     background: rgb(143, 143, 143);
     border-right: 1px solid rgba(0,0,0,0.2);
 }
@@ -112,7 +113,7 @@ body
 {
     position: relative;
     width: 100%;
-    height: 60px;
+    height: 6vh;
     background: rgb(79, 168, 79);
     display: flex;
     justify-content: space-between;
@@ -154,6 +155,21 @@ body
     border-radius: 5px;
     margin-left: 10px;
 
+}
+#emojiPallet {
+    position: absolute;
+    top: 68%;
+    left: 87%;
+    z-index: 9999;
+    display: none;
+    background-color: #4fa84f;
+    border: 1px solid #206420;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    height: 27%;
+    overflow-y: auto;
+    width: 11%;
+    border-radius: 5px;
+    margin-left: 10px;
 }
 
 #chat-users {
@@ -261,10 +277,11 @@ body
 {
     cursor: pointer;
     position: relative;
-    display: flex;
+    display: block ruby;
     align-items: center;
     padding: 15px;
     border-bottom: 1px solid rgb(104, 113, 104);
+    font-size: 95%;
 }
 .channel_list .block:hover
 {
@@ -366,7 +383,7 @@ a{
 .chatbox
 {
     position: relative;
-    height: 70vh;
+    height: 78vh;
     padding: 5%;
     padding-bottom: 10px;
     overflow-y: scroll;
@@ -463,10 +480,11 @@ a{
 {
     position: relative;
     width: 100%;
-    height: 60px;
+    height: 10vh;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-bottom: 5vh;
 
 }
 .chatbox_input .form
@@ -474,15 +492,29 @@ a{
     position: relative;
     width: 100%;
     padding: 5%;
-    /* padding-right: 0%; */
+    padding-right: 0%;
     display:flex;
     
 }
-.form button
+.emoG {
+    padding: 2px;
+    /* margin: 2px; */
+    cursor: pointer;
+}
+.emoji
 {
     min-width: 7%;
     background-color: #a5e4e4;
-    /* border: none; */
+    padding: 10px;
+    border: none;
+    border-radius: 45%;
+    cursor: pointer;
+}
+.send {
+    min-width: 7%;
+    background-color: #a5e4e4;
+    padding: 10px;
+    border: none;
     border-radius: 45%;
     cursor: pointer;
 }

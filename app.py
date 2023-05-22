@@ -21,8 +21,8 @@ from pytz import timezone
 app = Flask(__name__)
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
-app.config['SECRET_KEY'] ="!!!"  #os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"   #os.environ.get('DATABASE_URI')
+app.config['SECRET_KEY'] =os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] =os.environ.get('DATABASE_URI')
 app.config.update(
     SESSION_COOKIE_SAMESITE='None',
     SESSION_COOKIE_SECURE='True',
@@ -120,10 +120,26 @@ Tables={
 
 
 # FOR DEVELOPMENT ONLY
-channels=server["app"].query(channel).all()
-for x in channels:
-    room_dict["app"].update({x.name:{}})
-
+Engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+metadata=MetaData()
+metadata.reflect(Engine)
+Base=automap_base(metadata=metadata)
+Base.prepare()
+Session=sessionmaker(bind=Engine)
+server["app"]=Session()
+engine["app"]=Engine
+tables=server["app"].query(channel).all()
+room_dict["app"]={'/':{}}
+for tb in tables:
+    try:
+        tab = Base.classes[tb.name]
+        setattr(tab, 'user', relationship('users'))
+        # Base.prepare()
+        Tables[tb.name]=tab
+        room_dict["app"].update({tb.name:{}})
+    except:
+        continue
+base["app"]=Base
 
 @app.route('/upload',methods=["POST"])
 def upload_db():
@@ -257,7 +273,7 @@ def create(newchannel):
         data = db.Column(db.String, nullable=False)
         sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
         time = db.Column(db.DateTime, server_default=func.now())
-        user = db.relationship('users')  
+        # user = db.relationship('users')  
 
     Base.metadata.create_all(engine[curr])
     # Base.prepare(engine[curr], reflect=True)
@@ -292,7 +308,7 @@ def create(newchannel):
 @socketio.on("search_text")
 def search(text):
     curr=session.get("server")
-    user_list=server[curr].query(users).filter(users.username.like(text+"%")).all()
+    user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
     Users={"users":[user.username for user in user_list]}
     socketio.emit("show_this",Users,to=request.sid)
 
@@ -583,6 +599,6 @@ if __name__ == '__main__':
 # ---^---   /====      /--------' ---^---
 #    |     /====     /------/        |
 #    |    /====  ,-------/           |
-@app.route("/test")
-def test():
-    return render_template("webRTC.html")
+# @app.route("/test")
+# def test():
+#     return render_template("webRTC.html")

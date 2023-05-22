@@ -48,12 +48,12 @@
             <a id="download" href="download/{{server}}">Download State</a>
             <p onclick='socket.emit("changeServer",false)' id="delete">Logout</p>
             <form id="logout" action="/servers" method="post" style="display: none;"></form>
-            <input style="display: none;" id="listen_call" onclick="listencall()" type="button"
-              value="Listen for calls">
-            <input type="button" onclick="sendOffer()" value="Make Call">
+            <!-- <input style="display: none;" id="listen_call" onclick="listencall()" type="button"
+              value="Listen for calls"> -->
+            <!-- <input type="button" onclick="sendOffer()" value="Make Call"> -->
           </div>
         </div>
-        <div class="chatbox" id="user" style="height: 68vh;">
+        <div class="chatbox" id="user">
           <p>
           <h2>Welcome {{name}}</h2><br>
           </p>
@@ -63,22 +63,25 @@
           </ul>
         </div>
         <div id="newform" class="chatbox_input">
-          <form class="form">
+          <form class="form" id="newform">
             <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel">
             <!-- <input type="submit" value="Add Topic"> -->
+          <button class="send" type="submit"><ion-icon name="arrow-forward-outline"></ion-icon></button>
           </form>
+          
         </div>
       </div>
       <div id="chatside" style="display: none;">
         <div class="header">
           <div class="imgtext">
             <h2 id="topic">&nbsp<br /></h2>
-            &nbsp<small style="
+            &nbsp
+            <small id="user-names" style="
                   font-style: italic;
                   color: rgb(59, 42, 181);
                   font-size: 95%;
-                  cursor: pointer;
-                " id="user-names"></small>
+                  cursor: pointer;">
+            </small>
             <ul id="user-list"></ul>
           </div>
         </div>
@@ -131,12 +134,14 @@
         <div class="chatbox_input" id="chatinput">
           <form class="form">
             <input autofocus autocomplete="off" type="text" name="post" placeholder="Message " id="text_message" />
-            <!-- <button class="emoji" onclick="handleEmojiButtonClick()">&#x1F603;</button> -->
             <!-- <input type="hidden" name="hide" default="False" value="{{hide}}" id="inputfield" /> -->
           </form>
+          <button class="emoji">&#x1F603;</button>
         </div>
       </div>
     </div>
+  </div>
+  <div id="emojiPallet">
   </div>
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
@@ -161,10 +166,78 @@
     const chatUsers = document.getElementById("user-names");
     const Top = document.getElementById("UP");
     const box = document.getElementById("box");
-    const Newform = document.getElementById("newform")
-    const newChannel = document.getElementById("newchannel")
-    let makevisible = true;
-    let hideTimeout;
+    const chatside = document.getElementById("chatside");
+    const userside = document.getElementById("userside");
+    const back = document.getElementById("back")
+    const Newform = document.getElementById("newform");
+    const newChannel = document.getElementById("newchannel");
+    let listvisibility = true;
+    let emojivisibility = true;
+    let listhide;
+    let emojihide;
+    const emojiPallet = document.getElementById("emojiPallet")
+    const emojis = [
+      "😄", "😃", "😀", "😊", "☺️", "😉", "😍", "😘", "😚", "😗",
+      "😙", "😜", "😝", "😛", "😳", "😁", "😔", "😌", "😒", "😞",
+      "😣", "😢", "😂", "😭", "😪", "😥", "😰", "😅", "😓", "😩",
+      "😫", "😨", "😱", "😠", "😡", "😤", "😖", "😆", "😋", "😷",
+      "😎", "😴", "😵", "😲", "😟", "😦", "😧", "😈", "👿", "😮",
+      "😬", "😐", "😕", "😯", "😶", "😇", "😏", "😑", "👲", "👳",
+      "👮", "👷", "💂", "👶", "👦", "👧", "👨", "👩", "👴", "👵",
+      "👱", "👼", "👸", "😺", "😸", "😻", "😽", "😼", "🙀", "😿",
+      "😹", "😾", "👹", "👺", "🙈", "🙉", "🙊", "💀", "👽", "💩",
+      "🔥", "✨", "🌟", "💫", "💥", "💢", "💦", "💧", "💤", "💨",
+      "👂", "👀", "👃", "👅", "👄", "👍", "👎", "👌", "👊", "✊",
+      "👋", "✋", "👐", "👆", "👇", "👉", "👈", "🙌", "🙏", "👏",
+      "💪", "🚶", "🏃", "💃", "👫", "👪", "👬", "👭", "💏", "💑",
+      "👯", "🙆", "🙅", "💁", "🙋", "💆", "💇", "💅", "👰", "🙎",
+      "🙍", "🙇", "🎩", "👑", "👒", "👟", "👞", "👡", "👠", "👢",
+      "👕", "👔", "👚", "👗", "🎽", "👖", "👘", "👙", "💼", "👜",
+      "👝", "👛", "👓", "🎀", "🌂", "💄", "💛", "💙", "💜", "💚",
+      "❤️", "💔", "💗", "💓", "💕", "💖", "💞", "💘", "💌", "💋",
+      "💍", "💎", "👤", "👥", "💬", "👣", "💭", "🐶", "🐺", "🐱",
+      "🐭", "🐹", "🐰", "🐸", "🐯", "🐨", "🐻", "🐷", "🐽", "🐮",
+      "🐗", "🐵", "🐒", "🐴", "🐑", "🐘", "🐼", "🐧", "🐦", "🐤",
+      "🐥", "🐣", "🐔", "🐍", "🐢", "🐛", "🐝", "🐜", "🐞", "🐌",
+      "🐙", "🐚", "🐠", "🐟", "🐬", "🐳", "🐋", "🐄", "🐏", "🐀",
+      "🐃", "🐅", "🐇", "🐉", "🐎", "🐐", "🐓", "🐕", "🐖", "🐁",
+      "🐂", "🐲", "🐡", "🐊", "🐪", "🐆", "🐈", "🐩", "🐾", "💐",
+      "🌸", "🌷", "🍀", "🌹", "🌻", "🌺", "🍁", "🍃", "🍂", "🌿",
+      "🌾", "🍄", "🌵", "🌴", "🌲", "🌳", "🌰", "🌱", "🌼", "🌐",
+      "🌞", "🌝", "🌚", "🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗",
+      "🌘", "🌜", "🌛", "🌙", "🌍", "🌎", "🌏", "🌋", "🌌", "⛅",
+      "⛄", "🌀", "🌁", "🌈", "🌊", "🌉", "🌇", "🌆", "🌄", "🌃",
+      "🌍", "🌎", "🌏", "🌋", "🌌", "⛅", "⛄", "🌀", "🌁", "🌈",
+      "🌊", "🌉", "🌇", "🌆", "🌄", "🌃", "🌂", "☂️", "☔", "💧",
+      "💦", "🌊", "🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇",
+      "🍓", "🍈", "🍒", "🍑", "🍍", "🍅", "🍆", "🌽", "🍠", "🍞",
+      "🍗", "🍖", "🍤", "🍳", "🍔", "🍟", "🌭", "🍕", "🍝", "🌮",
+      "🌯", "🍜", "🍲", "🍥", "🍣", "🍱", "🍛", "🍙", "🍚", "🍘",
+      "🍢", "🍡", "🍧", "🍨", "🍦", "🍰", "🎂", "🍮", "🍬", "🍭",
+      "🍫", "🍿", "🍩", "🍪", "🌰", "🍯", "🍎", "🍏", "🍊", "🍋",
+      "🍒", "🍇", "🍉", "🍓", "🍑", "🍈", "🍌", "🍐", "🍍", "🍠",
+      "🍆", "🌽", "🍄", "🌰", "🍞", "🍞", "🍖", "🍗", "🍔", "🍟",
+      "🌭", "🍕", "🍝", "🌮", "🌯", "🍜", "🍲", "🍥", "🍛", "🍙",
+      "🍚", "🍘", "🍢", "🍡", "🍧", "🍨", "🍦", "🍰", "🎂", "🍮",
+      "🍬", "🍭", "🍫", "🍿", "🍩", "🍪", "🍯", "🌰"
+    ];
+
+    // console.log(emojis)
+    emojis.forEach(emoji => {
+      let bx = document.createElement('span')
+      bx.innerText = emoji
+      bx.classList.add('emoG')
+      bx.setAttribute('onclick', 'add("' + emoji + '")')
+      emojiPallet.appendChild(bx)
+    });
+
+    function add(emoji) {
+      if (chatside.style.display == "block") {
+        message_input.value += emoji + " "
+      } else {
+        newChannel.value += emoji + " "
+      }
+    }
 
     function rearrange() {
       search = search_input.value.toLowerCase();
@@ -182,16 +255,16 @@
 
     function show(side) {
       if (side === "chatside") {
-        if (document.getElementById("chatside").style.display === "none") {
-          document.getElementById("userside").style.display = "none"
-          document.getElementById("chatside").style.display = "block"
-          document.getElementById("back").style.display = "block"
+        if (chatside.style.display === "none") {
+          userside.style.display = "none"
+          chatside.style.display = "block"
+          back.style.display = "block"
         }
       } else {
-        if (document.getElementById("userside").style.display === "none") {
-          document.getElementById("chatside").style.display = "none"
-          document.getElementById("userside").style.display = "block"
-          document.getElementById("back").style.display = "none"
+        if (userside.style.display === "none") {
+          chatside.style.display = "none"
+          userside.style.display = "block"
+          back.style.display = "none"
           chatbox.innerHTML = ""
           if (document.getElementsByClassName("active").length != 0) {
             document.getElementsByClassName("active")[0].classList.remove("active")
@@ -205,7 +278,6 @@
       chatbox.innerHTML = ""
       userList.innerHTML = "";
       chatUsers.innerText = "";
-      // '<div class="arrow" onclick="gethistory()" id="UP"><ion-icon name="arrow-up-outline"></ion-icon></div><hr id="breaker">';
     }
 
     function goto(Newchannel) {
@@ -223,6 +295,7 @@
         document.getElementById("topic").innerText = Newchannel
         emphasize()
         chatUsers.innerText = "";
+        message_input.value = ""
         socket.emit("change", { "channel": Newchannel });
       }
     }
@@ -234,7 +307,7 @@
           active[0].classList.remove("active");
         }
         Frnd.classList.add("active")
-        if (Frnd.children[1].children[0].childElementCount==2){
+        if (Frnd.children[1].children[0].childElementCount == 2) {
           Frnd.children[1].children[0].children[1].remove()
         }
         document.getElementById("topic").innerText = Frnd.innerText
@@ -248,45 +321,73 @@
       userList.innerHTML = "";
       chatUsers.innerText = "";
       channel_list.innerHTML = "";
-      if(Newserver.childElementCount==2){Newserver.children[1].remove()}
+      if (Newserver.childElementCount == 2) { Newserver.children[1].remove() }
       socket.emit("changeServer", Newserver.innerText)
     }
 
-    chatUsers.addEventListener("click", () => {
-      clearTimeout(hideTimeout);
-      if (makevisible) {
-        userList.style.display = "block";
-        makevisible = false;
-      } else {
-        userList.style.display = "none";
-        makevisible = true;
-      }
-    });
 
-    chatUsers.addEventListener("mouseleave", () => {
-      hideTimeout = setTimeout(() => {
-        if (makevisible) {
-          userList.style.display = "none";
-        }
-      }, 500);
+
+
+
+
+
+
+    makeHoverable(chatUsers, userList, listvisibility, listhide)
+    const emoji_btns = document.getElementsByClassName("emoji")
+    Array.from(emoji_btns).forEach(emoji_btn => {
+      makeHoverable(emoji_btn, emojiPallet, emojivisibility, emojihide)
     });
-    chatUsers.addEventListener("mouseenter", () => {
-      if (makevisible) {
-        userList.style.display =
-          userList.style.display === "block" ? "none" : "block";
+    function makeHoverable(btn, block, visibility, time) {
+      let mouseleave = function () {
+        console.log("mouse leave")
+        time = setTimeout(() => {
+          if (visibility) {
+            block.style.display = "none";
+          }
+        }, 500);
       }
-    });
-    userList.addEventListener("mouseenter", () => {
-      clearTimeout(hideTimeout);
-      userList.style.display = "block";
-    });
-    userList.addEventListener("mouseleave", () => {
-      hideTimeout = setTimeout(() => {
-        if (makevisible) {
-          userList.style.display = "none";
+      let blockenter = function () {
+        console.log("block enter")
+        clearTimeout(time);
+        block.style.display = "block";
+
+      }
+      let btnenter = function () {
+        console.log("btn enter")
+        if (visibility) {
+          block.style.display =
+            block.style.display === "block" ? "none" : "block";
         }
-      }, 500);
-    });
+      }
+      btn.addEventListener("mouseenter", btnenter)
+      btn.addEventListener("mouseleave", mouseleave)
+      block.addEventListener("mouseenter", blockenter);
+      block.addEventListener("mouseleave", mouseleave)
+      
+
+      btn.addEventListener("click", () => {
+        console.log("clicked")
+        console.log("timeout can remove the block (t/f) : " + visibility)
+        clearTimeout(time);
+        if (visibility) {
+          block.style.display = "block";
+          console.log("remove eventlistener")
+          btn.removeEventListener("mouseenter", btnenter);
+          btn.removeEventListener("mouseleave", mouseleave);
+          block.removeEventListener("mouseenter", blockenter);
+          block.removeEventListener("mouseleave", mouseleave);
+          visibility = false;
+        } else {
+          console.log("add eventlistener")
+          btn.addEventListener("mouseenter", btnenter)
+          btn.addEventListener("mouseleave", mouseleave)
+          block.addEventListener("mouseenter", blockenter);
+          block.addEventListener("mouseleave", mouseleave)
+          block.style.display = "none";
+          visibility = true;
+        }
+      });
+    }
 
     socket.on("connect", function () {
       socket.emit("changeServer", '{{server}}')
@@ -297,7 +398,8 @@
       document.getElementById("server2").innerText = data[0]
       document.getElementById("download").href = "/download/" + data[0]
       show("userside")
-      channel_list.innerHTML = ""
+      all = false;
+      channel_list.innerHTML = "";
       data[1].forEach(element => {
         let channel = document.createElement("div")
         channel.classList.add("block")
@@ -310,6 +412,7 @@
     document.getElementById("back").onclick = function () {
       userList.innerHTML = "";
       chatUsers.innerText = "";
+      message_input.value = ""
       document.getElementById("topic").innerText = ""
       document.getElementById("chats").innerHTML = ""
 
@@ -361,12 +464,13 @@
     });
 
     function GOTOfrnd(user, GOTO = true) {
-      let block = document.getElementsByClassName("block")
+      let block = document.getElementsByClassName("friend")
       let create = true;
       for (let i = 0; i < block.length; i++) {
         if (block[i].innerText == user) {
           if (GOTO) {
-            gotofrnd(block[i])
+            gotofrnd(block[i].parentElement)
+            return
           }
           create = false;
         }
@@ -453,7 +557,7 @@
             num.innerText = "1";
             ls[i].parentElement.appendChild(num);
           } else {
-            let num=parseInt(ls[i].parentElement.children[1].innerText)
+            let num = parseInt(ls[i].parentElement.children[1].innerText)
             ls[i].parentElement.children[1].innerText = num + 1;
           }
         }
@@ -477,8 +581,14 @@
 
     search_form.onsubmit = function () {
       let search = search_input.value.trim();
-      socket.emit("search_text", String(search));
-      rearrange();
+      if (search.length != 0) {
+        if (search == '*') {
+          search = "";
+          all = true;
+        }
+        socket.emit("search_text", String(search));
+        rearrange();
+      }
       return false;
     };
 
