@@ -19,10 +19,11 @@ from pytz import timezone
 
 
 app = Flask(__name__)
+app.debug=True
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
-app.config['SECRET_KEY'] =os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] =os.environ.get('DATABASE_URI')
+app.config['SECRET_KEY'] ="!!!"  #os.environ.get('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///test.sqlite3"   #os.environ.get('DATABASE_URI')
 app.config.update(
     SESSION_COOKIE_SAMESITE='None',
     SESSION_COOKIE_SECURE='True',
@@ -595,6 +596,7 @@ def download_database(server):
 
 if __name__ == '__main__':
     socketio.run(app)
+    # app.run()
 
 # ---^---   /====      /--------' ---^---
 #    |     /====     /------/        |

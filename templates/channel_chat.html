@@ -11,7 +11,7 @@
 </head>
 
 <body>
-  <div class="container">
+  <div class="container" id="container">
     <div class="servers">
       {% for srvr in mysrvr: %}
       <div class="text-block" onclick='gotoserver(this)'>
@@ -66,23 +66,26 @@
           <form class="form" id="newform">
             <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel">
             <!-- <input type="submit" value="Add Topic"> -->
-          <button class="send" type="submit"><ion-icon name="arrow-forward-outline"></ion-icon></button>
+            <button class="send" type="submit"><ion-icon name="arrow-forward-outline"></ion-icon></button>
           </form>
-          
+
         </div>
       </div>
       <div id="chatside" style="display: none;">
         <div class="header">
           <div class="imgtext">
             <h2 id="topic">&nbsp<br /></h2>
-            &nbsp
-            <small id="user-names" style="
-                  font-style: italic;
-                  color: rgb(59, 42, 181);
-                  font-size: 95%;
-                  cursor: pointer;">
-            </small>
-            <ul id="user-list"></ul>
+
+          </div>
+          <div class="channel_info">
+            <div id="users" class="info">
+              <ion-icon class="info_icon" name="people-outline"></ion-icon>
+              <div id="user-count">(...)</div>
+            </div>
+            <!-- <div id="both" class="info" >&nbsp&nbsp&nbsp</div> -->
+            <div id="attachment" class="info">
+            <ion-icon class="info_icon" name="attach-outline"></ion-icon>
+            </div>
           </div>
         </div>
         <div id="box" class="chatbox">
@@ -133,7 +136,11 @@
 
         <div class="chatbox_input" id="chatinput">
           <form class="form">
-            <input autofocus autocomplete="off" type="text" name="post" placeholder="Message " id="text_message" />
+            <input autofocus autocomplete="off" type="text" name="post" placeholder="Message" id="text_message" />
+            <!-- <div contenteditable="true" 
+            id="text_message" class ="inputarea" data-text="Message">       
+             </div> -->
+          
             <!-- <input type="hidden" name="hide" default="False" value="{{hide}}" id="inputfield" /> -->
           </form>
           <button class="emoji">&#x1F603;</button>
@@ -141,7 +148,35 @@
       </div>
     </div>
   </div>
+  <div class="sidebar">
+    <div class="user-list" id="listblock">
+      People:
+      <ul id="user-list"></ul>
+    </div>
+    <div class="pins" id="pins">
+      Media:
+      <div class="pinned" onclick="showpinned('test.py')"> test.py</div>
+      <div class="pinned" onclick="showpinned('imgage.png')"> imgage.png</div>
+      <div class="pinned" onclick="showpinned('todo.pdf')"> todo.pdf</div>
+      <!-- <input style="display: flex; flex-wrap: wrap;" type="file" multiple name="files" autocomplete="off" />
+      <input id="upload" type="submit" value="Send" /> -->
+    </div>
+  </div>
   <div id="emojiPallet">
+  </div>
+  <div id="pintab">
+    <nav>
+      <div style="cursor: auto;" class="navitems center-items">
+        test.py
+      </div>
+      <div class="navitems right-items">
+        <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+        <ion-icon name="close-outline" onclick="cancelpinned()"></ion-icon>
+      </div>
+    </nav>
+    <div class="content">
+
+    </div>
   </div>
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
@@ -154,7 +189,9 @@
     var socket = io({
       transports: ["websocket"],
     });
+    const body = document.getElementById("container");
     const chatbox = document.getElementById("chats");
+    const server = document.getElementById("server")
     const line = document.getElementById("breaker");
     const channel_list = document.getElementById("channel_list")
     const message_form = document.getElementById("chatinput");
@@ -163,7 +200,10 @@
     const search_input = document.getElementById("search_input");
     const userlive = document.getElementById("userlive")
     const userList = document.getElementById("user-list");
-    const chatUsers = document.getElementById("user-names");
+    const both = document.getElementById("both")
+    const listblock = document.getElementById("listblock")
+    const Users = document.getElementById("users");
+    const userCount = document.getElementById("user-count")
     const Top = document.getElementById("UP");
     const box = document.getElementById("box");
     const chatside = document.getElementById("chatside");
@@ -171,10 +211,16 @@
     const back = document.getElementById("back")
     const Newform = document.getElementById("newform");
     const newChannel = document.getElementById("newchannel");
+    const pintab = document.getElementById("pintab");
+    const attachment = document.getElementById("attachment");
+    const pins = document.getElementById("pins")
+    attachment.checked = true
+    let pinsvisibility = true;
     let listvisibility = true;
     let emojivisibility = true;
     let listhide;
     let emojihide;
+    let pinshide;
     const emojiPallet = document.getElementById("emojiPallet")
     const emojis = [
       "😄", "😃", "😀", "😊", "☺️", "😉", "😍", "😘", "😚", "😗",
@@ -222,7 +268,34 @@
       "🍬", "🍭", "🍫", "🍿", "🍩", "🍪", "🍯", "🌰"
     ];
 
-    // console.log(emojis)
+
+    // both.addEventListener('mouseenter', () => {
+    //   // Trigger the mouseenter event of the attachment
+    //   attachment.dispatchEvent(new Event('mouseenter'));
+    //   Users.dispatchEvent(new Event('mouseenter'));
+    // });
+
+    // both.addEventListener('mouseleave', () => {
+    //   // Trigger the mouseleave event of the attachment
+    //   attachment.dispatchEvent(new Event('mouseleave'));
+    //   Users.dispatchEvent(new Event('mouseenter'));
+    // });
+
+    function showpinned(pin) {
+      body.classList.add('blur');
+      pintab.style.display = "block";
+      // show new window
+    }
+
+    function cancelpinned() {
+      pintab.style.display = "none";
+      body.classList.remove('blur');
+    }
+
+
+
+    makeHoverable(attachment, pins, pinsvisibility, pinshide)
+
     emojis.forEach(emoji => {
       let bx = document.createElement('span')
       bx.innerText = emoji
@@ -277,7 +350,7 @@
       show("chatside")
       chatbox.innerHTML = ""
       userList.innerHTML = "";
-      chatUsers.innerText = "";
+      userCount.innerText = "(...)";
     }
 
     function goto(Newchannel) {
@@ -287,14 +360,18 @@
           active[0].classList.remove("active");
         }
         Newchannel.classList.add("active")
-        document.getElementsByClassName("active")
-        if (Newchannel.children[1].children[0].childElementCount == 2) {
-          Newchannel.children[1].children[0].children[1].remove()
+        if (Newchannel.childElementCount == 3) {
+          Newchannel.children[2].remove()
         }
         Newchannel = Newchannel.innerText.split('\n')[0]
         document.getElementById("topic").innerText = Newchannel
         emphasize()
-        chatUsers.innerText = "";
+        pins.style.display="none";
+        pinsvisibility=true;
+        listblock.style.display="none";
+        listvisibility=true;
+        userList.innerHTML = "";
+        userCount.innerText = "(...)";
         message_input.value = ""
         socket.emit("change", { "channel": Newchannel });
       }
@@ -317,57 +394,44 @@
     }
 
     function gotoserver(Newserver) {
-      userlive.innerHTML = "";
-      userList.innerHTML = "";
-      chatUsers.innerText = "";
-      channel_list.innerHTML = "";
-      if (Newserver.childElementCount == 2) { Newserver.children[1].remove() }
-      socket.emit("changeServer", Newserver.innerText)
+      if (server.innerText!=Newserver.innerText){
+        userlive.innerHTML = "";
+        userList.innerHTML = "";
+        userCount.innerText = "(...)";
+        channel_list.innerHTML = "";
+        if (Newserver.childElementCount == 2) { Newserver.children[1].remove() }
+        socket.emit("changeServer", Newserver.innerText)
+      }
     }
 
-
-
-
-
-
-
-
-    makeHoverable(chatUsers, userList, listvisibility, listhide)
+    makeHoverable(Users, listblock, listvisibility, listhide)
     const emoji_btns = document.getElementsByClassName("emoji")
     Array.from(emoji_btns).forEach(emoji_btn => {
       makeHoverable(emoji_btn, emojiPallet, emojivisibility, emojihide)
     });
     function makeHoverable(btn, block, visibility, time) {
       let mouseleave = function () {
-        console.log("mouse leave")
         time = setTimeout(() => {
           if (visibility) {
             block.style.display = "none";
           }
-        }, 500);
+        }, 100);
       }
       let blockenter = function () {
-        console.log("block enter")
         clearTimeout(time);
         block.style.display = "block";
-
       }
       let btnenter = function () {
-        console.log("btn enter")
-        if (visibility) {
-          block.style.display =
-            block.style.display === "block" ? "none" : "block";
-        }
+        clearTimeout(time)
+        block.style.display = "block";
       }
       btn.addEventListener("mouseenter", btnenter)
       btn.addEventListener("mouseleave", mouseleave)
       block.addEventListener("mouseenter", blockenter);
       block.addEventListener("mouseleave", mouseleave)
-      
+
 
       btn.addEventListener("click", () => {
-        console.log("clicked")
-        console.log("timeout can remove the block (t/f) : " + visibility)
         clearTimeout(time);
         if (visibility) {
           block.style.display = "block";
@@ -394,7 +458,7 @@
     });
 
     socket.on("showNewServer", function (data) {
-      document.getElementById("server").innerText = data[0]
+      server.innerText = data[0]
       document.getElementById("server2").innerText = data[0]
       document.getElementById("download").href = "/download/" + data[0]
       show("userside")
@@ -403,7 +467,7 @@
       data[1].forEach(element => {
         let channel = document.createElement("div")
         channel.classList.add("block")
-        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4></div><div class="creator"><p>created by ' + element[1] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4></div><div class="creator"><p>created by ' + element[1] + '</p></div></div>'
         channel.setAttribute('onclick', 'goto(this)')
         channel_list.appendChild(channel)
       });
@@ -411,7 +475,7 @@
 
     document.getElementById("back").onclick = function () {
       userList.innerHTML = "";
-      chatUsers.innerText = "";
+      userCount.innerText = "(...)";
       message_input.value = ""
       document.getElementById("topic").innerText = ""
       document.getElementById("chats").innerHTML = ""
@@ -478,7 +542,7 @@
       if (create) {
         let plate = document.createElement("div")
         plate.classList.add("block")
-        plate.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="friend">' + user + '</h4></div><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        plate.innerHTML = '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="friend">' + user + '</h4></div></div></div>'
         plate.setAttribute('onclick', 'gotofrnd(this)')
         channel_list.insertAdjacentElement("afterbegin", plate)
         if (GOTO) {
@@ -532,34 +596,30 @@
 
     socket.on("notify", function (userObj) {
       userList.innerHTML = ""
-      chatUsers.innerHTML = ""
-      let first3 = "you";
       for (const key in userObj) {
         let user = document.createElement("li");
         user.innerText = key;
         user.setAttribute('onclick', 'GOTOfrnd("' + key + '")')
         userList.appendChild(user);
-        if (key != '{{name}}') {
-          first3 += " " + key
-        }
+
       }
-      first3 += " (" + Object.keys(userObj).length + ")";
-      chatUsers.innerText = first3;
+      userCount.innerText = " (" + Object.keys(userObj).length + ")";
     });
 
     function shownotification(to, name) {
       let ls = document.getElementsByClassName(to)
       for (let i = 0; i < ls.length; i++) {
         if (ls[i].innerText == name) {
-          if (ls[i].parentElement.childElementCount == 1) {
+          if (ls[i].parentElement.parentElement.parentElement.childElementCount != 3) {
             let num = document.createElement('p')
             num.classList.add("update")
             num.innerText = "1";
-            ls[i].parentElement.appendChild(num);
+            ls[i].parentElement.parentElement.parentElement.appendChild(num);
           } else {
-            let num = parseInt(ls[i].parentElement.children[1].innerText)
-            ls[i].parentElement.children[1].innerText = num + 1;
+            let num = parseInt(ls[i].parentElement.parentElement.parentElement.children[2].innerText)
+            ls[i].parentElement.parentElement.parentElement.children[2].innerText = num + 1;
           }
+          channel_list.insertAdjacentElement("afterbegin", ls[i].parentElement.parentElement.parentElement)
         }
       }
     }
