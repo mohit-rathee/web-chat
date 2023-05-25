@@ -394,7 +394,7 @@
     }
 
     function gotoserver(Newserver) {
-      if (server.innerText!=Newserver){
+      if (server.innerText!=Newserver.innerText){
         userlive.innerHTML = "";
         userList.innerHTML = "";
         userCount.innerText = "(...)";
@@ -458,19 +458,19 @@
     });
 
     socket.on("showNewServer", function (data) {
-      // server.innerText = data[0]
-      // document.getElementById("server2").innerText = data[0]
-      // document.getElementById("download").href = "/download/" + data[0]
-      // show("userside")
-      // all = false;
-      // channel_list.innerHTML = "";
-      // data[1].forEach(element => {
-      //   let channel = document.createElement("div")
-      //   channel.classList.add("block")
-      //   channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4></div><div class="creator"><p>created by ' + element[1] + '</p></div></div>'
-      //   channel.setAttribute('onclick', 'goto(this)')
-      //   channel_list.appendChild(channel)
-      // });
+      server.innerText = data[0]
+      document.getElementById("server2").innerText = data[0]
+      document.getElementById("download").href = "/download/" + data[0]
+      show("userside")
+      all = false;
+      channel_list.innerHTML = "";
+      data[1].forEach(element => {
+        let channel = document.createElement("div")
+        channel.classList.add("block")
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4></div><div class="creator"><p>created by ' + element[1] + '</p></div></div>'
+        channel.setAttribute('onclick', 'goto(this)')
+        channel_list.appendChild(channel)
+      });
     })
 
     document.getElementById("back").onclick = function () {
