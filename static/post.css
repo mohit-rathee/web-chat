@@ -366,7 +366,7 @@ nav {
 }
 .channel_list {
   position: relative;
-  height: 79vh;
+  height: 77vh;
   overflow-y: auto;
   background: #a3c08f;
 }

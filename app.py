@@ -227,6 +227,13 @@ def change_db():
 def on_disconnect():
     changeServer(False)
 
+@socketio.on('Load')
+def Load():
+    curr=session.get('server')
+    join_room(curr)
+    room_dict[curr]["/"].update({session.get("name"):request.sid})
+    socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
+
 @socketio.on("changeServer")
 def changeServer(newServer):
     # REMOVE PREV 
@@ -563,13 +570,16 @@ def login():
 def channel_chat():
     if not session.get("name"):
         return redirect("/servers")
-    curr=session.get("server")
     name=session.get("name")
     myserver=session.get("myserver")
-    if myserver!=None:
-        return render_template("channel_chat.html",name=name,server=curr,mysrvr=myserver)
-    session.clear()
-    return redirect("/login")    
+    curr=myserver[0]
+    channels=server[curr].query(channel).all()
+    ppls=room_dict[curr]["/"]
+    print(ppls)
+    peoples=[[people] for people in ppls]
+    print(peoples)
+    return render_template("channel_chat.html",name=name,server=curr,mysrvr=myserver,channels=channels,peoples=peoples)
+    
                 
 
 
