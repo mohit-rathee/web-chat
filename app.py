@@ -247,10 +247,10 @@ def changeServer(newServer):
         join_room(newServer)
         # print(socketio.server.manager.rooms)
         room_dict[newServer]["/"].update({session.get("name"):request.sid})
-        socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
-        channel_list=[session.get("server")]
-        channel_list.append([[channel.name,channel.user.username] for channel in channels])
-        socketio.emit("showNewServer",channel_list,to=request.sid)    
+        socketio.emit("serverlive",room=newServer)
+        # channel_list=[session.get("server")]
+        # channel_list.append([[channel.name,channel.user.username] for channel in channels])
+        socketio.emit("showNewServer",to=request.sid)    
     else:
         session.clear()
         session["name"]=None
