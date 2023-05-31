@@ -111,9 +111,8 @@ nav {
   display: none;
   background-color: #262626;
   position: absolute;
-  top: 20%;
+  top: 10%;
   left: 20%;
-  height: 60%;
   width: 60%;
   z-index: 500;
 }
@@ -121,8 +120,11 @@ nav {
   filter: blur(5px);
   pointer-events: none;
 }
+.content {
+  width: 100;
+  object-fit: contain;
+}
 .image {
-  height: 100%;
   width: 100%;
 }
 .pinned {

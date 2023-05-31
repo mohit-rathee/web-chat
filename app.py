@@ -62,7 +62,7 @@ class chats(db.Model):
 class media(db.Model):
     id=db.Column(db.String,primary_key=True)
     name=db.Column(db.String, nullable=False) 
-    ext=db.Column(db.String, nullable=False)
+    mime=db.Column(db.String, nullable=False)
     chat=db.relationship('chats',backref='media')
 # class posts(db.Model):
 #     __abstract__ = True
@@ -248,7 +248,7 @@ def Load():
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
     Media=server[curr].query(media).all()
-    Md=[[media.name,media.id,media.ext] for media in Media]
+    Md=[[media.name,media.id,media.mime] for media in Media]
     socketio.emit("medias",Md,to=request.sid)
 
 @socketio.on("changeServer")
@@ -598,7 +598,7 @@ def handel_get_Media(name):
     Media=server[session.get("server")].query(media).filter_by(id=name).first()
     # print(Media)
     if Media != None:
-        file_path="media/"+name+Media.ext
+        file_path="media/"+name+mimetypes.guess_extension(Media.mime)
         print(file_path)
         return send_file(file_path)
     else:
@@ -633,7 +633,7 @@ def handel_media():
             if os.path.exists("media/"+new_file_name)==False:
 
                 os.rename("media/"+file_name,"media/"+new_file_name)
-                Media=media(id=file_hash,name=name.split(".")[0],ext=mediaHash[unique_id]["ext"])
+                Media=media(id=file_hash,name=name,mime=mediaHash[unique_id]["mime"])
                 server[curr].add(Media)
                 server[curr].commit()
             else:
@@ -658,9 +658,9 @@ def handel_media():
     typ=request.form['typ']
     Total=request.form['total']
     unique_id = str(uuid.uuid4())
-    mime=mimetypes.guess_extension(typ)
+    ext=mimetypes.guess_extension(typ)
     try:
-        with open(str("media/"+unique_id+mime), 'wb'):
+        with open(str("media/"+unique_id+ext), 'wb'):
             pass
 
     except:
@@ -670,7 +670,7 @@ def handel_media():
     mediaHash[unique_id]["seq"]=int(Total)-1
     mediaHash[unique_id]["Hash"]=hashlib.sha256()
     mediaHash[unique_id]["mime"]=typ
-    mediaHash[unique_id]["ext"]=mime
+    mediaHash[unique_id]["ext"]=ext
     return unique_id
 
 # 6037d1fb7ce473ae87f8e182a1db22ae0bcf2370c7d548ca20688de593c29393

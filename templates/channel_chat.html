@@ -384,27 +384,27 @@
       body.classList.add('blur');
       pintab.style.display = "block";
       pinname.innerText = data[0]
-      content.innerHTML=""
-      // if (data[2].toLowerCase().includes("image")) {
-      const img = document.createElement("img")
-      img.classList.add("image")
-      img.src = "/media/" + data[1]
-      content.appendChild(img)
-      // }
+      content.innerHTML = ""
+      if (data[2].toLowerCase().includes("image")) {
+        const img = document.createElement("img")
+        img.classList.add("image")
+        img.src = "/media/" + data[1]
+        content.appendChild(img)
+      }
       if (data[2].toLowerCase().includes("video")) {
-        alert("not configured for videos now")
-        // const video = document.createElement('video');
-        // video.controls = true;
-        // fetch("/media/" + url)
-        //   .then(response => response.blob())
-        //   .then(blob => {
-        //     video.src = URL.createObjectURL(blob);
-        //     video.type="video/x-matroska"
-        //   })
-        //   .catch(error => {
-        //     console.error('Error:', error);
-        //   });
-        // content.appendChild(video)
+        // alert("not configured for videos now")
+        const video = document.createElement('video');
+        video.classList.add("image")
+        video.controls = true;
+        fetch("/media/" + data[1])
+          .then(response => response.blob())
+          .then(blob => {
+            video.src = URL.createObjectURL(blob);
+          })
+          .catch(error => {
+            console.error('Error:', error);
+          });
+        content.appendChild(video)
       }
 
       // const fileInput = document.getElementById('fileInput');
@@ -445,7 +445,7 @@
     function cancelpinned() {
       pintab.style.display = "none";
       body.classList.remove('blur');
-      content.innerHTML=""
+      content.innerHTML = ""
     }
 
 
@@ -617,23 +617,23 @@
       socket.emit("Load")
     });
 
-    function addmedia(data){
+    function addmedia(data) {
       console.log(data)
       let mediaplate = document.createElement("div")
       mediaplate.classList.add("pinned")
       mediaplate.innerText = data[0]
-      
-      mediaplate.setAttribute("onclick", 'showpinned('+JSON.stringify(data)+')')
+
+      mediaplate.setAttribute("onclick", 'showpinned(' + JSON.stringify(data) + ')')
       mediaPool.appendChild(mediaplate)
     }
 
-    socket.on("medias",function(datas){
+    socket.on("medias", function (datas) {
       datas.forEach(data => {
         addmedia(data)
       })
     })
 
-    socket.on("media",function(data){
+    socket.on("media", function (data) {
       addmedia(data)
     })
 
