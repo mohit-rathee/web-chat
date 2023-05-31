@@ -86,9 +86,6 @@ input[type="submit"]:hover {
   background-color: #b8e3bb;
 }
 
-.blur {
-  filter: blur(3px);
-}
 nav {
   background-color: #3e3e3e;
   display: flex;
@@ -120,6 +117,14 @@ nav {
   width: 60%;
   z-index: 500;
 }
+.blur {
+  filter: blur(5px);
+  pointer-events: none;
+}
+.image {
+  height: 100%;
+  width: 100%;
+}
 .pinned {
   cursor: pointer;
   margin-bottom: 5%;
@@ -128,6 +133,7 @@ nav {
   font-size: 80%;
   background-color: #a3c08f;
   border-radius: 10%;
+  overflow-x: auto;
 }
 .sidebar {
   position: absolute;
@@ -364,6 +370,7 @@ nav {
 .search_channel div input::placeholder {
   color: rgb(190, 38, 38);
 }
+
 .channel_list {
   position: relative;
   height: 77vh;

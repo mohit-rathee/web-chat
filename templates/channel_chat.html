@@ -40,7 +40,7 @@
       </div>
       <div class="channel_list" id="channel_list">
         {% for channel in channels: %}
-        <div class="block" onclick="goto(this)">
+        <div class="block" onclick="goto(this)" data-key="{{channel.id}}">
           <div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div>
           <div class="details">
             <div class="name">
@@ -74,7 +74,7 @@
           <ul style="cursor: pointer;" type="bullet" id="userlive">
             <br>
             {% for people in peoples %}
-              <li onclick="GOTOfrnd('{{people}}')">{{people}}</li>
+            <li onclick="GOTOfrnd('{{people}}')">{{people}}</li>
             {% endfor %}
           </ul>
         </div>
@@ -171,26 +171,25 @@
     </div>
     <div class="pins" id="pins">
       Media:
-      <div class="pinned" onclick="showpinned('test.py')"> test.py</div>
-      <div class="pinned" onclick="showpinned('imgage.png')"> imgage.png</div>
-      <div class="pinned" onclick="showpinned('todo.pdf')"> todo.pdf</div>
-      <!-- <input style="display: flex; flex-wrap: wrap;" type="file" multiple name="files" autocomplete="off" />
-      <input id="upload" type="submit" value="Send" /> -->
+      <div id="mediaPool">
+      </div>
+      <input id="media" style="display: flex; flex-wrap: wrap;" type="file" name="files" autocomplete="off" />
+      <div style="display: flex;"> <button id="upload">Send</button>
+        <div id="loading-circle"></div>
+      </div>
     </div>
   </div>
   <div id="emojiPallet">
   </div>
   <div id="pintab">
     <nav>
-      <div style="cursor: auto;" class="navitems center-items">
-        test.py
-      </div>
+      <div id="pinname" style="cursor: auto;" class="navitems center-items"></div>
       <div class="navitems right-items">
         <ion-icon name="ellipsis-vertical-outline"></ion-icon>
         <ion-icon name="close-outline" onclick="cancelpinned()"></ion-icon>
       </div>
     </nav>
-    <div class="content">
+    <div id="content">
 
     </div>
   </div>
@@ -230,6 +229,10 @@
     const pintab = document.getElementById("pintab");
     const attachment = document.getElementById("attachment");
     const pins = document.getElementById("pins")
+    const mediaPool = document.getElementById("mediaPool")
+    const loadingCircle = document.getElementById('loading-circle');
+    const pinname = document.getElementById("pinname")
+    const content = document.getElementById("content")
     attachment.checked = true
     let pinsvisibility = true;
     let listvisibility = true;
@@ -297,15 +300,152 @@
     //   Users.dispatchEvent(new Event('mouseenter'));
     // });
 
-    function showpinned(pin) {
+    const chunkSize = 10485760; // 10 MB in bytes
+
+
+    // document.getElementById("upload").onclick = async function () {
+    //   const file = document.getElementById("media").files[0];
+    //   const metaData = new FormData();
+    //   metaData.append('file', file);
+    //   try {
+    //     const response = await fetch('/media', {
+    //       method: 'POST',
+    //       body: metaData
+    //     });
+    //     const data = await response.text();
+    //     console.log('Response:', data);
+    //   } catch (error) {
+    //     console.error('Error:', error);
+    //   }
+    // }
+    function updateLoadingCircle(value) {
+      loadingCircle.innerText = value
+    }
+    document.getElementById("upload").onclick = async function () {
+      if (document.getElementById("media").files[0] == null) {
+        return
+      }
+      document.getElementById("loading-circle").style.display = "block"
+      const file = document.getElementById("media").files[0];
+      const Total = Math.ceil(file.size / chunkSize);
+      const metaData = new FormData();
+      metaData.append('name', file.name);
+      metaData.append('typ', file.type);
+      metaData.append('total', Total);
+      metaData.append('uuid', "");
+
+      try {
+        const response = await fetch('/media', {
+          method: 'POST',
+          body: metaData
+        });
+        const data = await response.text();
+        console.log('Response:', data);
+        const uuid = data;
+        let seq = 0;
+        updateLoadingCircle(seq);
+        while (seq <= Total) {
+          const offset = chunkSize * seq;
+          const chunk = file.slice(offset, offset + chunkSize);
+          console.log(offset, offset + chunkSize);
+          seq = await sendSeqChunk(seq, chunk, uuid);
+          updateLoadingCircle(Math.round(seq * 100 / Total));
+          console.log(seq)
+        }
+        document.getElementById("media").value = '';
+        document.getElementById("loading-circle").style.display = "none"
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+
+    async function sendSeqChunk(seq, chunk, uuid) {
+      try {
+        console.log(seq);
+        console.log(chunk);
+        const fileData = new FormData();
+        fileData.append('chunk', chunk);
+        fileData.append('seq', seq);
+        fileData.append('uuid', uuid);
+
+        const response = await fetch('/media', {
+          method: 'POST',
+          body: fileData
+        });
+        const data = await response.text();
+        return data;
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+
+    function showpinned(data) {
       body.classList.add('blur');
       pintab.style.display = "block";
-      // show new window
+      pinname.innerText = data[0]
+      content.innerHTML=""
+      // if (data[2].toLowerCase().includes("image")) {
+      const img = document.createElement("img")
+      img.classList.add("image")
+      img.src = "/media/" + data[1]
+      content.appendChild(img)
+      // }
+      if (data[2].toLowerCase().includes("video")) {
+        alert("not configured for videos now")
+        // const video = document.createElement('video');
+        // video.controls = true;
+        // fetch("/media/" + url)
+        //   .then(response => response.blob())
+        //   .then(blob => {
+        //     video.src = URL.createObjectURL(blob);
+        //     video.type="video/x-matroska"
+        //   })
+        //   .catch(error => {
+        //     console.error('Error:', error);
+        //   });
+        // content.appendChild(video)
+      }
+
+      // const fileInput = document.getElementById('fileInput');
+      // const file = fileInput.files[0];
+
+      // const fileContainer = document.getElementById('fileContainer');
+      // fileContainer.innerHTML = ''; // Clear any existing content
+
+      // if (file.type.includes('image')) {
+      //   // If it's an image file, display the image
+      //   const img = document.createElement('img');
+      //   img.src = URL.createObjectURL(file);
+      //   fileContainer.appendChild(img);
+      // } else if (file.type.includes('video')) {
+      //   // If it's a video file, display a video player
+      //   const video = document.createElement('video');
+      //   video.controls = true;
+      //   video.src = URL.createObjectURL(file);
+      //   fileContainer.appendChild(video);
+      // } else if (file.type.includes('pdf')) {
+      //   // If it's a PDF file, display a PDF viewer
+      //   const pdfViewer = document.createElement('iframe');
+      //   pdfViewer.src = URL.createObjectURL(file);
+      //   fileContainer.appendChild(pdfViewer);
+      // } else {
+      //   // For other file types, display a download link
+      //   const downloadLink = document.createElement('a');
+      //   downloadLink.href = URL.createObjectURL(file);
+      //   downloadLink.innerText = 'Download File';
+      //   fileContainer.appendChild(downloadLink);
+      // }
+
+
+
+
     }
 
     function cancelpinned() {
       pintab.style.display = "none";
       body.classList.remove('blur');
+      content.innerHTML=""
     }
 
 
@@ -379,8 +519,7 @@
         if (Newchannel.childElementCount == 3) {
           Newchannel.children[2].remove()
         }
-        Newchannel = Newchannel.innerText.split('\n')[0]
-        document.getElementById("topic").innerText = Newchannel
+        document.getElementById("topic").innerText = Newchannel.innerText.split('\n')[0]
         emphasize()
         pins.style.display = "none";
         pinsvisibility = true;
@@ -389,7 +528,7 @@
         userList.innerHTML = "";
         userCount.innerText = "(...)";
         message_input.value = ""
-        socket.emit("change", { "channel": Newchannel });
+        socket.emit("change", { "channel": Newchannel.dataset.key });
       }
     }
 
@@ -430,16 +569,19 @@
         time = setTimeout(() => {
           if (visibility) {
             block.style.display = "none";
+            btn.style.color = "black";
           }
         }, 100);
       }
       let blockenter = function () {
         clearTimeout(time);
         block.style.display = "block";
+        btn.style.color = "aquamarine";
       }
       let btnenter = function () {
         clearTimeout(time)
         block.style.display = "block";
+        btn.style.color = "aquamarine";
       }
       btn.addEventListener("mouseenter", btnenter)
       btn.addEventListener("mouseleave", mouseleave)
@@ -451,6 +593,7 @@
         clearTimeout(time);
         if (visibility) {
           block.style.display = "block";
+          btn.style.color = "aquamarine";
           console.log("remove eventlistener")
           btn.removeEventListener("mouseenter", btnenter);
           btn.removeEventListener("mouseleave", mouseleave);
@@ -464,6 +607,7 @@
           block.addEventListener("mouseenter", blockenter);
           block.addEventListener("mouseleave", mouseleave)
           block.style.display = "none";
+          btn.style.color = "black";
           visibility = true;
         }
       });
@@ -472,6 +616,26 @@
     socket.on("connect", function () {
       socket.emit("Load")
     });
+
+    function addmedia(data){
+      console.log(data)
+      let mediaplate = document.createElement("div")
+      mediaplate.classList.add("pinned")
+      mediaplate.innerText = data[0]
+      
+      mediaplate.setAttribute("onclick", 'showpinned('+JSON.stringify(data)+')')
+      mediaPool.appendChild(mediaplate)
+    }
+
+    socket.on("medias",function(datas){
+      datas.forEach(data => {
+        addmedia(data)
+      })
+    })
+
+    socket.on("media",function(data){
+      addmedia(data)
+    })
 
     socket.on("showNewServer", function (data) {
       server.innerText = data[0]
@@ -483,7 +647,8 @@
       data[1].forEach(element => {
         let channel = document.createElement("div")
         channel.classList.add("block")
-        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[0] + '</h4></div><div class="creator"><p>created by ' + element[1] + '</p></div></div>'
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + element[1] + '</h4></div><div class="creator"><p>created by ' + element[2] + '</p></div></div>'
+        channel.setAttribute("data-key", element[0])
         channel.setAttribute('onclick', 'goto(this)')
         channel_list.appendChild(channel)
       });
@@ -671,16 +836,8 @@
     Newform.onsubmit = function () {
       let chnl = newchannel.value.trim();
       if (chnl.length) {
-        let match = false;
-        Array.from(document.getElementsByClassName("chnl")).forEach(element => {
-          if (element.innerText == chnl) {
-            match = true
-          }
-        })
-        if (!match) {
-          socket.emit("create", chnl)
-          newchannel.value = ""
-        }
+        socket.emit("create", chnl)
+        newchannel.value = ""
       }
       return false;
     }
@@ -690,10 +847,10 @@
           GOTOfrnd(user, GOTO = false);
         });
       } else {
-        let channel = document.createElement("div")
+        const channel = document.createElement("div")
         channel.classList.add("block")
-        let NewName = Object.keys(data["channel"])[0]
-        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + NewName + '</h4></div><div class="creator"><p>created by ' + data["channel"][NewName] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.innerHTML = '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' + data["channel"][1] + '</h4></div><div class="creator"><p>created by ' + data["channel"][2] + '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>'
+        channel.setAttribute("data-key", data["channel"][0])
         channel.setAttribute('onclick', 'goto(this)')
         channel_list.insertAdjacentElement("afterbegin", channel)
       }

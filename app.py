@@ -1,5 +1,5 @@
-import os
-from flask import Flask, render_template, request, redirect, session
+import os, uuid, asyncio, mimetypes
+from flask import Flask, render_template, request, redirect, session, make_response
 from werkzeug.utils import secure_filename
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -11,7 +11,7 @@ import hashlib
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
-from sqlalchemy import create_engine, MetaData, Column, func, text, Table, String
+from sqlalchemy import create_engine, MetaData, Column, BLOB,  func, text, Table, String
 from sqlalchemy.ext.declarative import declared_attr
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
 import gevent
@@ -48,16 +48,22 @@ class users(db.Model):
 
 class channel(db.Model):
     id=db.Column(db.Integer,primary_key=True)                   #topic ID
-    name=db.Column(db.String, nullable=False,unique=True)       #topic name
+    name=db.Column(db.String, nullable=False)                   #topic name
     creator_id=db.Column(db.Integer,db.ForeignKey('users.id'))  #creator ID
 
 class chats(db.Model):
     id=db.Column(db.Integer,primary_key=True)                               #topic ID
     key=db.Column(db.String,nullable=False)                                 #Private Key
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #Sender ID
+    media_id = db.Column(db.String, db.ForeignKey('media.id'), nullable=True)
     data=db.Column(db.String, nullable=False)                               #actuall msg
     time = db.Column(db.DateTime, default=func.now(timezone('Asia/Kolkata')))#time
  
+class media(db.Model):
+    id=db.Column(db.String,primary_key=True)
+    name=db.Column(db.String, nullable=False) 
+    ext=db.Column(db.String, nullable=False)
+    chat=db.relationship('chats',backref='media')
 # class posts(db.Model):
 #     __abstract__ = True
 #     id = db.Column(db.Integer, primary_key=True)
@@ -116,40 +122,48 @@ base={
     "app":db.Model
 }
 Tables={
+    "app":{}
     # models of channels
 }
+mediaHash={}
 
+chunk_size = 4096
 
 # FOR DEVELOPMENT ONLY
-Engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+# Engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 metadata=MetaData()
-metadata.reflect(Engine)
+metadata.reflect(db.engine)
 Base=automap_base(metadata=metadata)
 Base.prepare()
-Session=sessionmaker(bind=Engine)
+Session=sessionmaker(bind=db.engine)
 server["app"]=Session()
-engine["app"]=Engine
+engine["app"]=db.engine
 tables=server["app"].query(channel).all()
 room_dict["app"]={'/':{}}
+Tables["app"]={}
+# for tb in Base.metadata.tables.keys():
+#     print(type(tb))
+#     print(Base.classes[tb])
+
 for tb in tables:
     try:
-        tab = Base.classes[tb.name]
+        print(tb.id)
+        tab = Base.classes[str(tb.id)]
         setattr(tab, 'user', relationship('users'))
         # Base.prepare()
-        Tables[tb.name]=tab
-        room_dict["app"].update({tb.name:{}})
+        Tables["app"][tb.id]=tab
+        room_dict["app"].update({tb.id:{}})
     except:
-        continue
+        print("error in reading tables")
+print(Tables["app"])
 base["app"]=Base
 
 @app.route('/upload',methods=["POST"])
 def upload_db():
-    files=request.files.getlist('files')
+    files=request.form.getlist('files')
     for file in files:
         if file and file.filename.split(".")[1]=="sqlite3":
             uploads_dir = os.path.join('db')
-            if os.path.exists(uploads_dir)==False:
-                os.makedirs(uploads_dir)
             file.save(os.path.join(uploads_dir,secure_filename(file.filename))) 
             data=secure_filename(file.filename).split(".")[0]
             app.config['SQLALCHEMY_BINDS'][data] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
@@ -166,12 +180,12 @@ def upload_db():
                 engine[data]=Engine
                 tables=server[data].query(channel).all()
                 room_dict[data]={'/':{}}
+                Tables[data]={}
                 for tb in tables:
                     try:
-                        tab = Base.classes[tb.name]
+                        tab = Base.classes[tb.id]
                         setattr(tab, 'user', relationship('users'))
-                        # Base.prepare()
-                        Tables[tb.name]=tab
+                        Tables[data][tb.id]=tab
                         room_dict[data].update({tb.name:{}})
                     except:
                         continue
@@ -233,6 +247,9 @@ def Load():
     join_room(curr)
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
+    Media=server[curr].query(media).all()
+    Md=[[media.name,media.id,media.ext] for media in Media]
+    socketio.emit("medias",Md,to=request.sid)
 
 @socketio.on("changeServer")
 def changeServer(newServer):
@@ -256,7 +273,7 @@ def changeServer(newServer):
         room_dict[newServer]["/"].update({session.get("name"):request.sid})
         socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
         channel_list=[session.get("server")]
-        channel_list.append([[channel.name,channel.user.username] for channel in channels])
+        channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
         socketio.emit("showNewServer",channel_list,to=request.sid)    
     else:
         session.clear()
@@ -269,48 +286,26 @@ def create(newchannel):
     id=session.get(curr)
     Topic=channel(name=newchannel,creator_id=id)
     server[curr].add(Topic)
-    try:
-        server[curr].commit()
-    except IntegrityError:
-        return
+    server[curr].commit()
     Base=base[curr]
 
     class Channel(Base):
-        __tablename__ = newchannel
+        __tablename__ = Topic.id
         id = db.Column(db.Integer, primary_key=True)
         data = db.Column(db.String, nullable=False)
         sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-        time = db.Column(db.DateTime, server_default=func.now())
-        # user = db.relationship('users')  
+        time = db.Column(db.DateTime, server_default=func.now()) 
 
     Base.metadata.create_all(engine[curr])
-    # Base.prepare(engine[curr], reflect=True)
-    # print(Base.metadata.tables)
-    # print(Channel)
-    # base[curr]=Base
-
-# Channel = Table(
-#     newchannel,
-#     Base.metadata,
-#     Column('id', Integer, primary_key=True),
-#     Column('data', String, nullable=False),
-#     Column('sender_id', Integer, ForeignKey('users.id')),
-#     Column('time', DateTime, server_default=func.now(timezone('Asia/Kolkata'))),
-# )
-
-    # print(base[curr].metadata)
-    metadata=MetaData()
-    metadata.reflect(engine[curr])
-    Base=automap_base(metadata=metadata)
+    Base = automap_base(metadata=Base.metadata)
     Base.prepare()
-    NEWChannel=Base.classes[newchannel]
-    setattr(NEWChannel, 'user', relationship('users'))
-    Tables.update({newchannel:NEWChannel})
+    Ntab=Base.classes[str(Topic.id)]
+    setattr(Ntab, 'user', relationship('users'))
+    Tables[curr].update({Topic.id:Ntab})
     base[curr]=Base
-    room_dict[curr][newchannel]={}
-    new={"channel":{Topic.name:Topic.user.username}}
+    room_dict[curr][Topic.id]={}
+    new={"channel":[Topic.id,Topic.name,Topic.user.username]}
     socketio.emit("show_this",new,room=curr)
-    # print(Tables)
 
 
 @socketio.on("search_text")
@@ -335,20 +330,22 @@ def change(To):
         session["friend"]=None
     session["channel"]=None
     if prev:
-        leave_room(curr+prev)
+        leave_room(curr+str(prev))
         if room_dict[curr][prev].pop(name,None):
-            socketio.emit("notify",room_dict[curr][prev],room=curr+prev)
+            socketio.emit("notify",room_dict[curr][prev],room=curr+str(prev))
 
     # CLEAR
     if not To:
         return 
     # GOTO CHANNEL/FRND IF ANY
     if "channel" in To:
-        to=To["channel"]
+        to=int(To["channel"])
         # current_channel=server[curr].query(channel).filter_by(name=to).first()
         session["channel"]=to
-        # print(Tables)
-        last_msgs=server[curr].query(Tables[to]).order_by(Tables[to].id.desc()).limit(30)
+        print(Tables)
+        # print(last_msgs)
+        print(room_dict)
+        last_msgs=server[curr].query(Tables[curr][to]).order_by(Tables[curr][to].id.desc()).limit(30)
         room_dict[curr][to].update({name:1})
     if "Frnd" in To:
         to=To["Frnd"]
@@ -364,8 +361,9 @@ def change(To):
         else:
             room_dict[curr].update({to:{name:1}})
     # JOIN ROOM AND NOTIFY
-    join_room(curr+to)
-    socketio.emit("notify",room_dict[curr][to],to=curr+to)
+    to=to
+    join_room(curr+str(to))
+    socketio.emit("notify",room_dict[curr][to],to=curr+str(to))
     # ARRANGE MSGS IN A FORMAT
     Msgs=[]
     for msg in last_msgs:
@@ -380,25 +378,28 @@ def change(To):
 
 
 @socketio.on('recieve_message')
-def handel_recieve_message(data):
+def handel_message(data):
     # IDENTIFY
+    if len(data)==0:
+        return
     curr=session.get("server")
-    name=session.get("name")
     id=session.get(curr)
-    channel_name=session.get("channel")
+    name=session.get("name")
+    channel_id=session.get("channel")
     key=session.get("key")
     # FOR CHANNEL
-    if channel_name:
-        # current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-        msg=Tables[channel_name](data=data,sender_id=id)
+    if channel_id:
+        # current_channel=server[curr].query(channel).filter_by(name=channel_id).first()
+        print(Tables)
+        msg=Tables[curr][channel_id](data=data,sender_id=id)
         server[curr].add(msg)
         server[curr].commit()
-        socketio.emit('show_message',[name,data,msg.time.strftime("%D  %H:%M")], room = curr+channel_name)
+        socketio.emit('show_message',[name,data,msg.time.strftime("%D  %H:%M")], room = curr+str(channel_id))
         for srvr in room_dict.keys():
             if srvr==curr:
                 for usr in room_dict[srvr]["/"].keys():
-                    if usr not in room_dict[srvr][channel_name].keys():    
-                        socketio.emit('currupdate',channel_name,to=room_dict[curr]["/"][usr])
+                    if usr not in room_dict[srvr][channel_id].keys():    
+                        socketio.emit('currupdate',channel_id,to=room_dict[curr]["/"][usr])
             else:
                 for usr in room_dict[srvr]["/"].keys():
                     socketio.emit('otherupdate',curr,to=room_dict[srvr]["/"][usr])
@@ -425,11 +426,11 @@ def getHistory():
     curr=session.get("server")
     # id=session.get('id')
     history=session.get("history")
-    channel_name=session.get("channel")
+    channel_id=session.get("channel")
     times=session.get("history")
-    if channel_name:
-        # current_channel=server[curr].query(channel).filter_by(name=channel_name).first()
-        last_msgs=server[curr].query(Tables[channel_name]).order_by(Tables[channel_name].id.desc()).offset(30*times).limit(30)
+    if channel_id:
+        # current_channel=server[curr].query(channel).filter_by(name=channel_id).first()
+        last_msgs=server[curr].query(Tables[curr][channel_id]).order_by(Tables[curr][channel_id].id.desc()).offset(30*times).limit(30)
     else:
         last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter(and_(chats.id<postID,chats.key==session.get("key"))).limit(30)
     Msgs=[]
@@ -565,7 +566,114 @@ def login():
                 return render_template("message.html",msg="YOUR OLD PASSWORD IS UPDATED WITH NEWONE",goto="/channels")
 
 
+# @app.route("/media",methods=["POST"])
+# def handel_media():
+#     curr=session.get('server')
+#     print("starting")
+#     file = request.files['file']
+#     hasher=hashlib.sha256()
+#     name=secure_filename(file.filename)
+#     mime = file.content_type
+#     arraybuffer=b''
+#     counter=0
+#     for chunk in iter(lambda: file.read(chunk_size), b''):
+#         hasher.update(chunk)
+#         arraybuffer+=chunk
+#         # counter+=1
+#         # if counter==5:
+#             # Media=media(id="asdfsdfsdfsdf",name=name,mime=mime,data=arraybuffer)
+#             # server[curr].add(Media)
+#             # server[curr].commit()
+#     file_hash = hasher.hexdigest()
+#     print(file_hash)
+#     print(file.read(file.content_length))
+#     # Media=media(id="asdfsdfsdfsdf",name=name,mime=mime,data=arraybuffer)
+#     # server[curr].add(Media)
+#     # server[curr].commit()
+#     return file_hash
 
+@app.route("/media/<name>",methods=["GET"])
+def handel_get_Media(name):
+    print("name "+name)
+    Media=server[session.get("server")].query(media).filter_by(id=name).first()
+    # print(Media)
+    if Media != None:
+        file_path="media/"+name+Media.ext
+        print(file_path)
+        return send_file(file_path)
+    else:
+        return render_template("message.html",msg="no such file",goto="/channels")
+
+
+@app.route("/media",methods=["POST"])
+def handel_media():
+    curr=session.get('server')
+    # print(request.form)
+    # print(request.files)
+    unique_id=request.form['uuid']
+    if len(unique_id)!=0:
+        # try:
+        seq=int(request.form['seq'])
+        chunk=request.files['chunk'].read()
+        hasher = mediaHash[unique_id]["Hash"]
+        hasher.update(chunk)
+        file_name=unique_id+mediaHash[unique_id]["ext"]
+        with open("media/"+file_name, 'ab') as file:
+            file.write(chunk)
+
+        # Media=server[curr].query(media).filter_by(id=unique_id).first()
+        # Media.data+=chunk
+        # server[curr].commit()
+        if mediaHash[unique_id]["seq"] ==0:
+            file_hash = hasher.hexdigest()
+            new_file_name=file_hash+mediaHash[unique_id]["ext"]
+            mime=mediaHash[unique_id]["mime"]
+            # Media=server[curr].query(media).filter_by(id=unique_id).first()
+            name=mediaHash[unique_id]["name"]
+            if os.path.exists("media/"+new_file_name)==False:
+
+                os.rename("media/"+file_name,"media/"+new_file_name)
+                Media=media(id=file_hash,name=name.split(".")[0],ext=mediaHash[unique_id]["ext"])
+                server[curr].add(Media)
+                server[curr].commit()
+            else:
+                os.remove("media/"+file_name)
+            mediaHash.pop(unique_id)
+            # response = make_response('{}'.format(file_hash))
+            # response.headers['Content-Type'] = 'plain/text'
+            socketio.emit("media",[name,file_hash,mime],room=curr)
+            print(file_hash)
+            return file_hash
+
+        mediaHash[unique_id]["seq"]-=1
+        print("success"+str(seq+1))
+        # response = make_response('{}'.format(seq+1))
+        # response.headers['Content-Type'] = 'plain/text'
+        return str(seq+1)
+        # except:
+        #     mediaHash[unique_id]["seq"]+=1
+        #     print("failed"+str(seq))
+        #     return str(seq)
+    name=request.form['name']
+    typ=request.form['typ']
+    Total=request.form['total']
+    unique_id = str(uuid.uuid4())
+    mime=mimetypes.guess_extension(typ)
+    try:
+        with open(str("media/"+unique_id+mime), 'wb'):
+            pass
+
+    except:
+        print(" problem ")
+    mediaHash[unique_id]={}
+    mediaHash[unique_id]["name"]=name
+    mediaHash[unique_id]["seq"]=int(Total)-1
+    mediaHash[unique_id]["Hash"]=hashlib.sha256()
+    mediaHash[unique_id]["mime"]=typ
+    mediaHash[unique_id]["ext"]=mime
+    return unique_id
+
+# 6037d1fb7ce473ae87f8e182a1db22ae0bcf2370c7d548ca20688de593c29393
 @app.route("/channels",methods=["GET"])
 def channel_chat():
     if not session.get("name"):
@@ -575,9 +683,12 @@ def channel_chat():
     curr=myserver[0]
     channels=server[curr].query(channel).all()
     ppls=room_dict[curr]["/"]
-    print(ppls)
+    # print(ppls)
+    # print(room_dict)
+    # socketio.emit("media",to=room_dict[curr])
     peoples=[[people] for people in ppls]
-    print(peoples)
+    # print(peoples)
+    # channels.pop()
     return render_template("channel_chat.html",name=name,server=curr,mysrvr=myserver,channels=channels,peoples=peoples)
     
                 
@@ -610,7 +721,14 @@ if __name__ == '__main__':
 
 # ---^---   /====      /--------' ---^---
 #    |     /====     /------/        |
-#    |    /====  ,-------/           |
-# @app.route("/test")
-# def test():
-#     return render_template("webRTC.html")
+#    |    /====   ,/-------/         |
+@app.route("/test")
+def test():
+    data=server[session.get('server')].query(media).all()
+    for md in data:
+        server[session.get('server')].delete(md)
+        server[session.get('server')].commit()
+    # print(data.data)
+    response = make_response('File uploaded successfully.')
+    response.headers['Content-Type'] = 'text/plain'
+    return response
