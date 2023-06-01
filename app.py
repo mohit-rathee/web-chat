@@ -662,7 +662,8 @@ def handel_media():
     try:
         with open(str("media/"+unique_id+ext), 'wb'):
             pass
-
+        print("file created")
+        print(unique_id+ext)
     except:
         print(" problem ")
     mediaHash[unique_id]={}
@@ -711,7 +712,7 @@ def download_database(server):
         path= str(app.config['SQLALCHEMY_DATABASE_URI']).rsplit("///")[1]
     else:
         path =str(app.config['SQLALCHEMY_BINDS'][str(server)]).rsplit("///")[1]
-    return send_file(path, as_attachment=True)
+    return send_file("media/"+"the legends of hanuman season 1 all.mkv", as_attachment=True)
 
 
 

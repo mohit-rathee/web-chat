@@ -6,3 +6,4 @@ templates/webRTC.html
 script.py
 fun.sqlite3
 todo.sqlite3
+test.sqlite3
