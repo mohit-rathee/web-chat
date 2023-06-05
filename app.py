@@ -665,13 +665,13 @@ def handel_media():
     Total=request.form['total']
     unique_id = str(uuid.uuid4())
     ext=mimetypes.guess_extension(typ)
-    # try:
-    #     with open(str(os.path.join(os.path.join("media"),unique_id+ext)), 'wb'):
-    #         pass
-    #     print("file created")
-    #     print(unique_id+ext)
-    # except:
-    #     return render_template("message.html",msg="pls reupload",goto="/channels")
+    try:
+        with open(os.path.join("media", unique_id + ext), 'wb') as file:
+            pass
+        print("file created")
+
+    except:
+        return render_template("message.html",msg="pls reupload",goto="/channels")
     mediaHash[unique_id]={}
     mediaHash[unique_id]["name"]=name
     mediaHash[unique_id]["seq"]=int(Total)-1
