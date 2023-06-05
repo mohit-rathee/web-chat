@@ -181,11 +181,12 @@
   </div>
   <div id="emojiPallet">
   </div>
-  <div id="pintab">
+  <div id="pintab" class="pintab">
     <nav>
       <div id="pinname" style="cursor: auto;" class="navitems center-items"></div>
       <div class="navitems right-items">
-        <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+        <div></div>
+        <ion-icon name="browsers-sharp" onclick="pintab.classList.toggle('pintab');pintab.classList.toggle('fullscreen')"></ion-icon>
         <ion-icon name="close-outline" onclick="cancelpinned()"></ion-icon>
       </div>
     </nav>
@@ -379,34 +380,75 @@
       }
     }
 
+    function showfile(mime,url){
+      console.log("showing file")
+      if (mime.toLowerCase().includes("image")) {
+        console.log("showing image file");
+        const img = document.createElement("img");
+        img.classList.add("image");
+        img.src = url;
+        content.appendChild(img);
+      } else if (mime.toLowerCase().includes("video")) {
+        console.log("showing video file");
+        const video = document.createElement('video');
+        video.classList.add("image");
+        video.controls = true;
+        video.src = url;
+        content.appendChild(video);
+      } else if (mime.toLowerCase().includes("text")) {
+        console.log("showing div file");
+        const div = document.createElement("embed");
+        fetch(url)
+          .then(response => response.text())
+          .then(text =>{
+            div.innerText=text
+          })
+        div.classList.add("image");
+        content.appendChild(div);
+      } else {
+        console.log("showing div file");
+        const embed = document.createElement("embed");
+        embed.classList.add("image");
+        embed.style.flexGrow="1";
+        embed.width = '100%';
+        embed.height = '100%';
+        embed.type = mime;
+        embed.src = url;
+        content.appendChild(embed);
+      }
+    }
 
     function showpinned(data) {
+      if(pinname.dataset.key==data[1]){
+        return
+      }
       body.classList.add('blur');
       pintab.style.display = "block";
       pinname.innerText = data[0]
+      pinname.setAttribute("data-key",data[1])
       content.innerHTML = ""
-      if (data[2].toLowerCase().includes("image")) {
-        const img = document.createElement("img")
-        img.classList.add("image")
-        img.src = "/media/" + data[1]
-        content.appendChild(img)
-      }
-      if (data[2].toLowerCase().includes("video")) {
-        // alert("not configured for videos now")
-        const video = document.createElement('video');
-        video.classList.add("image")
-        video.controls = true;
-        fetch("/media/" + data[1])
+      let url = localStorage.getItem(data[1]);
+      if (!url) {
+        // key doesnot exist
+        console.log("sending request to "+"/media/" + data[1].toString())
+        fetch("/media/" + data[1].toString())
           .then(response => response.blob())
-          .then(blob => {
-            video.src = URL.createObjectURL(blob);
+          .then(Data => {
+            // geneate url
+            console.log(Data)
+            url = URL.createObjectURL(Data)
+            // store this url 
+            console.log(url)
+            localStorage.setItem(data[1], url);
+            showfile(data[2],url)
           })
           .catch(error => {
             console.error('Error:', error);
           });
-        content.appendChild(video)
+      }else{
+        showfile(data[2],url)
       }
-
+      
       // const fileInput = document.getElementById('fileInput');
       // const file = fileInput.files[0];
 
@@ -618,7 +660,6 @@
     });
 
     function addmedia(data) {
-      console.log(data)
       let mediaplate = document.createElement("div")
       mediaplate.classList.add("pinned")
       mediaplate.innerText = data[0]
@@ -855,6 +896,7 @@
         channel_list.insertAdjacentElement("afterbegin", channel)
       }
     })
+    localStorage.clear()
   </script>
 </body>
 

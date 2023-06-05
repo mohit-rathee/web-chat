@@ -15,8 +15,9 @@ from sqlalchemy import create_engine, MetaData, Column, BLOB,  func, text, Table
 from sqlalchemy.ext.declarative import declared_attr
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
 import gevent
+from gevent import monkey
 from pytz import timezone
-
+monkey.patch_all()
 
 app = Flask(__name__)
 app.debug=True
@@ -594,13 +595,17 @@ def login():
 
 @app.route("/media/<name>",methods=["GET"])
 def handel_get_Media(name):
-    print("name "+name)
-    Media=server[session.get("server")].query(media).filter_by(id=name).first()
-    # print(Media)
+    print(name)
+    Media=server[session.get("server")].query(media).filter_by(id=str(name)).first()
     if Media != None:
-        file_path="media/"+name+mimetypes.guess_extension(Media.mime)
-        print(file_path)
-        return send_file(file_path)
+        print("ok")
+        try:
+            file_path="media/"+name+mimetypes.guess_extension(Media.mime)
+            print(Media.mime)
+            return send_file(file_path,mimetype=Media.mime)
+        except:
+            print("wrong approach to send file!!!")
+            return 0
     else:
         return render_template("message.html",msg="no such file",goto="/channels")
 
@@ -618,7 +623,8 @@ def handel_media():
         hasher = mediaHash[unique_id]["Hash"]
         hasher.update(chunk)
         file_name=unique_id+mediaHash[unique_id]["ext"]
-        with open("media/"+file_name, 'ab') as file:
+        print("opening "+os.path.join(os.path.join("media"),file_name))
+        with open(os.path.join(os.path.join("media"),secure_filename(file_name)) , 'ab') as file:
             file.write(chunk)
 
         # Media=server[curr].query(media).filter_by(id=unique_id).first()
@@ -630,12 +636,12 @@ def handel_media():
             mime=mediaHash[unique_id]["mime"]
             # Media=server[curr].query(media).filter_by(id=unique_id).first()
             name=mediaHash[unique_id]["name"]
-            if os.path.exists("media/"+new_file_name)==False:
-
+            if os.path.exists(os.path.join(os.path.join("media"),new_file_name))==False:
                 os.rename("media/"+file_name,"media/"+new_file_name)
                 Media=media(id=file_hash,name=name,mime=mediaHash[unique_id]["mime"])
                 server[curr].add(Media)
                 server[curr].commit()
+                print(Media.mime)
             else:
                 os.remove("media/"+file_name)
             mediaHash.pop(unique_id)
@@ -659,13 +665,14 @@ def handel_media():
     Total=request.form['total']
     unique_id = str(uuid.uuid4())
     ext=mimetypes.guess_extension(typ)
+    print(type(typ))
     try:
-        with open(str("media/"+unique_id+ext), 'wb'):
+        with open(str(os.path.join(os.path.join("media"),unique_id+ext)), 'wb'):
             pass
         print("file created")
         print(unique_id+ext)
     except:
-        print(" problem ")
+        return render_template("message.html",msg="pls reupload",goto=channels)
     mediaHash[unique_id]={}
     mediaHash[unique_id]["name"]=name
     mediaHash[unique_id]["seq"]=int(Total)-1
