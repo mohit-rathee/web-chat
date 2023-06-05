@@ -486,6 +486,8 @@
 
     function cancelpinned() {
       pintab.style.display = "none";
+      pinname.innerText=""
+      pinname.dataset.key=""
       body.classList.remove('blur');
       content.innerHTML = ""
     }
