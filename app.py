@@ -666,12 +666,28 @@ def handel_media():
     unique_id = str(uuid.uuid4())
     ext=mimetypes.guess_extension(typ)
     try:
-        with open(os.path.join("media", unique_id + ext), 'wb') as file:
-            pass
-        print("file created")
+        file_path = os.path.join("media", unique_id + ext)
 
-    except:
-        return render_template("message.html",msg="pls reupload",goto="/channels")
+        # Check if the directory exists, create it if necessary
+        directory = os.path.dirname(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        with open(file_path, 'wb') as file:
+            pass
+
+        print("File created successfully")
+
+    except FileNotFoundError:
+        return render_template("message.html", msg="Please reupload", goto="/channels")
+
+    except PermissionError:
+        return render_template("message.html", msg="Permission denied", goto="/channels")
+
+    except Exception as e:
+        # Handle any other exceptions that may occur
+        print("Error:", str(e))
+
     mediaHash[unique_id]={}
     mediaHash[unique_id]["name"]=name
     mediaHash[unique_id]["seq"]=int(Total)-1
