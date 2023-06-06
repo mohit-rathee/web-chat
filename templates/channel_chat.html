@@ -186,7 +186,8 @@
       <div id="pinname" style="cursor: auto;" class="navitems center-items"></div>
       <div class="navitems right-items">
         <div></div>
-        <ion-icon name="browsers-sharp" onclick="pintab.classList.toggle('pintab');pintab.classList.toggle('fullscreen')"></ion-icon>
+        <ion-icon name="browsers-sharp"
+          onclick="pintab.classList.toggle('pintab');pintab.classList.toggle('fullscreen')"></ion-icon>
         <ion-icon name="close-outline" onclick="cancelpinned()"></ion-icon>
       </div>
     </nav>
@@ -196,7 +197,6 @@
   </div>
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-
   <!-- adding socket -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
     integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
@@ -301,7 +301,7 @@
     //   Users.dispatchEvent(new Event('mouseenter'));
     // });
 
-    const chunkSize = 51250; // 50 KB in bytes
+    const chunkSize = 102400; // 100 KB in bytes
 
 
     // document.getElementById("upload").onclick = async function () {
@@ -380,7 +380,7 @@
       }
     }
 
-    function showfile(mime,url){
+    function showfile(mime, url) {
       console.log("showing file")
       if (mime.toLowerCase().includes("image")) {
         console.log("showing image file");
@@ -397,11 +397,11 @@
         content.appendChild(video);
       } else if (mime.toLowerCase().includes("text")) {
         console.log("showing div file");
-        const div = document.createElement("embed");
+        const div = document.createElement("div");
         fetch(url)
           .then(response => response.text())
-          .then(text =>{
-            div.innerText=text
+          .then(text => {
+            div.innerText = text
           })
         div.classList.add("image");
         content.appendChild(div);
@@ -409,7 +409,7 @@
         console.log("showing div file");
         const embed = document.createElement("embed");
         embed.classList.add("image");
-        embed.style.flexGrow="1";
+        embed.style.flexGrow = "1";
         embed.width = '100%';
         embed.height = '100%';
         embed.type = mime;
@@ -419,18 +419,18 @@
     }
 
     function showpinned(data) {
-      if(pinname.dataset.key==data[1]){
+      if (pinname.dataset.key == data[1]) {
         return
       }
       body.classList.add('blur');
       pintab.style.display = "block";
       pinname.innerText = data[0]
-      pinname.setAttribute("data-key",data[1])
+      pinname.setAttribute("data-key", data[1])
       content.innerHTML = ""
       let url = localStorage.getItem(data[1]);
       if (!url) {
         // key doesnot exist
-        console.log("sending request to "+"/media/" + data[1].toString())
+        console.log("sending request to " + "/media/" + data[1].toString())
         fetch("/media/" + data[1].toString())
           .then(response => response.blob())
           .then(Data => {
@@ -440,15 +440,15 @@
             // store this url 
             console.log(url)
             localStorage.setItem(data[1], url);
-            showfile(data[2],url)
+            showfile(data[2], url)
           })
           .catch(error => {
             console.error('Error:', error);
           });
-      }else{
-        showfile(data[2],url)
+      } else {
+        showfile(data[2], url)
       }
-      
+
       // const fileInput = document.getElementById('fileInput');
       // const file = fileInput.files[0];
 
@@ -486,8 +486,8 @@
 
     function cancelpinned() {
       pintab.style.display = "none";
-      pinname.innerText=""
-      pinname.dataset.key=""
+      pinname.innerText = ""
+      pinname.dataset.key = ""
       body.classList.remove('blur');
       content.innerHTML = ""
     }
@@ -720,19 +720,33 @@
         if (Msgs[i][0] == "{{name}}") {
           message.classList.add("my_message");
           message.innerHTML =
-            "<p>" + Msgs[i][1] + "<span>" + Msgs[i][2] + "</span>" + "</p>";
+            "<p></p>";
+          var text = document.createElement("div")
+          text.innerText = Msgs[i][1]
+          message.firstChild.appendChild(text)
+          var time=document.createElement("span")
+          time.innerText=Msgs[i][2]
+          message.firstChild.appendChild(time)
           chatbox.insertAdjacentElement('afterbegin', message)
         } else {
           message.classList.add("frnd_message");
           message.innerHTML =
-            "<p>" + Msgs[i][1] + "<span>" + Msgs[i][2] + "</span>" + "</p>";
+            "<p></p>";
+          var text = document.createElement("div")
+          text.innerText = Msgs[i][1]
+          message.firstChild.appendChild(text)
+          var time=document.createElement("span")
+          time.innerText=Msgs[i][2]
+          message.firstChild.appendChild(time)
           if (i == Msgs.length - 1 || Msgs[i][0] != Msgs[i + 1][0]) {
             var Frnd = document.createElement("div");
             Frnd.classList.add("message");
             Frnd.classList.add("frnd");
-            Frnd.innerHTML = '<p>' + Msgs[i][0] + '</p>';
+            Frnd.innerHTML = '<p></p>';
+            var frndname=document.createElement("div")
+            frndname.innerText=Msgs[i][0]
+            Frnd.firstChild.appendChild(frndname)
             Frnd.setAttribute('onclick', 'GOTOfrnd("' + Msgs[i][0] + '")')
-            // chatbox.insertBefore(message, Top);
             chatbox.insertAdjacentElement('afterbegin', message)
             chatbox.insertAdjacentElement('afterbegin', Frnd)
             // chatbox.insertBefore(Frnd, Top);
@@ -788,13 +802,22 @@
           var Frnd = document.createElement("div");
           Frnd.classList.add("message");
           Frnd.classList.add("frnd");
-          Frnd.innerHTML = '<p>' + data[0] + '</p>';
+          Frnd.innerHTML = '<p></p>';
+          var frndname=document.createElement("div")
+          frndname.innerText=data[0];
+          Frnd.firstChild.appendChild(frndname)
           Frnd.setAttribute('onclick', 'GOTOfrnd("' + data[0] + '")')
           chatbox.appendChild(Frnd);
         }
       }
       chat.innerHTML =
-        "<p>" + data[1] + "<span>" + data[2] + "</span>" + "</p>";
+        "<p></p>";
+      var text=document.createElement("div")
+      text.innerText=data[1]
+      var time=document.createElement("span")
+      time.innerText=data[2]
+      chat.firstChild.appendChild(text)
+      chat.firstChild.appendChild(time)
       chatbox.appendChild(chat);
       chat.scrollIntoView();
     });

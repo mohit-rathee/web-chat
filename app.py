@@ -613,82 +613,49 @@ def handel_get_Media(name):
 @app.route("/media",methods=["POST"])
 def handel_media():
     curr=session.get('server')
-    # print(request.form)
-    # print(request.files)
     unique_id=request.form['uuid']
     if len(unique_id)!=0:
-        # try:
         seq=int(request.form['seq'])
         chunk=request.files['chunk'].read()
         hasher = mediaHash[unique_id]["Hash"]
         hasher.update(chunk)
-        file_name=unique_id+mediaHash[unique_id]["ext"]
-        print("opening "+os.path.join(os.path.join("media"),file_name))
-        with open(os.path.join(os.path.join("media"),secure_filename(file_name)) , 'ab') as file:
-            file.write(chunk)
-
-        # Media=server[curr].query(media).filter_by(id=unique_id).first()
-        # Media.data+=chunk
-        # server[curr].commit()
+        mediaHash[unique_id]["data"]+=chunk
         if mediaHash[unique_id]["seq"] ==0:
             file_hash = hasher.hexdigest()
             new_file_name=file_hash+mediaHash[unique_id]["ext"]
+            try:
+                file_path = os.path.join("media", new_file_name)
+                if os.path.exists(file_path):
+                    print("file exist already")
+                    return file_hash
+                with open(file_path, 'wb') as file:
+                    file.write(mediaHash[unique_id]["data"])
+                print("File created successfully")
+            except Exception as e:
+                print("Error:", str(e))
             mime=mediaHash[unique_id]["mime"]
-            # Media=server[curr].query(media).filter_by(id=unique_id).first()
             name=mediaHash[unique_id]["name"]
-            if os.path.exists(os.path.join(os.path.join("media"),new_file_name))==False:
-                os.rename("media/"+file_name,"media/"+new_file_name)
-                Media=media(id=file_hash,name=name,mime=mediaHash[unique_id]["mime"])
-                server[curr].add(Media)
-                server[curr].commit()
-                print(Media.mime)
-            else:
-                os.remove("media/"+file_name)
+            Media=media(id=file_hash,name=name,mime=mediaHash[unique_id]["mime"])
+            server[curr].add(Media)
+            server[curr].commit()
+            print(Media.mime)
             mediaHash.pop(unique_id)
-            # response = make_response('{}'.format(file_hash))
-            # response.headers['Content-Type'] = 'plain/text'
             socketio.emit("media",[name,file_hash,mime],room=curr)
             print(file_hash)
             return file_hash
 
         mediaHash[unique_id]["seq"]-=1
         print("success"+str(seq+1))
-        # response = make_response('{}'.format(seq+1))
-        # response.headers['Content-Type'] = 'plain/text'
         return str(seq+1)
-        # except:
-        #     mediaHash[unique_id]["seq"]+=1
-        #     print("failed"+str(seq))
-        #     return str(seq)
     name=request.form['name']
     typ=request.form['typ']
     Total=request.form['total']
     unique_id = str(uuid.uuid4())
     ext=mimetypes.guess_extension(typ)
-    try:
-        file_path = os.path.join("media", unique_id + ext)
-
-        # Check if the directory exists, create it if necessary
-        directory = os.path.dirname(file_path)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        with open(file_path, 'wb') as file:
-            pass
-
-        print("File created successfully")
-
-    except FileNotFoundError:
-        return render_template("message.html", msg="Please reupload", goto="/channels")
-
-    except PermissionError:
-        return render_template("message.html", msg="Permission denied", goto="/channels")
-
-    except Exception as e:
-        # Handle any other exceptions that may occur
-        print("Error:", str(e))
-
+    if not os.path.exists(os.path.join("media")):
+        os.makedirs(os.path.join("media"))
     mediaHash[unique_id]={}
+    mediaHash[unique_id]["data"]=b''
     mediaHash[unique_id]["name"]=name
     mediaHash[unique_id]["seq"]=int(Total)-1
     mediaHash[unique_id]["Hash"]=hashlib.sha256()
