@@ -484,7 +484,7 @@ const emojis = [
 function updateLoadingCircle(value) {
   loadingCircle.innerText = value;
 }
-const chunkSize = 102400; // 100 KB in bytes
+let chunkSize = 102400; // 100 KB in bytes
 document.getElementById("upload").onclick = async function () {
   if (document.getElementById("media").files[0] == null) {
     return;
