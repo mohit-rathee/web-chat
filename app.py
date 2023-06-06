@@ -352,7 +352,7 @@ def change(To):
         to=To["Frnd"]
         frnd=server[curr].query(users).filter_by(username=to).first()
         if not frnd:
-            return 
+            return render_template("message.html",msg="user doesn't exist",goto="/channels")
         to=private_key(id,frnd.id)
         session["key"]=to
         session["friend"]=frnd.username
