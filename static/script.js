@@ -1,6 +1,7 @@
 var socket = io({
   transports: ["websocket"],
 });
+console.log(name)
 const body = document.getElementById("container");
 const chatbox = document.getElementById("chats");
 const server = document.getElementById("server");
@@ -680,8 +681,8 @@ function emphasize() {
   show("chatside");
   chatbox.innerHTML = "";
   userList.innerHTML = "";
-  userCount.innerText = "(...)";
 }
+
 
 function goto(Newchannel) {
   let active = document.getElementsByClassName("active");
@@ -690,19 +691,11 @@ function goto(Newchannel) {
       active[0].classList.remove("active");
     }
     Newchannel.classList.add("active");
-    if (Newchannel.childElementCount == 3) {
-      Newchannel.children[2].remove();
-    }
     document.getElementById("topic").innerText =
       Newchannel.innerText.split("\n")[0];
-    emphasize();
-    pins.style.display = "none";
-    pinsvisibility = true;
-    listblock.style.display = "none";
-    listvisibility = true;
-    userList.innerHTML = "";
-    userCount.innerText = "(...)";
-    message_input.value = "";
+    emphasize()
+    // define a new funtion
+    B4Change(Newchannel)
     socket.emit("change", { channel: Newchannel.dataset.key });
   }
 }
@@ -723,15 +716,25 @@ function gotofrnd(Frnd) {
   }
 }
 
+function B4Change(to){
+  if (to.childElementCount == 3) {
+    to.children[2].remove();
+  }
+  chatbox.innerHTML = "";
+  pins.style.display = "none";
+  pinsvisibility = true;
+  listblock.style.display = "none";
+  listvisibility = true;
+  userList.innerHTML = "";
+  userCount.innerText = "(...)";
+  message_input.value = "";
+}
+
 function gotoserver(Newserver) {
+  console.log("changing server")
   if (server.innerText != Newserver.innerText) {
-    userlive.innerHTML = "";
-    userList.innerHTML = "";
-    userCount.innerText = "(...)";
-    channel_list.innerHTML = "";
-    if (Newserver.childElementCount == 2) {
-      Newserver.children[1].remove();
-    }
+    console.log(Newserver)
+    B4Change(Newserver)
     socket.emit("changeServer", Newserver.innerText);
   }
 }
@@ -826,7 +829,7 @@ socket.on("showNewServer", function (data) {
     let channel = document.createElement("div");
     channel.classList.add("block");
     channel.innerHTML =
-      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' +
+      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 data-key="'+element[0]+'" class="chnl">' +
       element[1] +
       '</h4></div><div class="creator"><p>created by ' +
       element[2] +
@@ -859,7 +862,7 @@ socket.on("showMessages", function (Msgs) {
   for (var i = 0; i < Msgs.length; i++) {
     var message = document.createElement("div");
     message.classList.add("message");
-    if (Msgs[i][0] == "{{name}}") {
+    if (Msgs[i][0] == name) {
       message.classList.add("my_message");
       message.innerHTML = "<p></p>";
       var text = document.createElement("div");
@@ -921,8 +924,9 @@ function GOTOfrnd(user, GOTO = true) {
     let plate = document.createElement("div");
     plate.classList.add("block");
     plate.innerHTML =
-      '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="friend">' +
-      user +
+      '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="friend" data-key="'
+      + user + '">' 
+      + user +
       "</h4></div></div></div>";
     plate.setAttribute("onclick", "gotofrnd(this)");
     channel_list.insertAdjacentElement("afterbegin", plate);
@@ -936,7 +940,7 @@ socket.on("show_message", function (data) {
   // TO ADD NEW CHILD OF MESSAGE //
   let chat = document.createElement("div");
   chat.classList.add("message");
-  if (data[0] == "{{name}}") {
+  if (data[0] == name) {
     chat.classList.add("my_message");
   } else {
     chat.classList.add("frnd_message");
@@ -1000,24 +1004,26 @@ socket.on("notify", function (userObj) {
 function shownotification(to, name) {
   let ls = document.getElementsByClassName(to);
   for (let i = 0; i < ls.length; i++) {
-    if (ls[i].innerText == name) {
+    if (ls[i].dataset.key == name) {
+      console.log(ls[i])
+      const block = ls[i].parentElement.parentElement.parentElement;
       if (
-        ls[i].parentElement.parentElement.parentElement.childElementCount != 3
+        block.childElementCount != 3
       ) {
         let num = document.createElement("p");
         num.classList.add("update");
         num.innerText = "1";
-        ls[i].parentElement.parentElement.parentElement.appendChild(num);
+        block.appendChild(num);
       } else {
         let num = parseInt(
-          ls[i].parentElement.parentElement.parentElement.children[2].innerText
+          block.children[2].innerText
         );
-        ls[i].parentElement.parentElement.parentElement.children[2].innerText =
+        block.children[2].innerText =
           num + 1;
       }
-      channel_list.insertAdjacentElement(
+      block.parentElement.insertAdjacentElement(
         "afterbegin",
-        ls[i].parentElement.parentElement.parentElement
+        block
       );
     }
   }
@@ -1032,10 +1038,6 @@ socket.on("otherupdate", function (data) {
 });
 socket.on("currupdate", function (data) {
   shownotification("chnl", data);
-});
-
-socket.on("Logout", function () {
-  document.getElementById("logout").submit();
 });
 
 search_form.onsubmit = function () {
@@ -1062,13 +1064,13 @@ Newform.onsubmit = function () {
 socket.on("show_this", function (data) {
   if (data.hasOwnProperty("users")) {
     data["users"].forEach((user) => {
-      GOTOfrnd(user, (GOTO = false));
+      GOTOfrnd(user, GOTO = false);
     });
   } else {
     const channel = document.createElement("div");
     channel.classList.add("block");
     channel.innerHTML =
-      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="chnl">' +
+      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 data-key='+data["channel"][0]+' class="chnl">' +
       data["channel"][1] +
       '</h4></div><div class="creator"><p>created by ' +
       data["channel"][2] +
@@ -1079,3 +1081,10 @@ socket.on("show_this", function (data) {
   }
 });
 localStorage.clear();
+function getdata(){
+  fetch("/see")
+    .then(response => response.text())
+    .then(text =>{
+      console.log(text)
+    })
+}

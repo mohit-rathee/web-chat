@@ -15,7 +15,12 @@
     <div class="servers">
       {% for srvr in mysrvr: %}
       <div class="text-block" onclick='gotoserver(this)'>
-        <div class="SERVER">{{srvr}}</div>
+        <div></div>
+        <div>
+          <div>
+            <div class="SERVER" data-key="{{srvr}}">{{srvr}}</div>
+          </div>
+        </div>
       </div>
       {% endfor %}
     </div>
@@ -44,7 +49,7 @@
           <div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div>
           <div class="details">
             <div class="name">
-              <h4 class="chnl">{{channel.name}}</h4>
+              <h4 class="chnl" data-key="{{channel.id}}">{{channel.name}}</h4>
             </div>
             <div class="creator">
               <p>created by {{channel.user.username}}</p>
@@ -59,8 +64,10 @@
         <div class="header">
           <div class="useless">
             <a id="download" href="download/{{server}}">Download State</a>
-            <p onclick='socket.emit("changeServer",false)' id="delete">Logout</p>
-            <form id="logout" action="/servers" method="post" style="display: none;"></form>
+            <form action="/" method="post">
+              <input id="delete" type="submit" value="Logout">
+            </form>
+            <form id="logout" action="/" method="post" style="display: none;"></form>
             <!-- <input style="display: none;" id="listen_call" onclick="listencall()" type="button"
               value="Listen for calls"> -->
             <!-- <input type="button" onclick="sendOffer()" value="Make Call"> -->
@@ -73,10 +80,8 @@
           <h4>People live in <span id="server2">{{server}}</span>:</h4>
           <ul style="cursor: pointer;" type="bullet" id="userlive">
             <br>
-            {% for people in peoples %}
-            <li onclick="GOTOfrnd('{{people}}')">{{people}}</li>
-            {% endfor %}
           </ul>
+          <button onclick="getdata()">Get Data</button>
         </div>
         <div id="newform" class="chatbox_input">
           <form class="form" id="newform">

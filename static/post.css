@@ -114,7 +114,7 @@ nav {
   width: 100;
   display: flex;
   justify-content: center;
-  height: 87vh;
+  height: 85vh;
 }
 .pintab {
   display: none;
@@ -139,8 +139,7 @@ nav {
   color: rgb(171, 171, 171);
   aspect-ratio: 1;
   display: flex;
-  height: 100%;
-  justify-content: center;
+  object-fit: cover;
   overflow-y: scroll;
   margin: 5px;
 }
@@ -150,11 +149,11 @@ nav {
   color: rgb(171, 171, 171);
   aspect-ratio: 1;
   display: flex;
-  height: auto;
-  width: auto;
-  justify-content: center;
+  object-fit: contain;
+  word-break: break-all;
   overflow-y: scroll;
-  margin: 20px;
+  padding: 10px;
+  
 }
 .pinned {
   cursor: pointer;
@@ -266,6 +265,7 @@ nav {
   overflow-x: auto;
 }
 .channel_info {
+  margin-left: 4%;
   display: flex;
   justify-content: flex-end;
 }
@@ -357,6 +357,7 @@ nav {
   border-bottom: none;
 }
 #topic {
+  width: 100%;
   color: #262626;
   font-weight: 700;
   line-height: 1.2em;
@@ -486,13 +487,14 @@ a {
   color: rgb(58, 58, 58);
 }
 .update {
+  position: relative;
   font-size: 1em;
   background-color: #00cd46;
   color: #ff6000;
   text-align: center;
   border-radius: 50%;
-  height: 30px;
-  width: 30px;
+  height: auto;
+  width: 25px;
   top: 30%;
 }
 .arrow {
