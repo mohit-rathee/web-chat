@@ -134,6 +134,13 @@ nav {
   width: 100%;
   z-index: 500;
 }
+.pins::-webkit-scrollbar{
+  display: none;
+}
+.image::-webkit-scrollbar{
+  display: none;
+}
+
 .fullscreen .image {
   position: relative;
   color: rgb(171, 171, 171);
