@@ -1,7 +1,6 @@
 var socket = io({
   transports: ["websocket"],
 });
-console.log(name)
 const body = document.getElementById("container");
 const chatbox = document.getElementById("chats");
 const server = document.getElementById("server");
@@ -31,13 +30,7 @@ const mediaPool = document.getElementById("mediaPool");
 const loadingCircle = document.getElementById("loading-circle");
 const pinname = document.getElementById("pinname");
 const content = document.getElementById("content");
-attachment.checked = true;
-let pinsvisibility = true;
-let listvisibility = true;
-let emojivisibility = true;
-let listhide;
-let emojihide;
-let pinshide;
+const emoji_btn = document.getElementById("emoji_btn")
 const emojiPallet = document.getElementById("emojiPallet");
 const emojis = [
   "😄",
@@ -470,18 +463,6 @@ const emojis = [
   "🌰",
 ];
 
-// both.addEventListener('mouseenter', () => {
-//   // Trigger the mouseenter event of the attachment
-//   attachment.dispatchEvent(new Event('mouseenter'));
-//   Users.dispatchEvent(new Event('mouseenter'));
-// });
-
-// both.addEventListener('mouseleave', () => {
-//   // Trigger the mouseleave event of the attachment
-//   attachment.dispatchEvent(new Event('mouseleave'));
-//   Users.dispatchEvent(new Event('mouseenter'));
-// });
-
 function updateLoadingCircle(value) {
   loadingCircle.innerText = value;
 }
@@ -490,32 +471,49 @@ document.getElementById("upload").onclick = async function () {
   if (document.getElementById("media").files[0] == null) {
     return;
   }
+  updateLoadingCircle(0);
   document.getElementById("loading-circle").style.display = "block";
   const file = document.getElementById("media").files[0];
-  const Total = Math.ceil(file.size / chunkSize);
+  const Size = file.size;
   const metaData = new FormData();
   metaData.append("name", file.name);
   metaData.append("typ", file.type);
-  metaData.append("total", Total);
+  metaData.append("chunk",file.slice(0,chunkSize));
   metaData.append("uuid", "");
-
+  let offset = chunkSize;
+  if (Size<=chunkSize){
+    metaData.append("dN", localStorage.getItem("server"))
+    offset=Size
+  }else{
+    metaData.append("dN","")
+  }
   try {
     const response = await fetch("/media", {
       method: "POST",
       body: metaData,
     });
     const data = await response.text();
+    let hash=data;
     console.log("Response:", data);
-    const uuid = data;
-    let seq = 0;
-    updateLoadingCircle(seq);
-    while (seq <= Total) {
-      const offset = chunkSize * seq;
+    if(offset!=Size){
+      const uuid = data;
+      console.log(Size);
+      while (offset + chunkSize < Size) {
+        const chunk = file.slice(offset, offset + chunkSize);
+        console.log(chunk);
+        await sendSeqChunk(chunk, uuid);
+        offset += chunkSize;
+        updateLoadingCircle(Math.round((offset * 100) / Size));
+      }
       const chunk = file.slice(offset, offset + chunkSize);
-      console.log(offset, offset + chunkSize);
-      seq = await sendSeqChunk(seq, chunk, uuid);
-      updateLoadingCircle(Math.round((seq * 100) / Total));
-      console.log(seq);
+      hash = await sendSeqChunk(chunk, uuid, dN = true);
+    }
+    console.log(hash);
+    if (hash!=0){
+      const blob = new Blob([file.slice(0,Size)], { type: file.type });
+      const url = URL.createObjectURL(blob);
+      console.log(url)
+      localStorage.setItem(hash, url);
     }
     document.getElementById("media").value = "";
     document.getElementById("loading-circle").style.display = "none";
@@ -524,15 +522,17 @@ document.getElementById("upload").onclick = async function () {
   }
 };
 
-async function sendSeqChunk(seq, chunk, uuid) {
+async function sendSeqChunk(chunk, uuid, dN = false) {
   try {
-    console.log(seq);
-    console.log(chunk);
     const fileData = new FormData();
     fileData.append("chunk", chunk);
-    fileData.append("seq", seq);
     fileData.append("uuid", uuid);
-
+    if (!dN) {
+      fileData.append("dN", "");
+    } else {
+      fileData.append("dN", localStorage.getItem("server"));
+      console.log(localStorage.getItem("server"));
+    }
     const response = await fetch("/media", {
       method: "POST",
       body: fileData,
@@ -594,8 +594,14 @@ function showpinned(data) {
   let url = localStorage.getItem(data[1]);
   if (!url) {
     // key doesnot exist
-    console.log("sending request to " + "/media/" + data[1].toString());
-    fetch("/media/" + data[1].toString())
+    console.log(
+      "sending request to " +
+        "/" +
+        localStorage.getItem("server") +
+        "/" +
+        data[1].toString()
+    );
+    fetch("/" + localStorage.getItem("server") + "/" + data[1].toString())
       .then((response) => response.blob())
       .then((Data) => {
         // geneate url
@@ -622,7 +628,7 @@ function cancelpinned() {
   content.innerHTML = "";
 }
 
-makeHoverable(attachment, pins, pinsvisibility, pinshide);
+makeHoverable(attachment, pins);
 
 emojis.forEach((emoji) => {
   let bx = document.createElement("span");
@@ -683,7 +689,6 @@ function emphasize() {
   userList.innerHTML = "";
 }
 
-
 function goto(Newchannel) {
   let active = document.getElementsByClassName("active");
   if (active[0] != Newchannel) {
@@ -693,9 +698,9 @@ function goto(Newchannel) {
     Newchannel.classList.add("active");
     document.getElementById("topic").innerText =
       Newchannel.innerText.split("\n")[0];
-    emphasize()
+    emphasize();
     // define a new funtion
-    B4Change(Newchannel)
+    B4Change(Newchannel);
     socket.emit("change", { channel: Newchannel.dataset.key });
   }
 }
@@ -716,41 +721,49 @@ function gotofrnd(Frnd) {
   }
 }
 
-function B4Change(to){
+function B4Change(to) {
   if (to.childElementCount == 3) {
     to.children[2].remove();
   }
   chatbox.innerHTML = "";
-  pins.style.display = "none";
-  pinsvisibility = true;
-  listblock.style.display = "none";
   listvisibility = true;
   userList.innerHTML = "";
   userCount.innerText = "(...)";
   message_input.value = "";
+  pinsvisibility = true;
+  if (listblock.style.display == "block") {
+    const clickEvent = new Event('click');
+    Users.dispatchEvent(clickEvent)
+  }
+  if (pins.style.display == "block") {
+    const clickEvent = new Event('click');
+    attachment.dispatchEvent(clickEvent)
+  }
+  if (emojiPallet.style.display == "block") {
+    const clickEvent = new Event('click');
+    emoji_btn.dispatchEvent(clickEvent)
+  }
 }
 
 function gotoserver(Newserver) {
-  console.log("changing server")
+  console.log("changing server");
   if (server.innerText != Newserver.innerText) {
-    console.log(Newserver)
-    B4Change(Newserver)
+    console.log(Newserver);
+    B4Change(Newserver);
+    mediaPool.innerHTML=""
     socket.emit("changeServer", Newserver.innerText);
   }
 }
 
-makeHoverable(Users, listblock, listvisibility, listhide);
-const emoji_btns = document.getElementsByClassName("emoji");
-Array.from(emoji_btns).forEach((emoji_btn) => {
-  makeHoverable(emoji_btn, emojiPallet, emojivisibility, emojihide);
-});
-function makeHoverable(btn, block, visibility, time) {
+makeHoverable(Users, listblock);
+makeHoverable(emoji_btn, emojiPallet);
+function makeHoverable(btn, block) {
+  let visibility=true
+  let time;
   let mouseleave = function () {
     time = setTimeout(() => {
-      if (visibility) {
-        block.style.display = "none";
-        btn.style.color = "black";
-      }
+      block.style.display = "none";
+      btn.style.color = "black";
     }, 100);
   };
   let blockenter = function () {
@@ -773,14 +786,12 @@ function makeHoverable(btn, block, visibility, time) {
     if (visibility) {
       block.style.display = "block";
       btn.style.color = "aquamarine";
-      console.log("remove eventlistener");
       btn.removeEventListener("mouseenter", btnenter);
       btn.removeEventListener("mouseleave", mouseleave);
       block.removeEventListener("mouseenter", blockenter);
       block.removeEventListener("mouseleave", mouseleave);
       visibility = false;
     } else {
-      console.log("add eventlistener");
       btn.addEventListener("mouseenter", btnenter);
       btn.addEventListener("mouseleave", mouseleave);
       block.addEventListener("mouseenter", blockenter);
@@ -793,6 +804,7 @@ function makeHoverable(btn, block, visibility, time) {
 }
 
 socket.on("connect", function () {
+  localStorage.setItem("server", document.getElementById("server").innerText);
   socket.emit("Load");
 });
 
@@ -822,6 +834,7 @@ socket.on("showNewServer", function (data) {
   server.innerText = data[0];
   document.getElementById("server2").innerText = data[0];
   document.getElementById("download").href = "/download/" + data[0];
+  localStorage.setItem("server", data[0]);
   show("userside");
   all = false;
   channel_list.innerHTML = "";
@@ -829,7 +842,9 @@ socket.on("showNewServer", function (data) {
     let channel = document.createElement("div");
     channel.classList.add("block");
     channel.innerHTML =
-      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 data-key="'+element[0]+'" class="chnl">' +
+      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 data-key="' +
+      element[0] +
+      '" class="chnl">' +
       element[1] +
       '</h4></div><div class="creator"><p>created by ' +
       element[2] +
@@ -924,9 +939,10 @@ function GOTOfrnd(user, GOTO = true) {
     let plate = document.createElement("div");
     plate.classList.add("block");
     plate.innerHTML =
-      '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="friend" data-key="'
-      + user + '">' 
-      + user +
+      '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 class="friend" data-key="' +
+      user +
+      '">' +
+      user +
       "</h4></div></div></div>";
     plate.setAttribute("onclick", "gotofrnd(this)");
     channel_list.insertAdjacentElement("afterbegin", plate);
@@ -1005,26 +1021,18 @@ function shownotification(to, name) {
   let ls = document.getElementsByClassName(to);
   for (let i = 0; i < ls.length; i++) {
     if (ls[i].dataset.key == name) {
-      console.log(ls[i])
+      console.log(ls[i]);
       const block = ls[i].parentElement.parentElement.parentElement;
-      if (
-        block.childElementCount != 3
-      ) {
+      if (block.childElementCount != 3) {
         let num = document.createElement("p");
         num.classList.add("update");
         num.innerText = "1";
         block.appendChild(num);
       } else {
-        let num = parseInt(
-          block.children[2].innerText
-        );
-        block.children[2].innerText =
-          num + 1;
+        let num = parseInt(block.children[2].innerText);
+        block.children[2].innerText = num + 1;
       }
-      block.parentElement.insertAdjacentElement(
-        "afterbegin",
-        block
-      );
+      block.parentElement.insertAdjacentElement("afterbegin", block);
     }
   }
 }
@@ -1064,13 +1072,15 @@ Newform.onsubmit = function () {
 socket.on("show_this", function (data) {
   if (data.hasOwnProperty("users")) {
     data["users"].forEach((user) => {
-      GOTOfrnd(user, GOTO = false);
+      GOTOfrnd(user, (GOTO = false));
     });
   } else {
     const channel = document.createElement("div");
     channel.classList.add("block");
     channel.innerHTML =
-      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 data-key='+data["channel"][0]+' class="chnl">' +
+      '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name"><h4 data-key=' +
+      data["channel"][0] +
+      ' class="chnl">' +
       data["channel"][1] +
       '</h4></div><div class="creator"><p>created by ' +
       data["channel"][2] +
@@ -1081,10 +1091,3 @@ socket.on("show_this", function (data) {
   }
 });
 localStorage.clear();
-function getdata(){
-  fetch("/see")
-    .then(response => response.text())
-    .then(text =>{
-      console.log(text)
-    })
-}

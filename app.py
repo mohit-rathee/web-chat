@@ -129,6 +129,10 @@ mediaHash={}
 
 chunk_size = 4096
 
+if not os.path.exists(os.path.join("media")):
+    os.makedirs(os.path.join("media"))
+if not os.path.exists(os.path.join("db")):
+    os.makedirs(os.path.join("media"))
 # FOR DEVELOPMENT ONLY
 # Engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 metadata=MetaData()
@@ -188,7 +192,6 @@ def upload_db():
                     except:
                         print("error as you expected")
                 base[data]=Base
-                print(Tables)
             except:
                 app.config['SQLALCHEMY_BINDS'].pop(data,None)
                 os.remove("db/"+data+".sqlite3")
@@ -241,12 +244,8 @@ def changeServer(newServer):
             socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
     # print("joining new server")
     if newServer:
-        print(("=========="))
-        print(newServer)
-        print(server)
         channels=server[newServer].query(channel).all()
         session["server"]=newServer
-        print("now new server is "+session.get("server"))
         join_room(newServer)
         # print(socketio.server.manager.rooms)
         room_dict[newServer]["/"].update({session.get("name"):request.sid})
@@ -307,7 +306,6 @@ def change(To):
         session["key"]=None
         session["friend"]=None
     session["channel"]=None
-    print(session.get("channel"))
     if prev:
         leave_room(curr+str(prev))
         if room_dict[curr][prev].pop(name,None):
@@ -318,15 +316,9 @@ def change(To):
         return 
     # GOTO CHANNEL/FRND IF ANY
     if "channel" in To:
-        print('-----------------------')
-        print(type(To["channel"]))
-        print(To["channel"])
         to=int(To["channel"])
-        print(to)
         # current_channel=server[curr].query(channel).filter_by(name=to).first()
         session["channel"]=to
-        print(session.get("channel"))
-        print('-----------------------')
         last_msgs=server[curr].query(Tables[curr][to]).order_by(Tables[curr][to].id.desc()).limit(30)
         room_dict[curr][to].update({name:1})
     if "Frnd" in To:
@@ -498,7 +490,6 @@ def login():
             allServers=[]
             for srvr in server.keys():
                 allServers.append(srvr)
-                print(allServers)
             return render_template("login.html",servers=allServers)
         else:
             return redirect("/channels")
@@ -576,9 +567,11 @@ def login():
 #     # server[curr].commit()
 #     return file_hash
 
-@app.route("/media/<name>",methods=["GET"])
-def handel_get_Media(name):
-    Media=server[session.get("server")].query(media).filter_by(id=str(name)).first()
+@app.route("/<srvr>/<name>",methods=["GET"])
+def handel_get_Media(srvr,name):
+    if srvr not in server.keys():
+        return redirect("/channels")
+    Media=server[srvr].query(media).filter_by(id=str(name)).first()
     if Media != None:
         try:
             ext=mimetypes.guess_extension(Media.mime)
@@ -594,64 +587,70 @@ def handel_get_Media(name):
 
 @app.route("/media",methods=["POST"])
 def handel_media():
-    print(session.get("server"))
     unique_id=request.form['uuid']
     if len(unique_id)!=0:
-        seq=int(request.form['seq'])
         chunk=request.files['chunk'].read()
+        print(mediaHash)
         hasher = mediaHash[unique_id]["Hash"]
         hasher.update(chunk)
-        mediaHash[unique_id]["data"]+=chunk
-        if mediaHash[unique_id]["seq"] ==0:
+        with open("media/"+unique_id,"ab") as file:
+            file.write(chunk)
+        if len(request.form['dN'])!=0:
+            curr=str(request.form['dN'])
             file_hash = hasher.hexdigest()
-            new_file_name=file_hash+mediaHash[unique_id]["ext"]
-            try:
-                file_path = os.path.join("media", new_file_name)
-                if os.path.exists(file_path):
-                    return file_hash
-                with open(file_path, 'wb') as file:
-                    file.write(mediaHash[unique_id]["data"])
-            except Exception as e:
-                print("Error:", str(e))
             mime=mediaHash[unique_id]["mime"]
+            ext=mimetypes.guess_extension(mediaHash[unique_id]["mime"])
+            if not ext:
+                ext=""
+            os.rename("media/"+unique_id,"media/"+file_hash+ext)
             name=mediaHash[unique_id]["name"]
-            curr=session.get('server')
-            print(curr)
             Media=media(id=file_hash,name=name,mime=mediaHash[unique_id]["mime"])
-            server[curr].add(Media)
-            server[curr].commit()
+            try:
+                server[curr].add(Media)
+                server[curr].commit()
+            except:
+                os.remove("media/"+file_hash+ext)
+                mediaHash.pop(unique_id)
+                return 0    
             mediaHash.pop(unique_id)
             socketio.emit("media",[name,file_hash,mime],room=curr)
-            print(curr)
             return file_hash
+        return "1"
 
-        mediaHash[unique_id]["seq"]-=1
-        return str(seq+1)
-    name=request.form['name']
-    typ=request.form['typ']
-    Total=request.form['total']
+    name=str(request.form['name'])
+    typ=str(request.form['typ'])
+    chunk=request.files['chunk'].read()
     unique_id = str(uuid.uuid4())
-    ext=mimetypes.guess_extension(typ)
-    if ext==None:
-        ext=""
-    if not os.path.exists(os.path.join("media")):
-        os.makedirs(os.path.join("media"))
-    mediaHash[unique_id]={}
-    mediaHash[unique_id]["data"]=b''
-    mediaHash[unique_id]["name"]=name
-    mediaHash[unique_id]["seq"]=int(Total)-1
-    mediaHash[unique_id]["Hash"]=hashlib.sha256()
-    mediaHash[unique_id]["mime"]=typ
-    mediaHash[unique_id]["ext"]=ext
-    return unique_id
+    with open(os.path.join("media", unique_id ),"wb") as file:
+        file.write(chunk)
+    hasher=hashlib.sha256()
+    hasher.update(chunk)
+    if len(request.form['dN'])==0:
+        mediaHash[unique_id]={}
+        mediaHash[unique_id]["name"]=name
+        mediaHash[unique_id]["Hash"]=hasher
+        mediaHash[unique_id]["mime"]=typ
+        return unique_id
+    else:
+        curr=request.form['dN']
+        ext=mimetypes.guess_extension(typ)
+        if ext==None:
+            ext=""
+        file_hash=hasher.hexdigest()
+        Media=media(id=file_hash,name=name,mime=typ)
+        try:
+            server[curr].add(Media)
+            server[curr].commit()
+            os.rename("media/"+unique_id,"media/"+file_hash+ext)
+            print(file_hash+ext)
+            socketio.emit("media",[name,file_hash,typ],room=curr)
+            return file_hash
+        except IntegrityError:
+            server[curr].rollback()
+            os.remove("media/"+unique_id)
+            return "0"    
 
-# 6037d1fb7ce473ae87f8e182a1db22ae0bcf2370c7d548ca20688de593c29393
 
-@app.route("/see",methods=["GET"])
-def see():
-    name={"channel":session.get("channel"),
-          "server":session.get("server")}
-    return name
 
 @app.route("/channels",methods=["GET"])
 def channel_chat():
@@ -660,7 +659,6 @@ def channel_chat():
     name=session.get("name")
     myserver=session.get("myserver")
     curr=session.get("server")
-    print(curr)
     channels=server[curr].query(channel).all()
     # ppls=room_dict[curr]["/"]
     # print(ppls)
@@ -687,7 +685,6 @@ def private_key(a,b):
 
 @app.route('/download/<server>',methods=["GET"])
 def download_database(server):
-    print(session.get("server"))
     if server=="app":
         path= str(app.config['SQLALCHEMY_DATABASE_URI']).rsplit("///")[1]
     else:

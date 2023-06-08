@@ -194,7 +194,7 @@ nav {
   margin-left: 15%;
   display: flex;
   cursor: pointer;
-  /* align-items: center; */
+  font-size: larger;
 }
 .text-block:hover {
   background-color: #1e4620;
@@ -363,6 +363,9 @@ nav {
 #user-list li:last-child {
   border-bottom: none;
 }
+.imgtext::-webkit-scrollbar{
+  display: none;
+}
 #topic {
   width: 100%;
   color: #262626;
@@ -394,7 +397,6 @@ nav {
 .search_channel {
   position: relative;
   width: 100%;
-  height: 6vh;
   border-color: black;
   background: rgb(163, 192, 143);
   display: flex;
@@ -410,14 +412,16 @@ nav {
   border: none;
   background: rgb(190, 190, 190);
   padding: 6px;
+  line-height: 4vh;
   border-radius: 30px;
-  font-size: 14px;
   text-align: center;
 }
 .search_channel div input::placeholder {
   color: rgb(190, 38, 38);
 }
-
+.channel_list::-webkit-scrollbar{
+  display: none;
+}
 .channel_list {
   position: relative;
   height: 78vh;

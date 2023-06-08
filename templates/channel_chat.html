@@ -163,7 +163,7 @@
 
             <!-- <input type="hidden" name="hide" default="False" value="{{hide}}" id="inputfield" /> -->
           </form>
-          <button class="emoji">&#x1F603;</button>
+          <button id="emoji_btn" class="emoji">&#x1F603;</button>
         </div>
       </div>
     </div>
@@ -202,6 +202,8 @@
 </body>
 <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
-<script>const name = '{{name}}';</script>
+<script>
+  const name = '{{name}}';
+</script>
 <script src="{{url_for('static',filename='script.js')}}"></script>
 </html>
