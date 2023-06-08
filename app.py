@@ -132,7 +132,7 @@ chunk_size = 4096
 if not os.path.exists(os.path.join("media")):
     os.makedirs(os.path.join("media"))
 if not os.path.exists(os.path.join("db")):
-    os.makedirs(os.path.join("media"))
+    os.makedirs(os.path.join("db"))
 # FOR DEVELOPMENT ONLY
 # Engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 metadata=MetaData()
