@@ -121,10 +121,6 @@ engine={
 base={
     "app":db.Model
 }
-Tables={
-    "app":{}
-    # models of channels
-}
 mediaHash={}
 
 chunk_size = 4096
@@ -144,7 +140,6 @@ server["app"]=Session()
 engine["app"]=db.engine
 tables=server["app"].query(channel).all()
 room_dict["app"]={'/':{}}
-Tables["app"]={}
 # for tb in Base.metadata.tables.keys():
 #     print(type(tb))
 #     print(Base.classes[tb])
@@ -152,9 +147,7 @@ Tables["app"]={}
 for tb in tables:
     try:
         tab = Base.classes[str(tb.id)]
-        setattr(tab, 'user', relationship('users'))
-        # Base.prepare()
-        Tables["app"][tb.id]=tab
+        setattr(tab, 'user', relationship(Base.classes['users']))
         room_dict["app"].update({tb.id:{}})
     except:
         print("error in reading tables")
@@ -182,12 +175,10 @@ def upload_db():
                 engine[data]=Engine
                 tables=server[data].query(channel).all()
                 room_dict[data]={'/':{}}
-                Tables[data]={}
                 for tb in tables:
                     try:
                         tab = Base.classes[str(tb.id)]
                         setattr(tab, 'user', relationship('users'))
-                        Tables[data][tb.id]=tab
                         room_dict[data].update({tb.id:{}})
                     except:
                         print("error as you expected")
@@ -277,8 +268,7 @@ def create(newchannel):
     Base = automap_base(metadata=Base.metadata)
     Base.prepare()
     Ntab=Base.classes[str(Topic.id)]
-    setattr(Ntab, 'user', relationship('users'))
-    Tables[curr].update({Topic.id:Ntab})
+    setattr(Ntab, 'user', relationship(Base.classes['users']))
     base[curr]=Base
     room_dict[curr][Topic.id]={}
     new={"channel":[Topic.id,Topic.name,Topic.user.username]}
@@ -319,7 +309,7 @@ def change(To):
         to=int(To["channel"])
         # current_channel=server[curr].query(channel).filter_by(name=to).first()
         session["channel"]=to
-        last_msgs=server[curr].query(Tables[curr][to]).order_by(Tables[curr][to].id.desc()).limit(30)
+        last_msgs=server[curr].query(base[curr].classes[str(to)]).order_by(base[curr].classes[str(to)].id.desc()).limit(30)
         room_dict[curr][to].update({name:1})
     if "Frnd" in To:
         to=To["Frnd"]
@@ -364,7 +354,7 @@ def handel_message(data):
     # FOR CHANNEL
     if channel_id:
         # current_channel=server[curr].query(channel).filter_by(name=channel_id).first()
-        msg=Tables[curr][channel_id](data=data,sender_id=id)
+        msg=base[curr].classes[str(channel_id)](data=data,sender_id=id)
         server[curr].add(msg)
         server[curr].commit()
         socketio.emit('show_message',[name,data,msg.time.strftime("%D  %H:%M")], room = curr+str(channel_id))
@@ -403,7 +393,7 @@ def getHistory():
     times=session.get("history")
     if channel_id:
         # current_channel=server[curr].query(channel).filter_by(name=channel_id).first()
-        last_msgs=server[curr].query(Tables[curr][channel_id]).order_by(Tables[curr][channel_id].id.desc()).offset(30*times).limit(30)
+        last_msgs=server[curr].query(base[curr].classes[str(channel_id)]).order_by(base[curr].classes[str(channel_id)].id.desc()).offset(30*times).limit(30)
     else:
         last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter(and_(chats.id<postID,chats.key==session.get("key"))).limit(30)
     Msgs=[]

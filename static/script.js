@@ -478,10 +478,10 @@ document.getElementById("upload").onclick = async function () {
   const metaData = new FormData();
   metaData.append("name", file.name);
   metaData.append("typ", file.type);
-  metaData.append("chunk",file.slice(0,chunkSize));
-  metaData.append("uuid", "");
   let offset = chunkSize;
-  if (Size<=chunkSize){
+  metaData.append("chunk",file.slice(0,offset));
+  metaData.append("uuid", "");
+  if (Size<=offset){
     metaData.append("dN", localStorage.getItem("server"))
     offset=Size
   }else{
@@ -500,9 +500,9 @@ document.getElementById("upload").onclick = async function () {
       console.log(Size);
       while (offset + chunkSize < Size) {
         const chunk = file.slice(offset, offset + chunkSize);
+        offset += chunkSize;
         console.log(chunk);
         await sendSeqChunk(chunk, uuid);
-        offset += chunkSize;
         updateLoadingCircle(Math.round((offset * 100) / Size));
       }
       const chunk = file.slice(offset, offset + chunkSize);
