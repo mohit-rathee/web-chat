@@ -498,14 +498,16 @@ document.getElementById("upload").onclick = async function () {
     if (offset != Size) {
       const uuid = data;
       console.log(Size);
-      var chunk = file.slice(offset, offset + chunkSize);
-      offset += chunkSize;
+      const constsize=offset+chunkSize
+      var chunk = file.slice(offset, constsize);
+      offset =constsize;
       while (offset < Size) {
+        const constSize=chunkSize;
         console.log(offset);
         const promise = sendSeqChunk(chunk, uuid);
         updateLoadingCircle(Math.round((offset * 100) / Size));
-        chunk = file.slice(offset, offset + chunkSize);
-        offset += chunkSize;
+        chunk = file.slice(offset, offset + constSize);
+        offset += constSize;
         await promise;
       }
        console.log("last chunk") 
