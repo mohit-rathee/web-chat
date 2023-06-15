@@ -30,7 +30,7 @@ const mediaPool = document.getElementById("mediaPool");
 const loadingCircle = document.getElementById("loading-circle");
 const pinname = document.getElementById("pinname");
 const content = document.getElementById("content");
-const emoji_btn = document.getElementById("emoji_btn")
+const emoji_btn = document.getElementById("emoji_btn");
 const emojiPallet = document.getElementById("emojiPallet");
 const emojis = [
   "😄",
@@ -479,13 +479,13 @@ document.getElementById("upload").onclick = async function () {
   metaData.append("name", file.name);
   metaData.append("typ", file.type);
   let offset = chunkSize;
-  metaData.append("chunk",file.slice(0,offset));
+  metaData.append("chunk", file.slice(0, offset));
   metaData.append("uuid", "");
-  if (Size<=offset){
-    metaData.append("dN", localStorage.getItem("server"))
-    offset=Size
-  }else{
-    metaData.append("dN","")
+  if (Size <= offset) {
+    metaData.append("dN", localStorage.getItem("server"));
+    offset = Size;
+  } else {
+    metaData.append("dN", "");
   }
   try {
     const response = await fetch("/media", {
@@ -493,26 +493,32 @@ document.getElementById("upload").onclick = async function () {
       body: metaData,
     });
     const data = await response.text();
-    let hash=data;
+    let hash = data;
     console.log("Response:", data);
-    if(offset!=Size){
+    if (offset != Size) {
       const uuid = data;
       console.log(Size);
-      while (offset + chunkSize < Size) {
-        const chunk = file.slice(offset, offset + chunkSize);
-        offset += chunkSize;
-        console.log(chunk);
-        await sendSeqChunk(chunk, uuid);
+      var chunk = file.slice(offset, offset + chunkSize);
+      offset += chunkSize;
+      while (offset < Size) {
+        console.log(offset);
+        const promise = sendSeqChunk(chunk, uuid);
         updateLoadingCircle(Math.round((offset * 100) / Size));
+        chunk = file.slice(offset, offset + chunkSize);
+        offset += chunkSize;
+        await promise;
       }
-      const chunk = file.slice(offset, offset + chunkSize);
-      hash = await sendSeqChunk(chunk, uuid, dN = true);
+       console.log("last chunk") 
+       console.log(offset)
+
+
+      hash = await sendSeqChunk(chunk, uuid, (dN = true));
     }
     console.log(hash);
-    if (hash!=0){
-      const blob = new Blob([file.slice(0,Size)], { type: file.type });
+    if (hash != 0) {
+      const blob = new Blob([file.slice(0, Size)], { type: file.type });
       const url = URL.createObjectURL(blob);
-      console.log(url)
+      console.log(url);
       localStorage.setItem(hash, url);
     }
     document.getElementById("media").value = "";
@@ -523,27 +529,34 @@ document.getElementById("upload").onclick = async function () {
 };
 
 async function sendSeqChunk(chunk, uuid, dN = false) {
-  try {
-    const fileData = new FormData();
-    fileData.append("chunk", chunk);
-    fileData.append("uuid", uuid);
-    if (!dN) {
-      fileData.append("dN", "");
-    } else {
-      fileData.append("dN", localStorage.getItem("server"));
-      console.log(localStorage.getItem("server"));
-    }
-    const response = await fetch("/media", {
-      method: "POST",
-      body: fileData,
-    });
-    const data = await response.text();
-    return data;
-  } catch (error) {
-    console.error("Error:", error);
-  }
-}
+  return new Promise(async (resolve, reject) => {
+    try {
+      const fileData = new FormData();
+      fileData.append("chunk", chunk);
+      fileData.append("uuid", uuid);
+      if (!dN) {
+        fileData.append("dN", "");
+      } else {
+        fileData.append("dN", localStorage.getItem("server"));
+        console.log(localStorage.getItem("server"));
+      }
+      const response = await fetch("/media", {
+        method: "POST",
+        body: fileData,
+      });
+      const data = await response.text();
+      if (data=="0"){
+        reject("file reuploaded!!!")
+        loadingCircle.style.display="none"
+      }
+      resolve(data)
 
+    } catch (error) {
+      console.error("Error:", error);
+      reject(error);
+    }
+  });
+}
 function showfile(mime, url) {
   console.log("showing file");
   if (mime.toLowerCase().includes("image")) {
@@ -605,7 +618,6 @@ function showpinned(data) {
       .then((response) => response.blob())
       .then((Data) => {
         // geneate url
-        console.log(Data);
         url = URL.createObjectURL(Data);
         // store this url
         console.log(url);
@@ -732,16 +744,16 @@ function B4Change(to) {
   message_input.value = "";
   pinsvisibility = true;
   if (listblock.style.display == "block") {
-    const clickEvent = new Event('click');
-    Users.dispatchEvent(clickEvent)
+    const clickEvent = new Event("click");
+    Users.dispatchEvent(clickEvent);
   }
   if (pins.style.display == "block") {
-    const clickEvent = new Event('click');
-    attachment.dispatchEvent(clickEvent)
+    const clickEvent = new Event("click");
+    attachment.dispatchEvent(clickEvent);
   }
   if (emojiPallet.style.display == "block") {
-    const clickEvent = new Event('click');
-    emoji_btn.dispatchEvent(clickEvent)
+    const clickEvent = new Event("click");
+    emoji_btn.dispatchEvent(clickEvent);
   }
 }
 
@@ -750,7 +762,7 @@ function gotoserver(Newserver) {
   if (server.innerText != Newserver.innerText) {
     console.log(Newserver);
     B4Change(Newserver);
-    mediaPool.innerHTML=""
+    mediaPool.innerHTML = "";
     socket.emit("changeServer", Newserver.innerText);
   }
 }
@@ -758,7 +770,7 @@ function gotoserver(Newserver) {
 makeHoverable(Users, listblock);
 makeHoverable(emoji_btn, emojiPallet);
 function makeHoverable(btn, block) {
-  let visibility=true
+  let visibility = true;
   let time;
   let mouseleave = function () {
     time = setTimeout(() => {

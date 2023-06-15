@@ -297,11 +297,11 @@
         <label for="loginBox" class="form-list login">Login</label>
       </li>
     </ul>
-    <h4 style="text-align: center; padding: 0%; margin: 0%;">Wanna Add new server? just add the database</h4>
+    <!-- <h4 style="text-align: center; padding: 0%; margin: 0%;">Wanna Add new server? just add the database</h4> -->
     <form action="/upload" method="post" enctype="multipart/form-data">
       <ul>
-        <li><input type="file" multiple name="files" autocomplete="off" /></li>
-        <li><input id="upload" type="submit" value="Upload" /></li>
+        <!-- <li><input type="file" multiple name="files" autocomplete="off" /></li> -->
+        <!-- <li><input id="upload" type="submit" value="Upload" /></li> -->
       </ul>
     </form>
   </div>
@@ -329,7 +329,7 @@
           <input name="password" required type="password" placeholder="Create a password" />
           <div class="server-container">
             {% for server in servers: %}
-            <input class="server" type="checkbox" name="server[]" value="{{server}}"> {{server}}
+            <input class="server" type="hidden" name="server[]" value="{{server}}">
             {% endfor %}
           </div>
           <input type="hidden" name="operation" value="register" />
