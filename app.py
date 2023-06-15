@@ -23,8 +23,8 @@ app = Flask(__name__)
 app.debug=True
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
-app.config['SECRET_KEY'] =os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] =os.environ.get('DATABASE_URI')
+app.config['SECRET_KEY'] ="!!!"
+app.config['SQLALCHEMY_DATABASE_URI'] ="postgresql://alien_x:UNaET4YqAgeZmuaJwiIdp5A0GaGvYNCH@dpg-ci1vav3hp8u1a18211l0-a.singapore-postgres.render.com/web_chat"
 app.config.update(
     SESSION_COOKIE_SAMESITE='None',
     SESSION_COOKIE_SECURE='True',
@@ -543,7 +543,7 @@ def handel_get_Media(srvr,name):
             file_path="media/"+name+ext
             return send_file(file_path,mimetype=Media.mime)
         except:
-            return 0
+            return "0"
     else:
         return render_template("message.html",msg="no such file",goto="/channels")
 
