@@ -74,7 +74,7 @@ class chats(db.Model):
     sender_id= db.Column(db.Integer, db.ForeignKey('users.id'))             #Sender ID
     media_id = db.Column(db.String, db.ForeignKey('media.id'), nullable=True)
     data=db.Column(db.String, nullable=False)                               #actuall msg
-    time = db.Column(db.DateTime, default=func.now(timezone('Asia/Kolkata')))#time
+    time = db.Column(db.DateTime, default=func.now())#time
  
 class media(db.Model):
     id=db.Column(db.String,primary_key=True)
