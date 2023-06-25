@@ -1371,16 +1371,17 @@ socket.on("show_this", function (data) {
   }
 });
 function showing(data) {
+  console.log(data)
   const channel = document.createElement("div");
   channel.setAttribute("onclick", "goto(this)");
-  channel.classList.add("c-" + data["channel"][0]);
+  channel.classList.add("c-" + data[0]);
   const block = document.createElement("div");
   block.classList.add("block");
   block.innerHTML =
     '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name">' +
-    data["channel"][1] +
+    data[1] +
     '</h4></div><div class="creator"><p>created by ' +
-    data["channel"][2] +
+    data[2] +
     '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>';
   channel.appendChild(block);
   const isActive = document.getElementsByClassName("active")[0];
