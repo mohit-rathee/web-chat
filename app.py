@@ -19,8 +19,8 @@ app = Flask(__name__)
 app.debug=True
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
-app.config['SECRET_KEY'] =os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] =os.environ.get('DATABASE_URI')
+app.config['SECRET_KEY'] =os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] =os.getenv('DATABASE_URI')
 app.config.update(
     SESSION_COOKIE_SAMESITE='None',
     SESSION_COOKIE_SECURE='True',
@@ -29,15 +29,15 @@ app.config.update(
 app.config['SQLALCHEMY_BINDS']={}
 india_timezone = pytz.timezone('Asia/Kolkata')
 db = SQLAlchemy(app)
-engine=create_engine(os.environ.get('DATABASE_URI'))
+engine=create_engine(os.getenv('DATABASE_URI'))
 metadata=MetaData(bind=engine)
 Base=declarative_base(metadata=metadata)
 
 class users(Base):
     __tablename__="users"
     id=db.Column(db.Integer,primary_key=True)                            #User ID
-    username=db.Column(db.String(20), unique=True, nullable=False)       #user name
-    password=db.Column(db.String(30), nullable=False)                    #user password
+    username=db.Column(db.String, unique=True, nullable=False)       #user name
+    password=db.Column(db.String, nullable=False)                    #user password
     description=db.Column(db.String, nullable=True)
 class channel(Base):
     __tablename__="channel"

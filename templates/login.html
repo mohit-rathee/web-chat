@@ -346,7 +346,7 @@
           <input name="password" required type="password" placeholder="Create a password" />
           <div class="server-container">
             {% for server in servers: %}
-            <input class="server" type="checkbox" name="server[]" value="{{server}}">
+            <input class="server" type="checkbox" name="server[]" value="{{server}}">{{server}}
             {% endfor %}
           </div>
           <input type="hidden" name="operation" value="register" />
