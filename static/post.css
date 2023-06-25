@@ -41,7 +41,6 @@ body {
   margin-top: 0%;
   margin-bottom: 20%;
 }
-
 .container .servers {
   position: relative;
   flex: 6%;
@@ -49,7 +48,6 @@ body {
   background-color: rgb(79, 168, 79);
   border: 1px solid rgb(104, 113, 104);
 }
-
 input[type="file"] {
   display: block;
   margin: 0 auto;
@@ -70,7 +68,6 @@ input[type="file"]:hover {
   z-index: 300;
   max-width: max-content;
 }
-
 input[type="submit"] {
   background-color: #296d28;
   border: none;
@@ -84,7 +81,6 @@ input[type="submit"] {
 input[type="submit"]:hover {
   background-color: #b8e3bb;
 }
-
 nav {
   background-color: #3e3e3e;
   display: flex;
@@ -100,12 +96,10 @@ nav {
   display: flex;
   justify-content: center;
 }
-
 .nav .right-items {
   display: flex;
   justify-content: flex-end;
 }
-
 .blur {
   filter: blur(5px);
   pointer-events: none;
@@ -134,13 +128,12 @@ nav {
   width: 100%;
   z-index: 500;
 }
-.pins::-webkit-scrollbar{
+.pins::-webkit-scrollbar {
   display: none;
 }
-.image::-webkit-scrollbar{
+.image::-webkit-scrollbar {
   display: none;
 }
-
 .fullscreen .image {
   position: relative;
   color: rgb(171, 171, 171);
@@ -149,8 +142,8 @@ nav {
   object-fit: cover;
   overflow-y: scroll;
   margin: 5px;
+  height: 93vh;
 }
-
 .image {
   position: relative;
   color: rgb(171, 171, 171);
@@ -160,7 +153,6 @@ nav {
   word-break: break-all;
   overflow-y: scroll;
   padding: 10px;
-  
 }
 .pinned {
   cursor: pointer;
@@ -257,7 +249,7 @@ nav {
   align-items: center;
   padding: 0 15px;
 }
-.chatside .userside{
+.chatside .userside {
   height: 100%;
 }
 #chats {
@@ -286,7 +278,6 @@ nav {
   bottom: -40%;
   font-size: 70%;
 }
-
 .user-list {
   position: relative;
   z-index: 300;
@@ -311,7 +302,6 @@ nav {
   border-radius: 5px;
   margin-left: 10px;
 }
-
 /* #chat-users {
   position: relative;
   display: inline-block;
@@ -349,7 +339,6 @@ nav {
   float: left;
   border: 2px solid gray;
 }
-
 #user-list li {
   padding: 5px;
   border-bottom: 1px solid #42633e;
@@ -359,11 +348,10 @@ nav {
   background: #599557;
   color: #b2b2b2;
 }
-
 #user-list li:last-child {
   border-bottom: none;
 }
-.imgtext::-webkit-scrollbar{
+.imgtext::-webkit-scrollbar {
   display: none;
 }
 #topic {
@@ -374,6 +362,7 @@ nav {
   margin-left: 15px;
 }
 #download {
+  visibility: hidden;
   font-size: 2.5vh;
 }
 .imgtext h4 {
@@ -419,7 +408,7 @@ nav {
 .search_channel div input::placeholder {
   color: rgb(190, 38, 38);
 }
-.channel_list::-webkit-scrollbar{
+.channel_list::-webkit-scrollbar {
   display: none;
 }
 .channel_list {
@@ -438,7 +427,6 @@ nav {
 .channel_list .block.active {
   background: rgb(89, 149, 87);
 }
-
 .channel_list .block {
   cursor: pointer;
   position: relative;
@@ -486,7 +474,6 @@ nav {
     position: relative;
     width: 23%;
 } */
-
 a {
   text-decoration: none;
   color: #555;
@@ -571,8 +558,9 @@ a {
 .message {
   position: relative;
   display: flex;
+  align-items: center;
   width: 100%;
-  margin: 5px 0;
+  margin: 10px 0;
 }
 .message p {
   position: relative;
@@ -592,7 +580,11 @@ a {
   opacity: 0.5;
 }
 .my_message {
-  justify-content: flex-end;
+  justify-content: flex-start;
+  flex-direction: row-reverse;
+}
+.my_message .reactions {
+  left: 5px;
 }
 .frnd_message {
   justify-content: flex-start;
@@ -605,6 +597,140 @@ a {
 .frnd_message p {
   background-color: #dde6d3;
   text-align: left;
+}
+.reactions::-webkit-scrollbar {
+  display: none;
+}
+.reactiontab {
+  display: flex;
+  height: 50px;
+  width: 30%;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  margin: 0 1%;
+  border-radius: 10px;
+  background-color: rgb(189, 245, 179);
+}
+.reactions .myreaction {
+  font-size: small;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.662);
+  border-radius: 50%;
+}
+.replyplate {
+  width: max-content;
+  background: aliceblue;
+  padding: 0 20px;
+  border-radius: 20px;
+  max-width: 90%;
+  overflow: scroll;
+  position: relative;
+  font-size: x-small;
+}
+.replyplate::-webkit-scrollbar {
+  display: none;
+}
+.replydiv {
+  display: flex;
+  width: 100%;
+  height: 6vh;
+  position: relative;
+}
+.replydelete {
+  width: 50px;
+  height: 50px;
+  margin-left: 0.5%;
+  border-radius: 50%;
+}
+.reactions {
+  display: flex;
+  position: absolute;
+  width: fit-content;
+  max-width: 150px;
+  height: 23px;
+  border-radius: 10px;
+  text-align: left;
+  padding: 0 3px;
+  z-index: 10;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  background-color: rgba(84, 109, 57, 0.88);
+  bottom: -9.5px;
+  right: 5px;
+  font-size: smaller;
+}
+.moremenu {
+  display: none;
+  position: absolute;
+  cursor: pointer;
+  text-align: end;
+  top: 2%;
+  right: 2%;
+  height: 20px;
+  width: 20px;
+  border-radius: 10%;
+  color: grey;
+  background-image: url("/static/moremenu.svg");
+}
+.moremenuoptions {
+  cursor: pointer;
+  font-size: medium;
+  border: 1px solid #f0f8ffab;
+  border-radius: 5px;
+  color: white;
+  padding: 1px 20px;
+  margin: 1px;
+}
+.my_message .moremenu {
+  left: 2%;
+}
+.moremenutab {
+  display: none;
+  position: absolute;
+  z-index: 20;
+  top: 0px;
+  border-radius: 5px;
+  background: #2d2c2cb2;
+  padding: 2px;
+}
+.mediatitle {
+  display: flex;
+  align-items: center;
+}
+.media {
+  border: 1px solid blue;
+  border-radius: 10px;
+  padding: 5px;
+  background: aquamarine;
+}
+.msg {
+  margin-top: 2px;
+  background-color: #649940a1;
+  padding: 2px;
+}
+.forward {
+  cursor: pointer;
+  position: relative;
+  margin: 4px;
+  height: 20px;
+  width: 20px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background-image: url("/static/forward.svg");
+  background-color: #2c761c78;
+}
+.menu {
+  cursor: pointer;
+  display: none;
+  position: relative;
+  margin: 4px;
+  height: 20px;
+  width: 20px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background-image: url("/static/smily.svg");
+  background-color: #2c761c78;
 }
 .shortBox {
   position: relative;
@@ -626,7 +752,18 @@ a {
   opacity: 0.8;
   text-align-last: right;
 }
+.reply {
+  width: 100%;
+  color: #313131;
+  font-size: smaller;
+  font-style: oblique;
+  cursor: pointer;
+  background: #00000024;
+  border-radius: 5px;
+  padding: 0 5px;
+}
 .chatbox_input {
+  flex-wrap: wrap;
   position: relative;
   width: 100%;
   height: 10vh;
@@ -637,9 +774,11 @@ a {
 .chatbox_input .form {
   position: relative;
   width: 100%;
-  padding: 5%;
   padding-right: 0%;
   display: flex;
+}
+.react {
+  padding: 2px;
 }
 .emoG {
   padding: 2px;
