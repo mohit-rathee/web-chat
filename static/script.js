@@ -835,7 +835,7 @@ socket.on("showNewServer", function (data) {
   all = false;
   channel_list.innerHTML = "";
   for (let i = data[1].length - 1; i > -1; i--) {
-    showing({ channel: data[1][i] });
+    showing(data[1][i]);
   }
 });
 document.getElementById("back").onclick = function () {
@@ -1371,7 +1371,6 @@ socket.on("show_this", function (data) {
   }
 });
 function showing(data) {
-  console.log(data)
   const channel = document.createElement("div");
   channel.setAttribute("onclick", "goto(this)");
   channel.classList.add("c-" + data[0]);
