@@ -487,7 +487,7 @@ document.getElementById("media").addEventListener("change", function () {
   }
 });
 let chunkSize = 51200; // 500 KB in bytes
-document.getElementById("upload").onclick = async function () {
+document.getElementById("upload").onclick = function () {
   if (document.getElementById("media").files[0] == null) {
     return;
   }
@@ -495,52 +495,71 @@ document.getElementById("upload").onclick = async function () {
   document.getElementById("loading-circle").style.display = "block";
   const file = document.getElementById("media").files[0];
   const Size = file.size;
-  const metaData = new FormData();
-  metaData.append("name", file.name);
-  metaData.append("typ", file.type);
-  let offset = chunkSize;
-  metaData.append("chunk", file.slice(0, offset));
-  metaData.append("uuid", "");
-  if (Size <= offset) {
-    metaData.append("dN", localStorage.getItem("server"));
-    offset = Size;
-  } else {
-    metaData.append("dN", "");
+  let offset = 0;
+  while (offset <= Size) {
+    socket.emit("hello", [
+      file.name,
+      file.type,
+      file.slice(offset, offset + chunkSize),
+    ]);
+    offset += chunkSize;
   }
-  try {
-    const response = await fetch("/media", {
-      method: "POST",
-      body: metaData,
-    });
-    const data = await response.text();
-    let hash = data;
-    if (offset != Size) {
-      const uuid = data;
-      const constsize = offset + chunkSize;
-      var chunk = file.slice(offset, constsize);
-      offset = constsize;
-      while (offset < Size) {
-        const constSize = chunkSize;
-        const promise = sendSeqChunk(chunk, uuid);
-        updateLoadingCircle(Math.round((offset * 100) / Size));
-        chunk = file.slice(offset, offset + constSize);
-        offset += constSize;
-        await promise;
-      }
-
-      hash = await sendSeqChunk(chunk, uuid, (dN = true));
-    }
-    if (hash != 0) {
-      const blob = new Blob([file.slice(0, Size)], { type: file.type });
-      const url = URL.createObjectURL(blob);
-      localStorage.setItem(hash, url);
-    }
-    document.getElementById("media").value = "";
-    document.getElementById("loading-circle").style.display = "none";
-  } catch (error) {
-    console.error("Error:", error);
-  }
+  console.log('done')
 };
+// document.getElementById("upload").onclick = async function () {
+//   if (document.getElementById("media").files[0] == null) {
+//     return;
+//   }
+//   updateLoadingCircle(0);
+//   document.getElementById("loading-circle").style.display = "block";
+//   const file = document.getElementById("media").files[0];
+//   const Size = file.size;
+//   const metaData = new FormData();
+//   metaData.append("name", file.name);
+//   metaData.append("typ", file.type);
+//   let offset = chunkSize;
+//   metaData.append("chunk", file.slice(0, offset));
+//   metaData.append("uuid", "");
+//   if (Size <= offset) {
+//     metaData.append("dN", localStorage.getItem("server"));
+//     offset = Size;
+//   } else {
+//     metaData.append("dN", "");
+//   }
+//   try {
+//     const response = await fetch("/media", {
+//       method: "POST",
+//       body: metaData,
+//     });
+//     const data = await response.text();
+//     let hash = data;
+//     if (offset != Size) {
+//       const uuid = data;
+//       const constsize = offset + chunkSize;
+//       var chunk = file.slice(offset, constsize);
+//       offset = constsize;
+//       while (offset < Size) {
+//         const constSize = chunkSize;
+//         const promise = sendSeqChunk(chunk, uuid);
+//         updateLoadingCircle(Math.round((offset * 100) / Size));
+//         chunk = file.slice(offset, offset + constSize);
+//         offset += constSize;
+//         await promise;
+//       }
+
+//       hash = await sendSeqChunk(chunk, uuid, (dN = true));
+//     }
+//     if (hash != 0) {
+//       const blob = new Blob([file.slice(0, Size)], { type: file.type });
+//       const url = URL.createObjectURL(blob);
+//       localStorage.setItem(hash, url);
+//     }
+//     document.getElementById("media").value = "";
+//     document.getElementById("loading-circle").style.display = "none";
+//   } catch (error) {
+//     console.error("Error:", error);
+//   }
+// };
 async function sendSeqChunk(chunk, uuid, dN = false) {
   return new Promise(async (resolve, reject) => {
     try {
@@ -1201,7 +1220,7 @@ socket.on("show_message", function (data) {
     }
   } else {
     const msg = JSON.parse(data[2]);
-    msg[6] = data[1];
+    msg[5] = data[1];
     msgList[data[1]] = msg;
     if (data[0] == name) {
       makeMessage(data[1], true, true);
