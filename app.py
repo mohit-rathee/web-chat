@@ -1,5 +1,5 @@
-import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json
-from flask import Flask, render_template, request, redirect, session, make_response
+import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json, time
+from flask import Flask, render_template, request, redirect, session, make_response, Response
 from werkzeug.utils import secure_filename
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -526,7 +526,7 @@ def handel_get_Media(srvr,name):
         except:
             return make_response('Not found',404)
     else:
-        return render_template("message.html",msg="no such file",goto="/channels")
+        return make_response('Please upload it first',404)
 @app.route("/media",methods=["POST"])
 def handel_media():
     unique_id=request.form['uuid']
@@ -618,5 +618,36 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
+
+@app.route('/start')
+def serve():
+    return render_template("test.html")
+
+@socketio.on('hello')
+def Print(data):
+    print(data)
+
+@app.route('/load')
+def stream():
+    print("initiating")
+    def generate():
+        data_stream='media/da157259fa4f7311a3340e973a20ad7e456b705bad01f60c12d629a736808155.mp4'
+        with open(data_stream, 'rb') as file:
+            while True:
+                chunk=file.read(4096)
+                print("------")
+                if not chunk:
+                    break
+                yield chunk
+    return Response(generate(),mimetype="text/plain")
 if __name__ == '__main__':
     socketio.run(app)
+
+# TODO:
+    # Add Media Id and use that instead of hash
+    # Streaming of media when asked
+    # Update chunksize acc.to internet speed
+    # Send all the chats on load 
+    # Add browser storage for quick response and maintainse
+    # (learning how to deal with tampering attacks)
+    # Use reddis db for storing peoples who are online
