@@ -1,5 +1,5 @@
-import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json, time
-from flask import Flask, render_template, request, redirect, session, make_response, Response
+import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json
+from flask import Flask, render_template, request, redirect, session, make_response
 from werkzeug.utils import secure_filename
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -9,7 +9,7 @@ from passlib.hash import sha256_crypt
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
-from sqlalchemy import create_engine, MetaData, Column, text, String, ForeignKeyConstraint
+from sqlalchemy import create_engine, MetaData, Column, text, String, Boolean, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr, declarative_base
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
 import gevent
@@ -53,9 +53,10 @@ class chats(Base):
     data=db.Column(db.String, nullable=False)                               #actuall msg
 class media(Base):
     __tablename__="media"
-    id=db.Column(db.String,primary_key=True)
-    name=db.Column(db.String, nullable=False) 
-    mime=db.Column(db.String, nullable=False)
+    id=db.Column(db.Integer,primary_key=True)
+    hash=db.Column(db.String,unique=True)
+    name=db.Column(db.String, nullable=False)
+    show=db.Column(db.Boolean,nullable=False)
 def create_channel(table_number,base,users):
     attrs = {
         '__tablename__': str(table_number),
@@ -84,12 +85,10 @@ server={"app":sqlsession()}
 base={"app":Base}
 mediaHash={}
 def private_key(a,b):
-    a=int(a)
-    b=int(b)
-    if a<=b:
-        key=str(a)+"-"+str(b)
+    if int(a)<=int(b):
+        key=a+"-"+b
     else:
-        key=str(b)+"-"+str(a)
+        key=b+"-"+a
     return hashlib.md5(key.encode()).hexdigest()
 uploads_dir = os.path.join('db')
 if not os.path.exists(os.path.join("media")):
@@ -193,7 +192,7 @@ def Load():
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
     Media=server[curr].query(media).all()
-    Md=[[media.name,media.id,media.mime] for media in Media]
+    Md=[[media.name,media.id] for media in Media]
     socketio.emit("medias",Md,to=request.sid)
 @socketio.on("changeServer")
 def changeServer(newServer):
@@ -214,7 +213,7 @@ def changeServer(newServer):
         channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
         socketio.emit("showNewServer",channel_list,to=request.sid)    
         Media=server[newServer].query(media).all()
-        Md=[[media.name,media.id,media.mime] for media in Media]
+        Md=[[media.name,media.id] for media in Media]
         socketio.emit("medias",Md,to=request.sid)
 @socketio.on("create")
 def create(newchannel):
@@ -511,22 +510,22 @@ def login():
                 return redirect("/channels")
             else:
                 return render_template("message.html",msg="YOUR OLD PASSWORD IS UPDATED WITH NEWONE",goto="/channels")
-@app.route("/<srvr>/<name>",methods=["GET"])
-def handel_get_Media(srvr,name):
+@app.route("/<srvr>/<id>",methods=["GET"])
+def handel_get_Media(srvr,index):
     if srvr not in server.keys():
         return redirect("/channels")
-    Media=server[srvr].query(media).filter_by(id=str(name)).first()
+    Media=server[srvr].query(media).filter_by(id=id).first()
     if Media != None:
-        try:
-            ext=mimetypes.guess_extension(Media.mime)
-            if ext == None:
-                ext=""
-            file_path="media/"+name+ext
+        ext=mimetypes.guess_extension(json.loads(Media.name)[1])
+        if ext == None:
+            ext=""
+        file_path="media/"+Media.hash+ext
+        if os.path.exists(file_path):
             return send_file(file_path,mimetype=Media.mime)
-        except:
+        else:
             return make_response('Not found',404)
     else:
-        return make_response('Please upload it first',404)
+        return make_response('Not found',404)
 @app.route("/media",methods=["POST"])
 def handel_media():
     unique_id=request.form['uuid']
@@ -539,31 +538,29 @@ def handel_media():
         if len(request.form['dN'])!=0:
             curr=str(request.form['dN'])
             file_hash = hasher.hexdigest()
-            mime=mediaHash[unique_id]["mime"]
-            ext=mimetypes.guess_extension(mediaHash[unique_id]["mime"])
+            mime=mediaHash[unique_id]["name"][1]
+            ext=mimetypes.guess_extension(mime)
             if not ext:
                 ext=""
-            name=mediaHash[unique_id]["name"]
+            name=mediaHash[unique_id]["name"][0]
             session=server[curr]
-            check=session.query(media).filter_by(id=file_hash).first()
+            check=session.query(media).filter_by(hash=file_hash).first()
             if check==None:
-                Media=media(id=file_hash,name=name,mime=mediaHash[unique_id]["mime"])
+                Media=media(hash=file_hash,name=json.dumps([name,mime]),show=True)
                 session.add(Media)
                 session.commit()
                 os.rename("media/"+unique_id,"media/"+file_hash+ext)
-                socketio.emit("media",[name,file_hash,mediaHash[unique_id]["mime"]],room=curr)
-                return file_hash
+                socketio.emit("media",[Media.id,name],room=curr)
+                return [Media.id,file_hash]
             elif not os.path.exists("media/"+file_hash+ext):
                 os.rename("media/"+unique_id,"media/"+file_hash+ext)
                 return "0"
             else:
                 os.remove("media/"+unique_id)
                 return "0"
-
-            
             mediaHash.pop(unique_id)
             socketio.emit("media",[name,file_hash,mime],room=curr)
-            return file_hash
+            return [Media.id,file_hash]
         return "1"
 
     name=str(request.form['name'])
@@ -576,9 +573,8 @@ def handel_media():
     hasher.update(chunk)
     if len(request.form['dN'])==0:
         mediaHash[unique_id]={}
-        mediaHash[unique_id]["name"]=name
+        mediaHash[unique_id]["name"]=[name,typ]
         mediaHash[unique_id]["Hash"]=hasher
-        mediaHash[unique_id]["mime"]=typ
         return unique_id
     else:
         curr=request.form['dN']
@@ -587,14 +583,14 @@ def handel_media():
             ext=""
         file_hash=hasher.hexdigest()
         session=server[curr]
-        check=session.query(media).filter_by(id=file_hash).first()
+        check=session.query(media).filter_by(hash=file_hash).first()
         if check==None:
-            Media=media(id=file_hash,name=name,mime=typ)
+            Media=media(hash=file_hash,name=json.dumps([name,typ]),show=True)
             session.add(Media)
             session.commit()
             os.rename("media/"+unique_id,"media/"+file_hash+ext)
             socketio.emit("media",[name,file_hash,typ],room=curr)    
-            return file_hash
+            return [Media.id,file_hash]
         elif not os.path.exists("media/"+file_hash+ext):
             os.rename("media/"+unique_id,"media/"+file_hash+ext)
             return "0"
@@ -618,36 +614,5 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
-
-@app.route('/start')
-def serve():
-    return render_template("test.html")
-
-@socketio.on('hello')
-def Print(data):
-    print(data)
-
-@app.route('/load')
-def stream():
-    print("initiating")
-    def generate():
-        data_stream='media/da157259fa4f7311a3340e973a20ad7e456b705bad01f60c12d629a736808155.mp4'
-        with open(data_stream, 'rb') as file:
-            while True:
-                chunk=file.read(4096)
-                print("------")
-                if not chunk:
-                    break
-                yield chunk
-    return Response(generate(),mimetype="text/plain")
 if __name__ == '__main__':
     socketio.run(app)
-
-# TODO:
-    # Add Media Id and use that instead of hash
-    # Streaming of media when asked
-    # Update chunksize acc.to internet speed
-    # Send all the chats on load 
-    # Add browser storage for quick response and maintainse
-    # (learning how to deal with tampering attacks)
-    # Use reddis db for storing peoples who are online
