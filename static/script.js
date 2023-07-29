@@ -499,36 +499,37 @@ document.getElementById("upload").onclick = async function () {
   metaData.append("name", file.name);
   metaData.append("typ", file.type);
   let offset = chunkSize;
-  metaData.append("chunk", file.slice(0, offset));
-  metaData.append("uuid", "");
-  if (Size <= offset) {
-    metaData.append("dN", localStorage.getItem("server"));
+  if (Size < offset) {
     offset = Size;
-  } else {
-    metaData.append("dN", "");
+    metaData.append("dN", 1);
   }
+  metaData.append("chunk", file.slice(0, offset));
   try {
-    const response = await fetch("/media", {
+    const response = await fetch("/media", { //first chunk
       method: "POST",
       body: metaData,
     });
+    let id,hash
     const data = await response.text();
-    let [id,hash] = data;
-    if (offset != Size) {
+    if(offset == Size){
+      [id,hash] = JSON.parse(data);
+    }
+    else {
       const uuid = data;
       const constsize = offset + chunkSize;
       var chunk = file.slice(offset, constsize);
       offset = constsize;
       while (offset < Size) {
         const constSize = chunkSize;
-        const promise = sendSeqChunk(chunk, uuid);
+        const promise = sendSeqChunk(chunk, uuid); 
         updateLoadingCircle(Math.round((offset * 100) / Size));
         chunk = file.slice(offset, offset + constSize);
         offset += constSize;
         await promise;
       }
-
-      [id,hash] = await sendSeqChunk(chunk, uuid, (dN = true));
+      let res = JSON.parse(await sendSeqChunk(chunk, uuid, (dN = true))); //last chunk
+      id=res[0]
+      hash=res[1]
     }
     if (hash != 0) {
       const blob = new Blob([file.slice(0, Size)], { type: file.type });
@@ -547,18 +548,16 @@ async function sendSeqChunk(chunk, uuid, dN = false) {
       const fileData = new FormData();
       fileData.append("chunk", chunk);
       fileData.append("uuid", uuid);
-      if (!dN) {
-        fileData.append("dN", "");
-      } else {
-        fileData.append("dN", localStorage.getItem("server"));
+      if (dN) {
+        fileData.append("dN", 1);
       }
       const response = await fetch("/media", {
         method: "POST",
         body: fileData,
       });
       const data = await response.text();
-      if (data == "0") {
-        reject("file reuploaded!!!");
+      if (data === "0") {
+        reject("duplicate file uploaded!!!");
         loadingCircle.style.display = "none";
       }
       resolve(data);
@@ -600,19 +599,21 @@ function showfile(mime, url) {
     content.appendChild(embed);
   }
 }
-function showpinned(data) {
+function showpinned(data) { //data = [id,hash,[name,mime]
+  console.log('hello')
   if (pinname.dataset.key == data[1]) {
     return;
   }
   body.classList.add("blur");
   pintab.style.display = "block";
-  pinname.innerText = data[0];
+  console.log(data)
+  pinname.innerText = data[2][0];
   pinname.setAttribute("data-key", data[1]);
   content.innerHTML = "";
   let url = localStorage.getItem(data[1]);
   if (!url) {
-    // key doesnot exist
-    fetch("/" + localStorage.getItem("server") + "/" + data[1].toString())
+    // loading new media
+    fetch("/media/" +data[0].toString())
       .then((response) => {
         if (response.status == 200) {
           return response.blob();
@@ -627,17 +628,18 @@ function showpinned(data) {
       })
       .then((Data) => {
         if (Data.length != 0) {
+          console.log(Data)
           url = URL.createObjectURL(Data);
           // store this url
           localStorage.setItem(data[1], url);
-          showfile(data[2], url);
+          showfile(data[2][1], url);
         }
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   } else {
-    showfile(data[2], url);
+    showfile(data[2][1], url);
   }
 }
 function cancelpinned() {
@@ -796,25 +798,28 @@ socket.on("connect", function () {
   localStorage.setItem("server", document.getElementById("server").innerText);
   socket.emit("Load");
 });
-function addmedia(data) {
+function addmedia(data) { //data = [id,hash,name]
   const mediaplate = document.createElement("div");
+  mediaplate.setAttribute('data-key',data[1])
   const nameplate = document.createElement("div");
   nameplate.classList.add("pinned");
-  nameplate.innerText = data[0];
-  nameplate.setAttribute("onclick", "showpinned(" + JSON.stringify(data) + ")");
+  const name= data[2]; //name=[name,mime]
+  nameplate.innerText = name[0];
+  nameplate.setAttribute("onclick", "showpinned(" + JSON.stringify(data) + ")"); 
   const forward = document.createElement("div");
   forward.classList.add("forward");
-  forward.setAttribute("onclick", 'reply("' + data[0] + '","' + data[1] + '")');
+  forward.setAttribute("onclick", 'reply("' + name[0] + '","' + data[0] + '")');
   mediaplate.classList.add("mediatitle");
   mediaplate.appendChild(nameplate);
   mediaplate.appendChild(forward);
-  mediaplate.classList.add("M-" + data[1]);
-  mediaplate.setAttribute("data-mime", data[2]);
+  mediaplate.classList.add("M-" + data[0]);
+  mediaplate.setAttribute("data-mime", name[1]);
   mediaPool.appendChild(mediaplate);
 }
 socket.on("medias", function (datas) {
   datas.forEach((data) => {
-    addmedia(data);
+
+    addmedia([data[0],data[1],JSON.parse(data[2])]);
   });
 });
 socket.on("media", function (data) {
@@ -887,11 +892,12 @@ function makeMessage(id, bool, neu) {
       nameplate.classList.add("pinned");
       nameplate.classList.add("msg");
       const medianame = m.innerText;
+      const hash = m.dataset.key
       nameplate.innerText = medianame;
       nameplate.setAttribute(
         "onclick",
         "showpinned(" +
-          JSON.stringify([medianame, msg[1], m.dataset.mime]) +
+          JSON.stringify([msg[1],hash, [medianame , m.dataset.mime]]) +
           ")"
       );
       mediatitle.appendChild(nameplate);
