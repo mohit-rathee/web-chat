@@ -84,8 +84,6 @@ server={"app":sqlsession()}
 base={"app":Base}
 mediaHash={}
 def private_key(a,b):
-    a=int(a)
-    b=int(b)
     if a<=b:
         key=str(a)+"-"+str(b)
     else:
