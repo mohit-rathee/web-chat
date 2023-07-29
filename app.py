@@ -381,6 +381,22 @@ def reaction(reactData):
             msg.data=data
             server[curr].commit()
             socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+str(channel_id))
+    # FOR PRVT
+    else:
+        msg=server[curr].query(chats).filter_by(key=session.get('key')).first()
+        if msg:
+            message=json.loads(msg.data)
+            if reactData[1]:
+                if message.get('4'):
+                    message['4'][str(id)]=reactData[1]
+                else:
+                    message['4']={str(id):reactData[1]}
+            else:
+                message['4'].pop(str(id))
+            data=json.dumps(message)
+            msg.data=data
+            server[curr].commit()
+            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=request.sid)
 @socketio.on('getHistory')
 def getHistory():
     curr=session.get("server")
