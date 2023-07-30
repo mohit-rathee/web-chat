@@ -15,18 +15,18 @@
 I used flask with sqlachemy,postgress and gunicorn for websockets and some html ,css ,javascript.
 
 ## Future Ideas.
-- Upgrade Fecth API to XHR
-- use local storage to store chats for better response.
-- Add a feature to create a profile to every Server, Channel, User. Just an md file like github.
-- streaming media files to client more fastly
-
-
+- Use indexedDB to store chats for quick response.
+- Add a feature to create a profile/description to every Server, Channel, User. Just an md file like github.
+- Streaming media files to client more fastly.
+- Add a personal encryption & decryption protocol.
+  
 ## Installation for linux :
 1. Clone this repo.
 2. Then open folder and create a virtual environment `python3 -m venv venv`
 3. Run `. venv/bin/activate`
 4. Install the essential things `pip install -r requirement.txt`
-5. Start the service by cmd `gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker app:app`  
+5. Either run `export DATABASE_URI=sqlite:///<path_to_store_database>test.sqlite3` and `export SECRET_KEY=<a_secret_key>` or edit the app.py file manually
+6. Start the service by cmd `gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker app:app`  
    (change the default url in app.py if you want to).
 
 # To Approach:
