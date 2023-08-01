@@ -9,7 +9,7 @@ from passlib.hash import sha256_crypt
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
-from sqlalchemy import create_engine, MetaData, Column, text, String, Boolean, ForeignKeyConstraint
+from sqlalchemy import create_engine, MetaData, Column, text, String, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr, declarative_base
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
 import gevent
@@ -306,7 +306,7 @@ def handel_message(message):
     id=session.get(curr)
     name=session.get("name")
     channel_id=session.get("channel")
-    msg[3]=(datetime.datetime.now(india_timezone))
+    msg[3]=datetime.datetime.now(india_timezone).strftime('%d-%m-%Y %H:%M:%S')
     # FOR CHANNEL
     if channel_id:
         if message.get('2'):
