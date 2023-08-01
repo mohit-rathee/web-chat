@@ -488,6 +488,7 @@ document.getElementById("media").addEventListener("change", function () {
     attachment.dispatchEvent(clickEvent);
   }
 });
+
 let chunkSize = 51200; // 500 KB in bytes
 document.getElementById("upload").onclick = function () {
   if (document.getElementById("media").files[0] == null) {
@@ -497,7 +498,6 @@ document.getElementById("upload").onclick = function () {
   document.getElementById("loading-circle").style.display = "block";
   const file = document.getElementById("media").files[0];
   const Size = file.size;
-<<<<<<< HEAD
   const metaData = new FormData();
   metaData.append("name", file.name);
   metaData.append("typ", file.type);
@@ -548,18 +548,7 @@ document.getElementById("upload").onclick = function () {
     document.getElementById("loading-circle").style.display = "none";
   } catch (error) {
     console.error("Error:", error);
-=======
-  let offset = 0;
-  while (offset <= Size) {
-    socket.emit("hello", [
-      file.name,
-      file.type,
-      file.slice(offset, offset + chunkSize),
-    ]);
-    offset += chunkSize;
->>>>>>> main
   }
-  console.log('done')
 };
 // document.getElementById("upload").onclick = async function () {
 //   if (document.getElementById("media").files[0] == null) {
