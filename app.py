@@ -21,18 +21,12 @@ app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
 app.config['SECRET_KEY'] =os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] =os.getenv('DATABASE_URI')
-app.config.update(
-    SESSION_COOKIE_SAMESITE='None',
-    SESSION_COOKIE_SECURE='True',
-    SQLALCHEMY_TRACK_MODIFICATIONS='False'
-)
 app.config['SQLALCHEMY_BINDS']={}
 india_timezone = pytz.timezone('Asia/Kolkata')
 db = SQLAlchemy(app)
 engine=create_engine(os.getenv('DATABASE_URI'))
 metadata=MetaData(bind=engine)
 Base=declarative_base(metadata=metadata)
-
 class users(Base):
     __tablename__="users"
     id=db.Column(db.Integer,primary_key=True)                            #User ID
@@ -336,7 +330,6 @@ def handel_message(message):
     # FOR DM's
     else:
         key=session.get("key")
-        print(key)
         if message.get('2'):
             reply=server[curr].query(chats).filter_by(id=int(message.get("2"))).first()
             if reply==None or reply.key!=key:
@@ -513,7 +506,7 @@ def login():
 @app.route("/media/<id>",methods=["GET"])
 def handel_get_Media(id):
     srvr=session.get('server')
-    if srvr not in server.keys():
+    if not srvr:
         return "0"
     Media=server[srvr].query(media).filter_by(id=id).first()
     if Media != None:
@@ -529,7 +522,6 @@ def handel_get_Media(id):
         return make_response('Not found',404)
 @app.route("/media",methods=["POST"])
 def handel_media():
-    print(request.form)
     def uploadSuccess(unique_id,file_hash,curr):
         session=server[curr]
         check=session.query(media).filter_by(hash=file_hash).first()
@@ -551,7 +543,6 @@ def handel_media():
     unique_id=request.form.get('uuid')
     if unique_id:
         chunk=request.files['chunk'].read()
-        print(mediaHash)
         hasher = mediaHash[unique_id][0]
         hasher.update(chunk)
         with open("media/"+unique_id,"ab") as file:
@@ -559,11 +550,9 @@ def handel_media():
         if not request.form.get('dN'):
             return "1"
         file_hash=hasher.hexdigest()
-        print(file_hash)
         curr = session.get("server")
         data = uploadSuccess(unique_id,file_hash,curr)
         mediaHash.pop(unique_id)
-        print('deleted from mediaHash')
         if data:
             return [data,file_hash]
         return "0"
@@ -579,22 +568,13 @@ def handel_media():
     mediaHash[unique_id]=[hasher,name,typ]  #store name,typ,hasher in List :
     if request.form.get('dN'):
         file_hash=hasher.hexdigest()
-        print(file_hash)
         curr = session.get("server")
         data = uploadSuccess(unique_id,file_hash,curr)
         mediaHash.pop(unique_id)
-        print('deleted from mediaHash')
         if data:
             return [data,file_hash]
         return "0"
-    print(mediaHash)
     return unique_id
-
-@app.route("/test",methods=["POST"])
-def Test():
-    curr = session.get("server")
-    print(curr)
-    return curr
 @app.route("/channels",methods=["GET"])
 def channel_chat():
     if not session.get("name"):

@@ -35,6 +35,8 @@ const reply_id = document.getElementById("reply_id");
 const media_id = document.getElementById("media_id");
 const emoji_btn = document.getElementById("emoji_btn");
 const emojiPallet = document.getElementById("emojiPallet");
+let msgList = {};
+let mediaList = {};
 const emojis = [
   "😄",
   "😃",
@@ -505,31 +507,31 @@ document.getElementById("upload").onclick = async function () {
   }
   metaData.append("chunk", file.slice(0, offset));
   try {
-    const response = await fetch("/media", { //first chunk
+    const response = await fetch("/media", {
+      //first chunk
       method: "POST",
       body: metaData,
     });
-    let id,hash
+    let id, hash;
     const data = await response.text();
-    if(offset == Size){
-      [id,hash] = JSON.parse(data);
-    }
-    else {
+    if (offset == Size) {
+      [id, hash] = JSON.parse(data);
+    } else {
       const uuid = data;
       const constsize = offset + chunkSize;
       var chunk = file.slice(offset, constsize);
       offset = constsize;
       while (offset < Size) {
         const constSize = chunkSize;
-        const promise = sendSeqChunk(chunk, uuid); 
+        const promise = sendSeqChunk(chunk, uuid);
         updateLoadingCircle(Math.round((offset * 100) / Size));
         chunk = file.slice(offset, offset + constSize);
         offset += constSize;
         await promise;
       }
       let res = JSON.parse(await sendSeqChunk(chunk, uuid, (dN = true))); //last chunk
-      id=res[0]
-      hash=res[1]
+      id = res[0];
+      hash = res[1];
     }
     if (hash != 0) {
       const blob = new Blob([file.slice(0, Size)], { type: file.type });
@@ -599,21 +601,21 @@ function showfile(mime, url) {
     content.appendChild(embed);
   }
 }
-function showpinned(data) { //data = [id,hash,[name,mime]
-  console.log('hello')
-  if (pinname.dataset.key == data[1]) {
+function showpinned(id) {
+  const hash=mediaList[id][0]
+  const media_data=mediaList[id][1]
+  if (pinname.dataset.key == hash) {
     return;
   }
   body.classList.add("blur");
   pintab.style.display = "block";
-  console.log(data)
-  pinname.innerText = data[2][0];
-  pinname.setAttribute("data-key", data[1]);
+  pinname.innerText = media_data[0];
+  pinname.setAttribute("data-key", hash);
   content.innerHTML = "";
-  let url = localStorage.getItem(data[1]);
+  let url = localStorage.getItem(hash);
   if (!url) {
     // loading new media
-    fetch("/media/" +data[0].toString())
+    fetch("/media/" + id.toString())
       .then((response) => {
         if (response.status == 200) {
           return response.blob();
@@ -628,18 +630,18 @@ function showpinned(data) { //data = [id,hash,[name,mime]
       })
       .then((Data) => {
         if (Data.length != 0) {
-          console.log(Data)
-          url = URL.createObjectURL(Data);
-          // store this url
-          localStorage.setItem(data[1], url);
-          showfile(data[2][1], url);
+          //cant rely on server for mimetype
+          const Data_with_mime = new Blob([Data], { type: media_data[1] });
+          url = URL.createObjectURL(Data_with_mime);
+          localStorage.setItem(hash, url);
+          showfile(media_data[1], url);
         }
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   } else {
-    showfile(data[2][1], url);
+    showfile(media_data[1], url);
   }
 }
 function cancelpinned() {
@@ -798,14 +800,15 @@ socket.on("connect", function () {
   localStorage.setItem("server", document.getElementById("server").innerText);
   socket.emit("Load");
 });
-function addmedia(data) { //data = [id,hash,name]
+function addmedia(data) {
+  //data = [id,hash,name]
+  mediaList[data[0]] = [data[1], data[2]];
   const mediaplate = document.createElement("div");
-  mediaplate.setAttribute('data-key',data[1])
   const nameplate = document.createElement("div");
   nameplate.classList.add("pinned");
-  const name= data[2]; //name=[name,mime]
+  const name = data[2]; //name=[name,mime]
   nameplate.innerText = name[0];
-  nameplate.setAttribute("onclick", "showpinned(" + JSON.stringify(data) + ")"); 
+  nameplate.setAttribute("onclick", "showpinned(" + data[0] + ")");
   const forward = document.createElement("div");
   forward.classList.add("forward");
   forward.setAttribute("onclick", 'reply("' + name[0] + '","' + data[0] + '")');
@@ -813,13 +816,12 @@ function addmedia(data) { //data = [id,hash,name]
   mediaplate.appendChild(nameplate);
   mediaplate.appendChild(forward);
   mediaplate.classList.add("M-" + data[0]);
-  mediaplate.setAttribute("data-mime", name[1]);
   mediaPool.appendChild(mediaplate);
 }
 socket.on("medias", function (datas) {
+  mediaList = {};
   datas.forEach((data) => {
-
-    addmedia([data[0],data[1],JSON.parse(data[2])]);
+    addmedia([data[0], data[1], JSON.parse(data[2])]);
   });
 });
 socket.on("media", function (data) {
@@ -885,21 +887,17 @@ function makeMessage(id, bool, neu) {
     msgPara.appendChild(replyof);
   }
   if (msg[1]) {
-    const m = document.getElementsByClassName("M-" + msg[1])[0];
+    const m = mediaList[msg[1]];
+    // const m = document.getElementsByClassName("M-" + msg[1])[0];
     if (m) {
       const mediatitle = document.createElement("div");
       const nameplate = document.createElement("div");
       nameplate.classList.add("pinned");
       nameplate.classList.add("msg");
-      const medianame = m.innerText;
-      const hash = m.dataset.key
+      const medianame = m[1][0];
+      const hash = m[0];
       nameplate.innerText = medianame;
-      nameplate.setAttribute(
-        "onclick",
-        "showpinned(" +
-          JSON.stringify([msg[1],hash, [medianame , m.dataset.mime]]) +
-          ")"
-      );
+      nameplate.setAttribute("onclick", "showpinned(" + msg[1] + ")");
       mediatitle.appendChild(nameplate);
       // const forward=document.createElement('div')
       // forward.classList.add('forward')
@@ -969,7 +967,7 @@ function makeMessage(id, bool, neu) {
     message.firstChild.appendChild(reaction);
   }
 }
-let msgList = {};
+
 socket.on("showMessages", function (Msgs) {
   ID = Msgs.pop();
   if (ID == 0) {
