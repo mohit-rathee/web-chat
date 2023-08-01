@@ -802,9 +802,13 @@ function B4Change(to) {
   }
 }
 function gotoserver(Newserver) {
-  console.log(Newserver.innerText)
-  Newserver.parentElement.lastElementChild.remove()
-  if (server.innerText != Newserver.innerText) {
+  console.log(Newserver)
+  console.log(Newserver.firstElementChild.innerText)
+  // console.log(Newserver.innerText)
+  // if (Newserver.parentElement.childElementCount==3){
+  //   Newserver.parentElement.lastElementChild.remove()
+  // }
+  if (localStorage.getItem('server') != Newserver.firstElementChild.innerText) {
     B4Change(Newserver);
     mediaPool.innerHTML = "";
     socket.emit("changeServer", Newserver.innerText);
