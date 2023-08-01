@@ -1,5 +1,5 @@
-import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json
-from flask import Flask, render_template, request, redirect, session, make_response
+import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json, time
+from flask import Flask, render_template, request, redirect, session, make_response, Response
 from werkzeug.utils import secure_filename
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -18,21 +18,16 @@ monkey.patch_all()
 app = Flask(__name__)
 app.debug=True
 app.config.from_object(__name__)
-socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
+socketio = SocketIO(app, async_mode='gevent', transport=['websocket'], manage_session=False)
 app.config['SECRET_KEY'] =os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 app.config['SQLALCHEMY_DATABASE_URI'] =os.getenv('DATABASE_URI')
-app.config.update(
-    SESSION_COOKIE_SAMESITE='None',
-    SESSION_COOKIE_SECURE='True',
-    SQLALCHEMY_TRACK_MODIFICATIONS='False'
-)
 app.config['SQLALCHEMY_BINDS']={}
 india_timezone = pytz.timezone('Asia/Kolkata')
 db = SQLAlchemy(app)
 engine=create_engine(os.getenv('DATABASE_URI'))
 metadata=MetaData(bind=engine)
 Base=declarative_base(metadata=metadata)
-
 class users(Base):
     __tablename__="users"
     id=db.Column(db.Integer,primary_key=True)                            #User ID
@@ -53,9 +48,9 @@ class chats(Base):
     data=db.Column(db.String, nullable=False)                               #actuall msg
 class media(Base):
     __tablename__="media"
-    id=db.Column(db.String,primary_key=True)
-    name=db.Column(db.String, nullable=False) 
-    mime=db.Column(db.String, nullable=False)
+    id=db.Column(db.Integer,primary_key=True)
+    hash=db.Column(db.String,unique=True)
+    name=db.Column(db.String, nullable=False)
 def create_channel(table_number,base,users):
     attrs = {
         '__tablename__': str(table_number),
@@ -193,7 +188,7 @@ def Load():
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
     Media=server[curr].query(media).all()
-    Md=[[media.name,media.id,media.mime] for media in Media]
+    Md=[[media.id,media.hash,media.name] for media in Media]
     socketio.emit("medias",Md,to=request.sid)
 @socketio.on("changeServer")
 def changeServer(newServer):
@@ -214,7 +209,7 @@ def changeServer(newServer):
         channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
         socketio.emit("showNewServer",channel_list,to=request.sid)    
         Media=server[newServer].query(media).all()
-        Md=[[media.name,media.id,media.mime] for media in Media]
+        Md=[[media.id,media.hash,media.name] for media in Media]
         socketio.emit("medias",Md,to=request.sid)
 @socketio.on("create")
 def create(newchannel):
@@ -381,6 +376,22 @@ def reaction(reactData):
             msg.data=data
             server[curr].commit()
             socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+str(channel_id))
+    # FOR PRVT
+    else:
+        msg=server[curr].query(chats).filter_by(key=session.get('key')).first()
+        if msg:
+            message=json.loads(msg.data)
+            if reactData[1]:
+                if message.get('4'):
+                    message['4'][str(id)]=reactData[1]
+                else:
+                    message['4']={str(id):reactData[1]}
+            else:
+                message['4'].pop(str(id))
+            data=json.dumps(message)
+            msg.data=data
+            server[curr].commit()
+            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=request.sid)
 @socketio.on('getHistory')
 def getHistory():
     curr=session.get("server")
@@ -511,96 +522,78 @@ def login():
                 return redirect("/channels")
             else:
                 return render_template("message.html",msg="YOUR OLD PASSWORD IS UPDATED WITH NEWONE",goto="/channels")
-@app.route("/<srvr>/<name>",methods=["GET"])
-def handel_get_Media(srvr,name):
-    if srvr not in server.keys():
-        return redirect("/channels")
-    Media=server[srvr].query(media).filter_by(id=str(name)).first()
+@app.route("/media/<id>",methods=["GET"])
+def handel_get_Media(id):
+    srvr=session.get('server')
+    if not srvr:
+        return "0"
+    Media=server[srvr].query(media).filter_by(id=id).first()
     if Media != None:
-        try:
-            ext=mimetypes.guess_extension(Media.mime)
-            if ext == None:
-                ext=""
-            file_path="media/"+name+ext
-            return send_file(file_path,mimetype=Media.mime)
-        except:
+        # ext=mimetypes.guess_extension(json.loads(Media.name)[1])
+        # if ext == None:
+        #     ext=""
+        file_path="media/"+Media.hash
+        if os.path.exists(file_path):
+            return send_file(file_path) #if this doesnt work put mimetype = (binary)
+        else:
             return make_response('Not found',404)
     else:
-        return render_template("message.html",msg="no such file",goto="/channels")
+        return make_response('Not found',404)
 @app.route("/media",methods=["POST"])
 def handel_media():
-    unique_id=request.form['uuid']
-    if len(unique_id)!=0:
+    def uploadSuccess(unique_id,file_hash,curr):
+        session=server[curr]
+        check=session.query(media).filter_by(hash=file_hash).first()
+        if check==None:
+            data=mediaHash[unique_id]
+            name=[data[1],data[2]] #store only name & typ 
+            Media=media(hash=file_hash,name=json.dumps(name))
+            session.add(Media)
+            session.commit()
+            os.rename("media/"+unique_id,"media/"+file_hash) #file uploaded
+            socketio.emit("media",[Media.id,Media.hash,name],room=curr)
+            return Media.id
+        elif not os.path.exists("media/"+file_hash): #file is reuploaded and saved
+            os.rename("media/"+unique_id,"media/"+file_hash) 
+            return check.id
+        else:
+            os.remove("media/"+unique_id) # duplicate file deleted
+            return 0
+    unique_id=request.form.get('uuid')
+    if unique_id:
         chunk=request.files['chunk'].read()
-        hasher = mediaHash[unique_id]["Hash"]
+        hasher = mediaHash[unique_id][0]
         hasher.update(chunk)
         with open("media/"+unique_id,"ab") as file:
             file.write(chunk)
-        if len(request.form['dN'])!=0:
-            curr=str(request.form['dN'])
-            file_hash = hasher.hexdigest()
-            mime=mediaHash[unique_id]["mime"]
-            ext=mimetypes.guess_extension(mediaHash[unique_id]["mime"])
-            if not ext:
-                ext=""
-            name=mediaHash[unique_id]["name"]
-            session=server[curr]
-            check=session.query(media).filter_by(id=file_hash).first()
-            if check==None:
-                Media=media(id=file_hash,name=name,mime=mediaHash[unique_id]["mime"])
-                session.add(Media)
-                session.commit()
-                os.rename("media/"+unique_id,"media/"+file_hash+ext)
-                socketio.emit("media",[name,file_hash,mediaHash[unique_id]["mime"]],room=curr)
-                return file_hash
-            elif not os.path.exists("media/"+file_hash+ext):
-                os.rename("media/"+unique_id,"media/"+file_hash+ext)
-                return "0"
-            else:
-                os.remove("media/"+unique_id)
-                return "0"
-
-            
-            mediaHash.pop(unique_id)
-            socketio.emit("media",[name,file_hash,mime],room=curr)
-            return file_hash
-        return "1"
+        if not request.form.get('dN'):
+            return "1"
+        file_hash=hasher.hexdigest()
+        curr = session.get("server")
+        data = uploadSuccess(unique_id,file_hash,curr)
+        mediaHash.pop(unique_id)
+        if data:
+            return [data,file_hash]
+        return "0"
 
     name=str(request.form['name'])
     typ=str(request.form['typ'])
     chunk=request.files['chunk'].read()
     unique_id = str(uuid.uuid4())
-    with open(os.path.join("media", unique_id ),"wb") as file:
+    with open("media/"+ unique_id ,"wb") as file:
         file.write(chunk)
     hasher=hashlib.sha256()
     hasher.update(chunk)
-    if len(request.form['dN'])==0:
-        mediaHash[unique_id]={}
-        mediaHash[unique_id]["name"]=name
-        mediaHash[unique_id]["Hash"]=hasher
-        mediaHash[unique_id]["mime"]=typ
-        return unique_id
-    else:
-        curr=request.form['dN']
-        ext=mimetypes.guess_extension(typ)
-        if ext==None:
-            ext=""
+    mediaHash[unique_id]=[hasher,name,typ]  #store name,typ,hasher in List :
+    if request.form.get('dN'):
         file_hash=hasher.hexdigest()
-        session=server[curr]
-        check=session.query(media).filter_by(id=file_hash).first()
-        if check==None:
-            Media=media(id=file_hash,name=name,mime=typ)
-            session.add(Media)
-            session.commit()
-            os.rename("media/"+unique_id,"media/"+file_hash+ext)
-            socketio.emit("media",[name,file_hash,typ],room=curr)    
-            return file_hash
-        elif not os.path.exists("media/"+file_hash+ext):
-            os.rename("media/"+unique_id,"media/"+file_hash+ext)
-            return "0"
-        else:
-            os.remove("media/"+unique_id)
-            return "0"
+        curr = session.get("server")
+        data = uploadSuccess(unique_id,file_hash,curr)
+        mediaHash.pop(unique_id)
+        if data:
+            return [data,file_hash]
+        return "0"
+    return unique_id
 @app.route("/channels",methods=["GET"])
 def channel_chat():
     if not session.get("name"):
@@ -618,5 +611,36 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
+
+@app.route('/start')
+def serve():
+    return render_template("test.html")
+
+@socketio.on('hello')
+def Print(data):
+    print(data)
+
+@app.route('/load')
+def stream():
+    print("initiating")
+    def generate():
+        data_stream='media/da157259fa4f7311a3340e973a20ad7e456b705bad01f60c12d629a736808155.mp4'
+        with open(data_stream, 'rb') as file:
+            while True:
+                chunk=file.read(4096)
+                print("------")
+                if not chunk:
+                    break
+                yield chunk
+    return Response(generate(),mimetype="text/plain")
 if __name__ == '__main__':
     socketio.run(app)
+
+# TODO:
+    # Add Media Id and use that instead of hash
+    # Streaming of media when asked
+    # Update chunksize acc.to internet speed
+    # Send all the chats on load 
+    # Add browser storage for quick response and maintainse
+    # (learning how to deal with tampering attacks)
+    # Use reddis db for storing peoples who are online
