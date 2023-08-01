@@ -306,7 +306,7 @@ def handel_message(message):
     id=session.get(curr)
     name=session.get("name")
     channel_id=session.get("channel")
-    msg[3]=datetime.datetime.now(india_timezone).strftime('%d-%m-%Y %H:%M:%S')
+    msg[3]=(datetime.datetime.now(india_timezone))
     # FOR CHANNEL
     if channel_id:
         if message.get('2'):
