@@ -593,12 +593,5 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
-@app.route('/test',methods=["GET"])
-def showserver():
-    print(session.get('server'))
-    session["server"]="app"
-    print(session.get('server'))
-    return session.get('server')
-
 if __name__ == '__main__':
     socketio.run(app)
