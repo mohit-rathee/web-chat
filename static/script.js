@@ -490,7 +490,7 @@ document.getElementById("media").addEventListener("change", function () {
 });
 
 let chunkSize = 51200; // 500 KB in bytes
-document.getElementById("upload").onclick = function () {
+document.getElementById("upload").onclick = async function () {
   if (document.getElementById("media").files[0] == null) {
     return;
   }
@@ -802,6 +802,8 @@ function B4Change(to) {
   }
 }
 function gotoserver(Newserver) {
+  console.log(Newserver.innerText)
+  Newserver.parentElement.lastElementChild.remove()
   if (server.innerText != Newserver.innerText) {
     B4Change(Newserver);
     mediaPool.innerHTML = "";
@@ -1371,6 +1373,7 @@ socket.on("notify", function (userObj) {
   userCount.innerText = " (" + Object.keys(userObj).length + ")";
 });
 function shownotification(to, name) {
+  console.log(to+name)
   const notify = document.getElementsByClassName(to + name)[0]
     .firstElementChild;
   if (notify) {
@@ -1383,15 +1386,17 @@ function shownotification(to, name) {
       let num = parseInt(notify.children[2].innerText);
       notify.children[2].innerText = num + 1;
     }
-    const isActive = document.getElementsByClassName("active")[0];
-    if (isActive && isActive.parentElement == channel_list.firstElementChild) {
-      channel_list.insertBefore(
-        notify.parentElement,
-        isActive.parentElement.nextElementSibling
-      );
-    } else {
-      channel_list.insertAdjacentElement("afterbegin", notify.parentElement);
-      notify.scrollIntoView();
+    if(to!="s-"){
+      const isActive = document.getElementsByClassName("active")[0];
+      if (isActive && isActive.parentElement == channel_list.firstElementChild) {
+        channel_list.insertBefore(
+          notify.parentElement,
+          isActive.parentElement.nextElementSibling
+        );
+      } else {
+        channel_list.insertAdjacentElement("afterbegin", notify.parentElement);
+        notify.scrollIntoView();
+      }
     }
   }
 }
