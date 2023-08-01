@@ -1,5 +1,5 @@
-import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json
-from flask import Flask, render_template, request, redirect, session, make_response
+import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json, time
+from flask import Flask, render_template, request, redirect, session, make_response, Response
 from werkzeug.utils import secure_filename
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -79,6 +79,8 @@ server={"app":sqlsession()}
 base={"app":Base}
 mediaHash={}
 def private_key(a,b):
+    a=int(a)
+    b=int(b)
     if a<=b:
         key=str(a)+"-"+str(b)
     else:
@@ -374,6 +376,22 @@ def reaction(reactData):
             msg.data=data
             server[curr].commit()
             socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+str(channel_id))
+    # FOR PRVT
+    else:
+        msg=server[curr].query(chats).filter_by(key=session.get('key')).first()
+        if msg:
+            message=json.loads(msg.data)
+            if reactData[1]:
+                if message.get('4'):
+                    message['4'][str(id)]=reactData[1]
+                else:
+                    message['4']={str(id):reactData[1]}
+            else:
+                message['4'].pop(str(id))
+            data=json.dumps(message)
+            msg.data=data
+            server[curr].commit()
+            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=request.sid)
 @socketio.on('getHistory')
 def getHistory():
     curr=session.get("server")
@@ -593,5 +611,36 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
+
+@app.route('/start')
+def serve():
+    return render_template("test.html")
+
+@socketio.on('hello')
+def Print(data):
+    print(data)
+
+@app.route('/load')
+def stream():
+    print("initiating")
+    def generate():
+        data_stream='media/da157259fa4f7311a3340e973a20ad7e456b705bad01f60c12d629a736808155.mp4'
+        with open(data_stream, 'rb') as file:
+            while True:
+                chunk=file.read(4096)
+                print("------")
+                if not chunk:
+                    break
+                yield chunk
+    return Response(generate(),mimetype="text/plain")
 if __name__ == '__main__':
     socketio.run(app)
+
+# TODO:
+    # Add Media Id and use that instead of hash
+    # Streaming of media when asked
+    # Update chunksize acc.to internet speed
+    # Send all the chats on load 
+    # Add browser storage for quick response and maintainse
+    # (learning how to deal with tampering attacks)
+    # Use reddis db for storing peoples who are online
