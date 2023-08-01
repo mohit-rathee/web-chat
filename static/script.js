@@ -534,9 +534,14 @@ document.getElementById("upload").onclick = async function () {
       hash = res[1];
     }
     if (hash != 0) {
-      const blob = new Blob([file.slice(0, Size)], { type: file.type });
-      const url = URL.createObjectURL(blob);
-      localStorage.setItem(hash, url);
+      if (!localStorage.getItem(hash)){
+        // may be we can revoke the existing url and create a new one 
+        // just in case if user has changed something then it can be refreshed
+        // but currently no need
+        const blob = new Blob([file.slice(0, Size)], { type: file.type });
+        const url = URL.createObjectURL(blob);
+        localStorage.setItem(hash, url);
+      }
     }
     document.getElementById("media").value = "";
     document.getElementById("loading-circle").style.display = "none";
@@ -825,6 +830,7 @@ socket.on("medias", function (datas) {
   });
 });
 socket.on("media", function (data) {
+  console.log(data)
   addmedia(data);
 });
 socket.on("showNewServer", function (data) {

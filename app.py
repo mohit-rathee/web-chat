@@ -18,8 +18,9 @@ monkey.patch_all()
 app = Flask(__name__)
 app.debug=True
 app.config.from_object(__name__)
-socketio = SocketIO(app, async_mode='gevent', transport=['websocket'])
+socketio = SocketIO(app, async_mode='gevent', transport=['websocket'], manage_session=False)
 app.config['SECRET_KEY'] =os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 app.config['SQLALCHEMY_DATABASE_URI'] =os.getenv('DATABASE_URI')
 app.config['SQLALCHEMY_BINDS']={}
 india_timezone = pytz.timezone('Asia/Kolkata')
@@ -206,7 +207,7 @@ def changeServer(newServer):
         channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
         socketio.emit("showNewServer",channel_list,to=request.sid)    
         Media=server[newServer].query(media).all()
-        Md=[[media.name,media.id] for media in Media]
+        Md=[[media.id,media.hash,media.name] for media in Media]
         socketio.emit("medias",Md,to=request.sid)
 @socketio.on("create")
 def create(newchannel):
@@ -592,5 +593,12 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
+@app.route('/test',methods=["GET"])
+def showserver():
+    print(session.get('server'))
+    session["server"]="app"
+    print(session.get('server'))
+    return session.get('server')
+
 if __name__ == '__main__':
     socketio.run(app)
