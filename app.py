@@ -79,8 +79,6 @@ server={"app":sqlsession()}
 base={"app":Base}
 mediaHash={}
 def private_key(a,b):
-    a=int(a)
-    b=int(b)
     if a<=b:
         key=str(a)+"-"+str(b)
     else:
@@ -391,7 +389,7 @@ def reaction(reactData):
             data=json.dumps(message)
             msg.data=data
             server[curr].commit()
-            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=request.sid)
+            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+session.get('key'))
 @socketio.on('getHistory')
 def getHistory():
     curr=session.get("server")

@@ -488,8 +488,9 @@ document.getElementById("media").addEventListener("change", function () {
     attachment.dispatchEvent(clickEvent);
   }
 });
+
 let chunkSize = 51200; // 500 KB in bytes
-document.getElementById("upload").onclick = function () {
+document.getElementById("upload").onclick = async function () {
   if (document.getElementById("media").files[0] == null) {
     return;
   }
@@ -497,7 +498,6 @@ document.getElementById("upload").onclick = function () {
   document.getElementById("loading-circle").style.display = "block";
   const file = document.getElementById("media").files[0];
   const Size = file.size;
-<<<<<<< HEAD
   const metaData = new FormData();
   metaData.append("name", file.name);
   metaData.append("typ", file.type);
@@ -548,18 +548,7 @@ document.getElementById("upload").onclick = function () {
     document.getElementById("loading-circle").style.display = "none";
   } catch (error) {
     console.error("Error:", error);
-=======
-  let offset = 0;
-  while (offset <= Size) {
-    socket.emit("hello", [
-      file.name,
-      file.type,
-      file.slice(offset, offset + chunkSize),
-    ]);
-    offset += chunkSize;
->>>>>>> main
   }
-  console.log('done')
 };
 // document.getElementById("upload").onclick = async function () {
 //   if (document.getElementById("media").files[0] == null) {
@@ -813,7 +802,13 @@ function B4Change(to) {
   }
 }
 function gotoserver(Newserver) {
-  if (server.innerText != Newserver.innerText) {
+  console.log(Newserver)
+  console.log(Newserver.firstElementChild.innerText)
+  // console.log(Newserver.innerText)
+  // if (Newserver.parentElement.childElementCount==3){
+  //   Newserver.parentElement.lastElementChild.remove()
+  // }
+  if (localStorage.getItem('server') != Newserver.firstElementChild.innerText) {
     B4Change(Newserver);
     mediaPool.innerHTML = "";
     socket.emit("changeServer", Newserver.innerText);
@@ -1382,6 +1377,7 @@ socket.on("notify", function (userObj) {
   userCount.innerText = " (" + Object.keys(userObj).length + ")";
 });
 function shownotification(to, name) {
+  console.log(to+name)
   const notify = document.getElementsByClassName(to + name)[0]
     .firstElementChild;
   if (notify) {
@@ -1394,15 +1390,17 @@ function shownotification(to, name) {
       let num = parseInt(notify.children[2].innerText);
       notify.children[2].innerText = num + 1;
     }
-    const isActive = document.getElementsByClassName("active")[0];
-    if (isActive && isActive.parentElement == channel_list.firstElementChild) {
-      channel_list.insertBefore(
-        notify.parentElement,
-        isActive.parentElement.nextElementSibling
-      );
-    } else {
-      channel_list.insertAdjacentElement("afterbegin", notify.parentElement);
-      notify.scrollIntoView();
+    if(to!="s-"){
+      const isActive = document.getElementsByClassName("active")[0];
+      if (isActive && isActive.parentElement == channel_list.firstElementChild) {
+        channel_list.insertBefore(
+          notify.parentElement,
+          isActive.parentElement.nextElementSibling
+        );
+      } else {
+        channel_list.insertAdjacentElement("afterbegin", notify.parentElement);
+        notify.scrollIntoView();
+      }
     }
   }
 }

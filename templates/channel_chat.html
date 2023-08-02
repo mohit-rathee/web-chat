@@ -14,12 +14,12 @@
   <div class="container" id="container">
     <div class="servers">
       {% for srvr in mysrvr: %}
-      <div class="text-block" onclick='gotoserver(this)'>
-        <div></div>
+      <div class="text-block s-{{srvr}}" onclick=gotoserver(this.firstElementChild)>
         <div>
           <div>
             <div class="SERVER" data-key="{{srvr}}">{{srvr}}</div>
           </div>
+          <div></div>
         </div>
       </div>
       {% endfor %}
