@@ -389,7 +389,7 @@ def reaction(reactData):
             data=json.dumps(message)
             msg.data=data
             server[curr].commit()
-            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=request.sid)
+            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+session.get('key'))
 @socketio.on('getHistory')
 def getHistory():
     curr=session.get("server")
