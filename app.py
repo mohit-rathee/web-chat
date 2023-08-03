@@ -1,4 +1,5 @@
 import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json, time
+from datetime import timedelta
 from flask import Flask, render_template, request, redirect, session, make_response, Response
 from werkzeug.utils import secure_filename
 from flask_session import Session
@@ -23,6 +24,7 @@ app.config['SECRET_KEY'] =os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 app.config['SQLALCHEMY_DATABASE_URI'] =os.getenv('DATABASE_URI')
 app.config['SQLALCHEMY_BINDS']={}
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
 india_timezone = pytz.timezone('Asia/Kolkata')
 db = SQLAlchemy(app)
 engine=create_engine(os.getenv('DATABASE_URI'))
