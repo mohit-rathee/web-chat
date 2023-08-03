@@ -182,8 +182,8 @@ def on_disconnect():
 @socketio.on('Load')
 def Load():
     curr=session.get('server')
-    if curr=None:
-        request.sid()
+    if curr==None:
+        return
     for srvr in session.get('myserver'):
         serverInfo=[srvr]        
         channels=server[srvr].query(channel).all() #later on we can limit this for sync sliding
