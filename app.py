@@ -182,12 +182,28 @@ def on_disconnect():
 @socketio.on('Load')
 def Load():
     curr=session.get('server')
+    if curr=None:
+        request.sid()
+    for srvr in session.get('myserver'):
+        serverInfo=[srvr]        
+        channels=server[srvr].query(channel).all() #later on we can limit this for sync sliding
+        serverInfo.append([[channel.id,channel.name,channel.user.username] for channel in channels])
+        Media=server[srvr].query(media).all()
+        serverInfo.append([[media.id,media.hash,media.name] for media in Media])
+        socketio.emit("server",serverInfo,to=request.sid)
+        # socketio.emit("medias",Md,to=request.sid)
     join_room(curr)
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
-    Media=server[curr].query(media).all()
-    Md=[[media.id,media.hash,media.name] for media in Media]
-    socketio.emit("medias",Md,to=request.sid)
+    print(room_dict)
+    # socketio.emit("servers",session.get("myserver"),to=request.sid)
+    # channels=server[curr].query(channel).all()
+    # channel_list=[session.get("server")]
+    # channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
+    # socketio.emit("showNewServer",channel_list,to=request.sid)   
+    # Media=server[curr].query(media).all()
+    # Md=[[media.id,media.hash,media.name] for media in Media]
+    # socketio.emit("medias",Md,to=request.sid)
 @socketio.on("changeServer")
 def changeServer(newServer):
     # REMOVE PREV 
@@ -195,20 +211,22 @@ def changeServer(newServer):
     oldServer=session.get("server")
     if oldServer:
         leave_room(oldServer)
+        session["server"]=None
         if room_dict[oldServer]["/"].pop(session.get("name"),None):
             socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
     if newServer:
-        channels=server[newServer].query(channel).all()
+        # channels=server[newServer].query(channel).all()
         session["server"]=newServer
         join_room(newServer)
         room_dict[newServer]["/"].update({session.get("name"):request.sid})
         socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
-        channel_list=[session.get("server")]
-        channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
-        socketio.emit("showNewServer",channel_list,to=request.sid)    
-        Media=server[newServer].query(media).all()
-        Md=[[media.id,media.hash,media.name] for media in Media]
-        socketio.emit("medias",Md,to=request.sid)
+        # channel_list=[session.get("server")]
+        # channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
+        socketio.emit("showNewServer",newServer,to=request.sid)    
+        # Media=server[newServer].query(media).all()
+        # Md=[[media.id,media.hash,media.name] for media in Media]
+        # socketio.emit("medias",Md,to=request.sid)
+    print(room_dict)
 @socketio.on("create")
 def create(newchannel):
     curr=session.get("server")
@@ -277,6 +295,7 @@ def change(To):
     # JOIN ROOM AND NOTIFY
     to=to
     join_room(curr+str(to))
+    print(room_dict)
     socketio.emit("notify",room_dict[curr][to],to=curr+str(to))
     # ARRANGE MSGS IN A FORMAT
     
@@ -597,11 +616,11 @@ def channel_chat():
     if not session.get("name"):
         return redirect("/login")
     name=session.get("name")
-    myserver=session.get("myserver")
+    # myserver=session.get("myserver")
     curr=session.get("server")
     id=session.get(curr)
-    channels=server[curr].query(channel).all()
-    return render_template("channel_chat.html",name=name,id=id,server=curr,mysrvr=myserver,channels=channels)  
+    # channels=server[curr].query(channel).all()
+    return render_template("channel_chat.html",name=name,id=id,server=curr) 
 @app.route('/download/<server>',methods=["GET"])
 def download_database(server):
     if server and app.config['SQLALCHEMY_BINDS'].get(str(server)):

@@ -12,8 +12,8 @@
 
 <body>
   <div class="container" id="container">
-    <div class="servers">
-      {% for srvr in mysrvr: %}
+    <div class="servers" id="servers">
+      <!-- {% for srvr in mysrvr: %}
       <div class="text-block s-{{srvr}}" onclick=gotoserver(this.firstElementChild)>
         <div>
           <div>
@@ -22,7 +22,7 @@
           <div></div>
         </div>
       </div>
-      {% endfor %}
+      {% endfor %} -->
     </div>
     <div class="leftside">
       <div class="header">
@@ -44,7 +44,7 @@
         </div>
       </div>
       <div class="channel_list" id="channel_list">
-        {% for channel in channels: %}
+        <!-- {% for channel in channels: %}
         <div class=" c-{{channel.id}}" onclick="goto(this)">
           <div class="block">
             <div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div>
@@ -58,7 +58,7 @@
             </div>
           </div>
         </div>
-        {% endfor %}
+        {% endfor %} -->
       </div>
     </div>
     <div class="rightside">
@@ -211,5 +211,5 @@
   const userid = '{{id}}'
 </script>
 <script src="{{url_for('static',filename='script.js')}}"></script>
-
+<script src="{{url_for('static',filename='indexed.js')}}"></script>
 </html>

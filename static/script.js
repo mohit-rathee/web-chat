@@ -35,8 +35,10 @@ const reply_id = document.getElementById("reply_id");
 const media_id = document.getElementById("media_id");
 const emoji_btn = document.getElementById("emoji_btn");
 const emojiPallet = document.getElementById("emojiPallet");
+const servers = document.getElementById("servers");
 let msgList = {};
 let mediaList = {};
+let serverList = {};
 const emojis = [
   "😄",
   "😃",
@@ -535,8 +537,8 @@ document.getElementById("upload").onclick = async function () {
       hash = res[1];
     }
     if (hash != 0) {
-      if (!localStorage.getItem(hash)){
-        // may be we can revoke the existing url and create a new one 
+      if (!localStorage.getItem(hash)) {
+        // may be we can revoke the existing url and create a new one
         // just in case if user has changed something then it can be refreshed
         // but currently no need
         const blob = new Blob([file.slice(0, Size)], { type: file.type });
@@ -662,8 +664,8 @@ function showfile(mime, url) {
   }
 }
 function showpinned(id) {
-  const hash=mediaList[id][0]
-  const media_data=mediaList[id][1]
+  const hash = mediaList[id][0];
+  const media_data = mediaList[id][1];
   if (pinname.dataset.key == hash) {
     return;
   }
@@ -802,13 +804,11 @@ function B4Change(to) {
   }
 }
 function gotoserver(Newserver) {
-  console.log(Newserver)
-  console.log(Newserver.firstElementChild.innerText)
   // console.log(Newserver.innerText)
   // if (Newserver.parentElement.childElementCount==3){
   //   Newserver.parentElement.lastElementChild.remove()
   // }
-  if (localStorage.getItem('server') != Newserver.firstElementChild.innerText) {
+  if (localStorage.getItem("server") != Newserver.firstElementChild.innerText) {
     B4Change(Newserver);
     mediaPool.innerHTML = "";
     socket.emit("changeServer", Newserver.innerText);
@@ -863,7 +863,6 @@ function makeHoverable(btn, block) {
   });
 }
 socket.on("connect", function () {
-  localStorage.setItem("server", document.getElementById("server").innerText);
   socket.emit("Load");
 });
 function addmedia(data) {
@@ -884,6 +883,46 @@ function addmedia(data) {
   mediaplate.classList.add("M-" + data[0]);
   mediaPool.appendChild(mediaplate);
 }
+socket.on("server", function (data) {
+  console.log(data);
+  addserver(data[0]);
+  serverList[data[0]] = data[1];
+  let curr=false;
+  data[1].forEach((ch) => {
+    if (!localStorage.getItem("server") || curr) {
+      server.innerText=data[0]   //this is not efficient
+      localStorage.setItem("server", data[0]);
+      curr = true;
+      showing(ch);
+    }
+  });
+  data[2].forEach((md) => {
+    const name = JSON.parse(md[2]);
+    md[2] = name;
+    if (!localStorage.getItem("server") || curr) {
+      addmedia(md);
+    }
+  });
+  mediaList[data[0]] = data[2];
+  curr=false
+});
+function addserver(data) {
+  const maindiv = document.createElement("div");
+  maindiv.classList.add("text-block");
+  maindiv.classList.add("s-" + data);
+  const childdiv = document.createElement("div");
+  const child1div = document.createElement("div");
+  const child2div = document.createElement("div");
+  const name = document.createElement("div");
+  name.classList.add("SERVER");
+  name.innerText = data;
+  child1div.appendChild(name);
+  childdiv.appendChild(child1div);
+  childdiv.appendChild(child2div);
+  maindiv.appendChild(childdiv);
+  maindiv.setAttribute("onclick", "gotoserver(this.firstElementChild)");
+  servers.appendChild(maindiv);
+}
 socket.on("medias", function (datas) {
   mediaList = {};
   datas.forEach((data) => {
@@ -891,26 +930,29 @@ socket.on("medias", function (datas) {
   });
 });
 socket.on("media", function (data) {
-  console.log(data)
+  console.log(data);
   addmedia(data);
 });
 socket.on("showNewServer", function (data) {
-  server.innerText = data[0];
-  document.getElementById("server2").innerText = data[0];
-  if (data[0] != "app") {
-    download.href = "/download/" + data[0];
+  // store_in_db(data);
+  server.innerText = data;
+  document.getElementById("server2").innerText = data;
+  if (data != "app") {
+    download.href = "/download/" + data;
     download.style.visibility = "visible";
   } else {
     download.href = "#";
     download.style.visibility = "hidden";
   }
-  localStorage.setItem("server", data[0]);
+  localStorage.setItem("server", data);
   show("userside");
-  all = false;
   channel_list.innerHTML = "";
-  for (let i = data[1].length - 1; i > -1; i--) {
-    showing(data[1][i]);
+  for (let i = serverList[data].length - 1; i > -1; i--) {
+    showing(serverList[data][i]);
   }
+  mediaList[data].forEach((media) => {
+    addmedia(media);
+  });
 });
 document.getElementById("back").onclick = function () {
   userList.innerHTML = "";
@@ -1377,7 +1419,7 @@ socket.on("notify", function (userObj) {
   userCount.innerText = " (" + Object.keys(userObj).length + ")";
 });
 function shownotification(to, name) {
-  console.log(to+name)
+  console.log(to + name);
   const notify = document.getElementsByClassName(to + name)[0]
     .firstElementChild;
   if (notify) {
@@ -1390,9 +1432,12 @@ function shownotification(to, name) {
       let num = parseInt(notify.children[2].innerText);
       notify.children[2].innerText = num + 1;
     }
-    if(to!="s-"){
+    if (to != "s-") {
       const isActive = document.getElementsByClassName("active")[0];
-      if (isActive && isActive.parentElement == channel_list.firstElementChild) {
+      if (
+        isActive &&
+        isActive.parentElement == channel_list.firstElementChild
+      ) {
         channel_list.insertBefore(
           notify.parentElement,
           isActive.parentElement.nextElementSibling
@@ -1419,7 +1464,6 @@ search_form.onsubmit = function () {
   if (search.length != 0) {
     if (search == "*") {
       search = "";
-      all = true;
     }
     socket.emit("search_text", String(search));
     rearrange();
@@ -1442,6 +1486,7 @@ socket.on("show_this", function (data) {
   } else {
     data["channel"];
     showing(data["channel"]);
+    serverList[localStorage.getItem("server")].push(data["channel"]);
   }
 });
 function showing(data) {
@@ -1468,5 +1513,4 @@ function showing(data) {
     channel.scrollIntoView();
   }
 }
-
 localStorage.clear();
