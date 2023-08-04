@@ -204,7 +204,7 @@ def changeServer(newServer):
     oldServer=session.get("server")
     if oldServer:
         leave_room(oldServer)
-        session["server"]=None
+        # session["server"]=None
         if room_dict[oldServer]["/"].pop(session.get("name"),None):
             socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
     if newServer:
@@ -621,19 +621,6 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
-# @app.route('/load')
-# def stream():
-#     print("initiating")
-#     def generate():
-#         data_stream='media/da157259fa4f7311a3340e973a20ad7e456b705bad01f60c12d629a736808155.mp4'
-#         with open(data_stream, 'rb') as file:
-#             while True:
-#                 chunk=file.read(4096)
-#                 print("------")
-#                 if not chunk:
-#                     break
-#                 yield chunk
-#     return Response(generate(),mimetype="text/plain")
 if __name__ == '__main__':
     socketio.run(app)
 # TODO:

@@ -17,7 +17,7 @@ const chatMessages = [
 ];
 function createDatabase(name, version) {
   return new Promise((resolve, reject) => {
-    const present = true;
+    let present = true;
     const request = indexedDB.open(name, version);
 
     request.onupgradeneeded = function (event) {
@@ -44,7 +44,7 @@ function createDatabase(name, version) {
     };
   });
 }
-let DBs = {};
+const DBs = {};
 createDatabase("app", 1).then((db) => {
   if (db[1] == true) {
     console.log("database was present");
@@ -55,12 +55,12 @@ createDatabase("app", 1).then((db) => {
   }
   DBs["app"] = db[0];
   console.log(DBs);
+  store_in_db()
+  get_from_db()
 });
 
 function store_in_db() {
-  console.log(db);
-  console.log("storing");
-  const transaction = db.transaction("messages", "readwrite");
+  const transaction = DBs.app.transaction("messages", "readwrite");
   const chatStore = transaction.objectStore("messages");
   chatMessages.forEach((msg) => {
     chatStore.put(msg);
@@ -70,7 +70,7 @@ function store_in_db() {
   };
 }
 function get_from_db() {
-  const transaction = db.transaction("messages", "readwrite");
+  const transaction = DBs.app.transaction("messages", "readwrite");
   const chatStore = transaction.objectStore("messages");
   const roomIndex = chatStore.index("by_roomId");
   const req = roomIndex.getAll(IDBKeyRange.only(1));
