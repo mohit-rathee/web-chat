@@ -863,6 +863,7 @@ function makeHoverable(btn, block) {
   });
 }
 socket.on("connect", function () {
+  
   socket.emit("Load");
 });
 function addmedia(data) {

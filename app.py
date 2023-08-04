@@ -193,19 +193,10 @@ def Load():
         Media=server[srvr].query(media).all()
         serverInfo.append([[media.id,media.hash,media.name] for media in Media])
         socketio.emit("server",serverInfo,to=request.sid)
-        # socketio.emit("medias",Md,to=request.sid)
     join_room(curr)
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
-    print(room_dict)
-    # socketio.emit("servers",session.get("myserver"),to=request.sid)
-    # channels=server[curr].query(channel).all()
-    # channel_list=[session.get("server")]
-    # channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
-    # socketio.emit("showNewServer",channel_list,to=request.sid)   
-    # Media=server[curr].query(media).all()
-    # Md=[[media.id,media.hash,media.name] for media in Media]
-    # socketio.emit("medias",Md,to=request.sid)
+    
 @socketio.on("changeServer")
 def changeServer(newServer):
     # REMOVE PREV 
@@ -625,41 +616,31 @@ def channel_chat():
     return render_template("channel_chat.html",name=name,id=id,server=curr) 
 @app.route('/download/<server>',methods=["GET"])
 def download_database(server):
-    if server and app.config['SQLALCHEMY_BINDS'].get(str(server)):
+    if app.config['SQLALCHEMY_BINDS'].get(str(server)):
         path =str(app.config['SQLALCHEMY_BINDS'][str(server)]).rsplit("///")[1]
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
-
-@app.route('/start')
-def serve():
-    return render_template("test.html")
-
-@socketio.on('hello')
-def Print(data):
-    print(data)
-
-@app.route('/load')
-def stream():
-    print("initiating")
-    def generate():
-        data_stream='media/da157259fa4f7311a3340e973a20ad7e456b705bad01f60c12d629a736808155.mp4'
-        with open(data_stream, 'rb') as file:
-            while True:
-                chunk=file.read(4096)
-                print("------")
-                if not chunk:
-                    break
-                yield chunk
-    return Response(generate(),mimetype="text/plain")
+# @app.route('/load')
+# def stream():
+#     print("initiating")
+#     def generate():
+#         data_stream='media/da157259fa4f7311a3340e973a20ad7e456b705bad01f60c12d629a736808155.mp4'
+#         with open(data_stream, 'rb') as file:
+#             while True:
+#                 chunk=file.read(4096)
+#                 print("------")
+#                 if not chunk:
+#                     break
+#                 yield chunk
+#     return Response(generate(),mimetype="text/plain")
 if __name__ == '__main__':
     socketio.run(app)
-
 # TODO:
-    # Add Media Id and use that instead of hash
+    # Add Media Id and use that instead of hash                       --done
     # Streaming of media when asked
     # Update chunksize acc.to internet speed
-    # Send all the chats on load 
-    # Add browser storage for quick response and maintainse
-    # (learning how to deal with tampering attacks)
+    # Send all the chats on load                                      --half-done
+    # Add browser storage for quick response and maintainse           --half-done
+    # (learning how to deal with tampering attacks)   --can't-be-delt --done
     # Use reddis db for storing peoples who are online
