@@ -622,5 +622,6 @@ if __name__ == '__main__':
     # Add browser storage for quick response and maintainse
     # (learning how to deal with tampering attacks)
     # Use reddis db for storing peoples who are online
-
     # this is commited because streak wont increase after commit on IndexedDB branch
+    # this too is a commit for streak i created a system where users can get/store
+    # all messages they may use into indexedDB 
