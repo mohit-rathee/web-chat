@@ -182,17 +182,27 @@ def upload_db():
 def on_disconnect():
     changeServer(False)
 @socketio.on('Load')
-def Load():
+def Load(reqsrvr):
     curr=session.get('server')
     if curr==None:
+        print("fail")
         return
-    for srvr in session.get('myserver'):
-        serverInfo=[srvr]        
-        channels=server[srvr].query(channel).all() #later on we can limit this for sync sliding
-        serverInfo.append([[channel.id,channel.name,channel.user.username] for channel in channels])
-        Media=server[srvr].query(media).all()
+    print(session.get("myserver"))
+    print(server.keys())    
+    if reqsrvr in session.get('myserver') and reqsrvr in server.keys():
+        serverInfo=[reqsrvr]   
+        channels=server[reqsrvr].query(channel).all() #later on we can limit this for sync sliding
+        serverInfo.append([[channel.id,channel.name,channel.user.id] for channel in channels])
+        Media=server[reqsrvr].query(media).all()
         serverInfo.append([[media.id,media.hash,media.name] for media in Media])
+        User=server[reqsrvr].query(users).all()
+        serverInfo.append([[user.id,user.username] for user in User])
         socketio.emit("server",serverInfo,to=request.sid)
+        for chnl in channels:
+            last_msgs=server[reqsrvr].query(Tables[reqsrvr][chnl.id]).order_by(Tables[reqsrvr][chnl.id].id.desc()).limit(30)
+            Msgs=[reqsrvr,chnl.id]
+            Msgs.append([[msg.id,msg.data,msg.user.id] for msg in last_msgs])
+            socketio.emit("messages",Msgs,to=request.sid)
     join_room(curr)
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
@@ -609,11 +619,12 @@ def channel_chat():
     if not session.get("name"):
         return redirect("/login")
     name=session.get("name")
-    # myserver=session.get("myserver")
+    myserver=session.get("myserver")
+    print(myserver)
     curr=session.get("server")
     id=session.get(curr)
     # channels=server[curr].query(channel).all()
-    return render_template("channel_chat.html",name=name,id=id,server=curr) 
+    return render_template("channel_chat.html",name=name,id=id,server=curr,myservers=myserver) 
 @app.route('/download/<server>',methods=["GET"])
 def download_database(server):
     if app.config['SQLALCHEMY_BINDS'].get(str(server)):

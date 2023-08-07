@@ -208,8 +208,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 <script>
   const name = '{{name}}';
-  const userid = '{{id}}'
+  const userid = '{{id}}';
+  const myservers = [];
+  {% for srvr in myservers: %}
+    myservers.push('{{srvr}}')
+  {% endfor %}
+  console.log(myservers);
 </script>
 <script src="{{url_for('static',filename='script.js')}}"></script>
-<script src="{{url_for('static',filename='indexedDB.js')}}"></script>
+<script src="{{url_for('static',filename='indexed.js')}}"></script>
 </html>

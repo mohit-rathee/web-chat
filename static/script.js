@@ -551,86 +551,32 @@ document.getElementById("upload").onclick = async function () {
   } catch (error) {
     console.error("Error:", error);
   }
+  async function sendSeqChunk(chunk, uuid, dN = false) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const fileData = new FormData();
+        fileData.append("chunk", chunk);
+        fileData.append("uuid", uuid);
+        if (dN) {
+          fileData.append("dN", 1);
+        }
+        const response = await fetch("/media", {
+          method: "POST",
+          body: fileData,
+        });
+        const data = await response.text();
+        if (data === "0") {
+          reject("duplicate file uploaded!!!");
+          loadingCircle.style.display = "none";
+        }
+        resolve(data);
+      } catch (error) {
+        console.error("Error:", error);
+        reject(error);
+      }
+    });
+  }
 };
-// document.getElementById("upload").onclick = async function () {
-//   if (document.getElementById("media").files[0] == null) {
-//     return;
-//   }
-//   updateLoadingCircle(0);
-//   document.getElementById("loading-circle").style.display = "block";
-//   const file = document.getElementById("media").files[0];
-//   const Size = file.size;
-//   const metaData = new FormData();
-//   metaData.append("name", file.name);
-//   metaData.append("typ", file.type);
-//   let offset = chunkSize;
-//   metaData.append("chunk", file.slice(0, offset));
-//   metaData.append("uuid", "");
-//   if (Size <= offset) {
-//     metaData.append("dN", localStorage.getItem("server"));
-//     offset = Size;
-//   } else {
-//     metaData.append("dN", "");
-//   }
-//   try {
-//     const response = await fetch("/media", {
-//       method: "POST",
-//       body: metaData,
-//     });
-//     const data = await response.text();
-//     let hash = data;
-//     if (offset != Size) {
-//       const uuid = data;
-//       const constsize = offset + chunkSize;
-//       var chunk = file.slice(offset, constsize);
-//       offset = constsize;
-//       while (offset < Size) {
-//         const constSize = chunkSize;
-//         const promise = sendSeqChunk(chunk, uuid);
-//         updateLoadingCircle(Math.round((offset * 100) / Size));
-//         chunk = file.slice(offset, offset + constSize);
-//         offset += constSize;
-//         await promise;
-//       }
-
-//       hash = await sendSeqChunk(chunk, uuid, (dN = true));
-//     }
-//     if (hash != 0) {
-//       const blob = new Blob([file.slice(0, Size)], { type: file.type });
-//       const url = URL.createObjectURL(blob);
-//       localStorage.setItem(hash, url);
-//     }
-//     document.getElementById("media").value = "";
-//     document.getElementById("loading-circle").style.display = "none";
-//   } catch (error) {
-//     console.error("Error:", error);
-//   }
-// };
-async function sendSeqChunk(chunk, uuid, dN = false) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const fileData = new FormData();
-      fileData.append("chunk", chunk);
-      fileData.append("uuid", uuid);
-      if (dN) {
-        fileData.append("dN", 1);
-      }
-      const response = await fetch("/media", {
-        method: "POST",
-        body: fileData,
-      });
-      const data = await response.text();
-      if (data === "0") {
-        reject("duplicate file uploaded!!!");
-        loadingCircle.style.display = "none";
-      }
-      resolve(data);
-    } catch (error) {
-      console.error("Error:", error);
-      reject(error);
-    }
-  });
-}
 function showfile(mime, url) {
   if (mime.toLowerCase().includes("image")) {
     const img = document.createElement("img");
@@ -862,10 +808,6 @@ function makeHoverable(btn, block) {
     }
   });
 }
-socket.on("connect", function () {
-  
-  socket.emit("Load");
-});
 function addmedia(data) {
   //data = [id,hash,name]
   mediaList[data[0]] = [data[1], data[2]];
@@ -884,29 +826,8 @@ function addmedia(data) {
   mediaplate.classList.add("M-" + data[0]);
   mediaPool.appendChild(mediaplate);
 }
-socket.on("server", function (data) {
-  console.log(data);
-  addserver(data[0]);
-  serverList[data[0]] = data[1];
-  let curr=false;
-  data[1].forEach((ch) => {
-    if (!localStorage.getItem("server") || curr) {
-      server.innerText=data[0]   //this is not efficient
-      localStorage.setItem("server", data[0]);
-      curr = true;
-      showing(ch);
-    }
-  });
-  data[2].forEach((md) => {
-    const name = JSON.parse(md[2]);
-    md[2] = name;
-    if (!localStorage.getItem("server") || curr) {
-      addmedia(md);
-    }
-  });
-  mediaList[data[0]] = data[2];
-  curr=false
-});
+let curr = true;
+
 function addserver(data) {
   const maindiv = document.createElement("div");
   maindiv.classList.add("text-block");
