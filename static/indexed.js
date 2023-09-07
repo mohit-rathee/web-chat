@@ -24,7 +24,7 @@ function createDatabase(name, version) {
       const db = event.target.result;
       db.createObjectStore("channels", { keyPath: "cid" });
       db.createObjectStore("users", { keyPath: "uid" });
-      const mediaStore = db.createObjectStore("medias", { keyPath: "mdid" });
+      db.createObjectStore("medias", { keyPath: "mdid" });
       const chatStore = db.createObjectStore("messages", {
         keyPath: ["rid", "mid"],
       });
@@ -63,7 +63,6 @@ socket.on("connect", function () {
 });
 
 socket.on("messages",function(messages){
-  console.log(messages)
   const db=DBs[messages[0]]
   const roomId = messages[1]
   if(db){
@@ -71,7 +70,6 @@ socket.on("messages",function(messages){
     const messagesStore = trxn.objectStore("messages");
     messages[2].forEach((msg)=>{
       const mssg={"rid":roomId,"mid":msg[0],"data":JSON.parse(msg[1]),"sender":msg[2]}
-      console.log(mssg)
       messagesStore.put(mssg)
     })
     trxn.oncomplete = function () {

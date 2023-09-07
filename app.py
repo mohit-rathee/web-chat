@@ -110,9 +110,10 @@ def createdb():
     class users(Base):
         __tablename__ = "users"
         __table_args__ = {"extend_existing": True}
-        id = Column(db.Integer, primary_key=True)  
-        username = Column(db.String(20), unique=True, nullable=False) 
-        password = Column(db.String(30), nullable=False)
+        id = Column(db.Integer, primary_key=True)
+        username = Column(db.String, unique=True, nullable=False)
+        password = Column(db.String, nullable=False)
+        description=db.Column(db.String, nullable=True)
     Base.metadata.create_all(bind=Engine)
     app.config['SQLALCHEMY_BINDS'][name]=db_uri
     base[name]=Base
@@ -130,7 +131,7 @@ def upload_db():
         if not file or filename[1]!="sqlite3" or filename[0] in server:
             return render_template("message.html",msg="select a valid database file (*.sqlite3) with unique name.",goto="/login")
         uploads_dir = os.path.join('db')
-        file.save(os.path.join(uploads_dir,secure_filename(file.filename))) 
+        file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
         name=filename[0]
         app.config['SQLALCHEMY_BINDS'][name] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
         try:
@@ -144,8 +145,8 @@ def upload_db():
             class users(Base):
                 __tablename__ = "users"
                 __table_args__ = {"extend_existing": True}
-                id = Column(db.Integer, primary_key=True)  
-                username = Column(db.String(20), unique=True, nullable=False) 
+                id = Column(db.Integer, primary_key=True)
+                username = Column(db.String(20), unique=True, nullable=False)
                 password = Column(db.String(30), nullable=False)
             Base.metadata.create_all(bind=Engine)
             inspector = inspect(Engine)
@@ -188,9 +189,9 @@ def Load(reqsrvr):
         print("fail")
         return
     print(session.get("myserver"))
-    print(server.keys())    
+    print(server.keys())
     if reqsrvr in session.get('myserver') and reqsrvr in server.keys():
-        serverInfo=[reqsrvr]   
+        serverInfo=[reqsrvr]
         channels=server[reqsrvr].query(channel).all() #later on we can limit this for sync sliding
         serverInfo.append([[channel.id,channel.name,channel.user.id] for channel in channels])
         Media=server[reqsrvr].query(media).all()
@@ -206,7 +207,7 @@ def Load(reqsrvr):
     join_room(curr)
     room_dict[curr]["/"].update({session.get("name"):request.sid})
     socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
-    
+
 @socketio.on("changeServer")
 def changeServer(newServer):
     # REMOVE PREV 
@@ -225,7 +226,7 @@ def changeServer(newServer):
         socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
         # channel_list=[session.get("server")]
         # channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
-        socketio.emit("showNewServer",newServer,to=request.sid)    
+        socketio.emit("showNewServer",newServer,to=request.sid)
         # Media=server[newServer].query(media).all()
         # Md=[[media.id,media.hash,media.name] for media in Media]
         # socketio.emit("medias",Md,to=request.sid)
@@ -269,7 +270,7 @@ def change(To):
 
     # CLEAR
     if not To:
-        return 
+        return
     # GOTO CHANNEL/FRND IF ANY
     if "channel" in To:
         to=int(To["channel"])
@@ -301,7 +302,7 @@ def change(To):
     print(room_dict)
     socketio.emit("notify",room_dict[curr][to],to=curr+str(to))
     # ARRANGE MSGS IN A FORMAT
-    
+
     if session.get("channel"):
         Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
         Msgs.append(None)
@@ -314,7 +315,7 @@ def change(To):
     else:
         Msgs.append(1)
         session["history"]=1
-    socketio.emit('showMessages',Msgs,to=request.sid)     
+    socketio.emit('showMessages',Msgs,to=request.sid)
 @socketio.on('message')
 def handel_message(message):
     msg={}
@@ -345,7 +346,7 @@ def handel_message(message):
         for srvr in room_dict.keys():
             if srvr==curr:
                 for usr in room_dict[srvr]["/"].keys():
-                    if usr not in room_dict[srvr][channel_id].keys():    
+                    if usr not in room_dict[srvr][channel_id].keys():
                         socketio.emit('currupdate',channel_id,to=room_dict[curr]["/"][usr])
             else:
                 for usr in room_dict[srvr]["/"].keys():
@@ -374,7 +375,7 @@ def handel_message(message):
                     usr = room_dict[srvr]["/"].get(session.get("friend"))
                     if usr!=None:
                         socketio.emit('otherupdate',curr,to=usr)
-                        return 
+                        return
 @socketio.on('reaction')
 def reaction(reactData):
     curr=session.get("server")
@@ -465,7 +466,7 @@ def loginlogic(name,password):
                         myServer.append(srvr)
                     else:
                         undone.append(srvr)
-                else:            
+                else:
                     if pswdHash != user.password:
                         if sha256_crypt.verify(str(name+password), user.password):
                             user.password=pswdHash
@@ -574,7 +575,7 @@ def handel_media():
             socketio.emit("media",[Media.id,Media.hash,name],room=curr)
             return Media.id
         elif not os.path.exists("media/"+file_hash): #file is reuploaded and saved
-            os.rename("media/"+unique_id,"media/"+file_hash) 
+            os.rename("media/"+unique_id,"media/"+file_hash)
             return check.id
         else:
             os.remove("media/"+unique_id) # duplicate file deleted
@@ -624,7 +625,7 @@ def channel_chat():
     curr=session.get("server")
     id=session.get(curr)
     # channels=server[curr].query(channel).all()
-    return render_template("channel_chat.html",name=name,id=id,server=curr,myservers=myserver) 
+    return render_template("channel_chat.html",name=name,id=id,server=curr,myservers=myserver)
 @app.route('/download/<server>',methods=["GET"])
 def download_database(server):
     if app.config['SQLALCHEMY_BINDS'].get(str(server)):
