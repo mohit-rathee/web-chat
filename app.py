@@ -105,7 +105,8 @@ def createdb():
     metadata=MetaData(bind=Engine)
     Base=declarative_base(metadata=metadata)
     req=["users","channel","chats","media"]
-    Tables[name]={'Len':0}
+    Tables[name]={}
+    rooms[name]=bidict({})
     for table_name in req:
         table = base["app"].metadata.tables.get(table_name)
         table.tometadata(metadata)
@@ -121,7 +122,6 @@ def createdb():
     base[name]=Base
     Session=sessionmaker(bind=Engine)
     server[name]=Session()
-    rooms[name]=bidict({})
     return redirect("/login")
 @app.route('/upload',methods=["POST"])
 def upload_db():
@@ -251,9 +251,11 @@ def Load(reqsrvr):
         # socketio.emit("medias",Md,to=request.sid)
 @socketio.on("create")
 def create(newchannel):
-    curr=session.get("server")
+    curr=newchannel[0]
+    if curr not in session.get("myserver"):
+        return
     id=session.get(curr)
-    Topic=channel(name=newchannel,creator_id=id)
+    Topic=channel(name=newchannel[1],creator_id=id)
     server[curr].add(Topic)
     server[curr].commit()
     Base=base[curr]
@@ -262,7 +264,6 @@ def create(newchannel):
     Base.metadata.create_all(engine[curr])
     new={"channel":[curr,Topic.id,Topic.name,Topic.user.username]}
     socketio.emit("show_this",new,room=curr)
-    return
 # @socketio.on("search_text")
 # def search(text):
 #     curr=session.get("server")
