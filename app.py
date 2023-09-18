@@ -105,7 +105,7 @@ def createdb():
     metadata=MetaData(bind=Engine)
     Base=declarative_base(metadata=metadata)
     req=["users","channel","chats","media"]
-    Tables[name]={}
+    Tables[name]={'Len':0}
     for table_name in req:
         table = base["app"].metadata.tables.get(table_name)
         table.tometadata(metadata)
@@ -121,6 +121,7 @@ def createdb():
     base[name]=Base
     Session=sessionmaker(bind=Engine)
     server[name]=Session()
+    rooms[name]=bidict({})
     return redirect("/login")
 @app.route('/upload',methods=["POST"])
 def upload_db():
