@@ -1104,10 +1104,18 @@ function showreactions(message) {
     var done = true;
     document.addEventListener("click", function e(event) {
       if (!done) {
-        document.removeEventListener("click", e);
-        message.lastElementChild.remove();
-        if (!message.contains(event.target)) {
-          message.lastChild.style.display = "none";
+        if(event.target!=emoji_btn){
+          document.removeEventListener("click", e);
+          
+          message.lastElementChild.remove();
+          if (!message.contains(event.target)) {
+            message.lastChild.style.display = "none";
+          }
+          if (event.target.classList.contains('emoG')){
+            event.stopPropagation()
+            react(event.target.innerText,message.firstChild.classList[0].split('-')[1])
+            message_input.value=message_input.value.slice(0,message_input.value.length-3)
+          }
         }
       }
       if (done && event.target == message.children[1]) {
