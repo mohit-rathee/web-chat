@@ -27,18 +27,19 @@
     <div class="leftside">
       <div class="header">
         <div class="imgtext">
-          <a class="arrow" id="back" style="text-decoration: none; font-size: 1.1em;display: none;"><ion-icon
-              name="arrow-back-outline"></ion-icon></a>
-          <div class="userimg">
+          <!-- <a class="arrow" id="back" style="text-decoration: none; font-size: 1.1em;display: none;"><ion-icon
+              name="arrow-back-outline"></ion-icon></a> -->
+          <!-- <div class="userimg">
             <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
-          </div>
+          </div> -->
           <h4>{{name}}<br /><span>Server:</span>&nbsp;<span id="server">{{server}}</span></h4>
         </div>
+        <ion-icon id="3dot" style="height: 100%;" name="ellipsis-vertical-outline"></ion-icon>
       </div>
       <div class="search_channel">
-        <div id="search_form">
+        <div id="search_form" data-create="n">
           <form>
-            <input autocomplete="off" id="search_input" placeholder="Search channel/person" type="text"
+            <input autocomplete="off" id="search_input" placeholder="Search channel" type="text"
               class="search_channel" />
           </form>
         </div>
@@ -62,36 +63,38 @@
       </div>
     </div>
     <div class="rightside">
+      <div id="options">
+        <ul style="list-style-type: none">
+          <li class="option" onclick="createChannel()">Create Channel</li>
+          <li >
+            <form action="/" method="post">
+              <input class="option logout" style="width: 100%;height: 100%;" type="submit" value="Logout">
+            </form>
+            <form action="/" method="post"></form>
+          </li>
+        </ul>
+      </div>
       <div id="userside" style="display: block;">
         <div class="header">
           <div class="useless">
             <a id="download" href="#">Download State</a>
-            <form action="/" method="post">
+            <!-- <form action="/" method="post">
               <input id="delete" type="submit" value="Logout">
             </form>
-            <form id="logout" action="/" method="post" style="display: none;"></form>
-            <!-- <input style="display: none;" id="listen_call" onclick="listencall()" type="button"
-              value="Listen for calls"> -->
-            <!-- <input type="button" onclick="sendOffer()" value="Make Call"> -->
+            <form id="logout" action="/" method="post" style="display: none;"></form> -->
           </div>
         </div>
         <div class="chatbox" id="user">
-          <p>
-          <h2>Welcome {{name}}</h2><br>
-          </p>
-          <h4>People live in <span id="server2">{{server}}</span>:</h4>
-          <ul style="cursor: pointer;" type="bullet" id="userlive">
-            <br>
-          </ul>
+          <p><h2>Select any chant.</h2></p>
         </div>
-        <div id="newform" class="chatbox_input">
-          <form class="form" id="newform">
-            <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel">
-            <!-- <input type="submit" value="Add Topic"> -->
-            <button class="send" type="submit"><ion-icon name="arrow-forward-outline"></ion-icon></button>
-          </form>
+        <!-- <div id="newform" class="chatbox_input"> -->
+        <!-- <form class="form" id="newform"> -->
+        <!-- <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel"> -->
+        <!-- <input type="submit" value="Add Topic"> -->
+        <!-- <button class="send" type="submit"><ion-icon name="arrow-forward-outline"></ion-icon></button> -->
+        <!-- </form> -->
 
-        </div>
+        <!-- </div> -->
       </div>
       <div id="chatside" style="display: none;">
         <div class="header">
@@ -208,13 +211,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 <script>
   const name = '{{name}}';
-  const userid = '{{id}}';
+  const userid = Number('{{id}}');
   const myservers = [];
-  {% for srvr in myservers: %}
-    myservers.push('{{srvr}}')
-  {% endfor %}
-  console.log(myservers);
+  function populateServer() {
+    const prevserver = localStorage.getItem("server");
+    myservers.push(prevserver)
+
+    {% for srvr in myservers: %}
+    if ('{{srvr}}' != prevserver) {
+      myservers.push('{{srvr}}')
+    }
+    {% endfor %}
+
+  }
+  populateServer();
 </script>
 <script src="{{url_for('static',filename='script.js')}}"></script>
 <script src="{{url_for('static',filename='indexed.js')}}"></script>
+
 </html>
