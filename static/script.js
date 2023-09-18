@@ -1227,14 +1227,18 @@ function shownotification(to, name) {
 //   console.log("hurrah");
 // });
 search_form.onsubmit = function () {
+  if(options.style.display=="block"){
+    const clickEvent = new Event("click");
+    threeDot.dispatchEvent(clickEvent);
+  }
   const chnlName = search_input.value.trim();
   if (chnlName.length != 0) {
     search_input.value = "";
     if (search_form.dataset.create == "y") {
       search_input.placeholder = "Search Channel";
-      search_form.setAttribute("data-search", "n");
+      search_form.setAttribute("data-create", "n");
       search_input.style.border = "none";
-      socket.emit("create", chnlName);
+      socket.emit("create", [localStorage.getItem('server'),chnlName]);
     } else {
       rearrange(chnlName);
       channel_list.scrollTop = "";
