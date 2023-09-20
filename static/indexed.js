@@ -82,7 +82,7 @@ function getlastuser(trxn) {
     const userStore = trxn.objectStore("users");
     const userRequest = userStore.openCursor(null, "prev");
     userRequest.onsuccess = function (event) {
-      const lastUser = event.target.result.value;
+      const lastUser = event.target.result;
       if (lastUser) {
         resolve(lastUser.uid);
       } else {
@@ -174,6 +174,7 @@ socket.on("server", function (data) {
   const mediaStore = trxn.objectStore("medias");
   const medias = data["medias"];
   for (const key in medias) {
+    const md=medias[key]
     const name = JSON.parse(md[2]);
     const media = { mdid: md[0], hash: md[1], name: name[0], mime: name[1] };
     mediaStore.put(media);
