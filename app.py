@@ -105,7 +105,7 @@ def createdb():
     metadata=MetaData(bind=Engine)
     Base=declarative_base(metadata=metadata)
     req=["users","channel","chats","media"]
-    Tables[name]={}
+    Tables[name]={'Len':0}
     rooms[name]=bidict({})
     for table_name in req:
         table = base["app"].metadata.tables.get(table_name)
@@ -206,28 +206,34 @@ def on_disconnect():
 #     print(socketio.server.manager.rooms)
 #     socketio.emit("celebrate",[],to=user_id)
 @socketio.on('Load')
-def Load(reqsrvr):
+def Load(data):
+    reqsrvr=data.get('server')
     if reqsrvr in session.get('myserver'): # And wheater the reqsrvr is in server.keys()
         id=session.get(reqsrvr)
         socketio.emit("notify",[reqsrvr,id,session.get("name"),request.sid],room=reqsrvr)
-        if id not in rooms[reqsrvr]:
-            eio_sid=rooms[None][request.sid]
-            rooms[reqsrvr][id]=eio_sid
-        serverInfo=[reqsrvr]
-        channels=server[reqsrvr].query(channel).all() #later on we can limit this for sync sliding
-        serverInfo.append([[channel.id,channel.name,channel.user.username] for channel in channels])
-        Media=server[reqsrvr].query(media).all()
-        serverInfo.append([[media.id,media.hash,media.name] for media in Media])
-        User=server[reqsrvr].query(users).all()
-        serverInfo.append({user.id:user.username for user in User})
-        serverInfo.append(dict(rooms[reqsrvr]))
+        eio_sid=rooms[None][request.sid]
+        rooms[reqsrvr][id]=eio_sid
+        serverInfo={'server':reqsrvr,'id':id}
+        curr=server[reqsrvr]
+        channels=curr.query(channel).all() #later on we can limit this for sync sliding
+        chnlCount=len(data.get("msg",0))
+        serverInfo['channels']={}
+        for chnl in channels:
+            if chnl.id>chnlCount:
+                serverInfo['channels'][chnl.id]=[chnl.id,chnl.name,chnl.user.username]
+        Media=curr.query(media).filter(media.id>data.get('media',0)).all()
+        serverInfo['medias']={media.id:[media.id,media.hash,media.name] for media in Media}
+        User=curr.query(users).filter(users.id>data.get('user',0)).all()
+        serverInfo['users']={user.id:user.username for user in User}
+        serverInfo['live']=dict(rooms[reqsrvr])
         socketio.emit("server",serverInfo,to=request.sid)
         for chnl in channels:
-            last_msgs=server[reqsrvr].query(Tables[reqsrvr][chnl.id]).order_by(Tables[reqsrvr][chnl.id].id.desc()).limit(30)
+            lastid=data.get('msg').get(str(chnl.id),0)
+            ch=Tables[reqsrvr][chnl.id]
+            last_msgs=curr.query(ch).order_by(ch.id.desc()).filter(ch.id>lastid).limit(30)
             Msgs=[reqsrvr,chnl.id]
             Msgs.append([[msg.id,msg.data,msg.user.username] for msg in last_msgs])
             socketio.emit("messages",Msgs,to=request.sid)
-# @socketio.on("changeServer")
 # def changeServer(newServer):
     # REMOVE PREV 
     # change(False)

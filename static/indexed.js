@@ -1,20 +1,4 @@
-// // Step 1: Open a connection to the IndexedDB database
-// const chatMessages = [
-//   {
-//     roomId: 1,
-//     messageId: 1,
-//     sender: 1,
-//     text: "Hello, this is room 1.",
-//   },
-//   { roomId: 1, messageId: 2, sender: 2, text: "Nice to meet you!" },
-//   {
-//     roomId: 2,
-//     messageId: 1,
-//     sender: 1,
-//     text: "Welcome to room 2.",
-//   },
-//   // More messages for different chat rooms...
-// ];
+const DBs = {};
 function createDatabase(name, version) {
   return new Promise((resolve, reject) => {
     let present = true;
@@ -34,7 +18,6 @@ function createDatabase(name, version) {
 
     request.onsuccess = function (event) {
       const db = event.target.result;
-      // console.log("Database connection established.");
       resolve([db, present]);
     };
 
@@ -44,70 +27,181 @@ function createDatabase(name, version) {
     };
   });
 }
-const DBs = {};
-socket.on("connect", function () {
-  servers.innerHTML = "";
-  myservers.forEach((srvr) => {
-    createDatabase(srvr, 1).then((db) => {
-      if (db[1] == true) {
-        // console.log("database was present");
-        socket.emit("Load", srvr);
+function getlastmsg(trxn) {
+  return new Promise((resolve) => {
+    const channelStore = trxn.objectStore("channels");
+    const messageStore = trxn.objectStore("messages");
+    const roomId = messageStore.index("by_rid");
+    const messages = {}; // Store the channel ID and last message ID here
+    const channelRequest = channelStore.getAll();
+    channelRequest.onsuccess = function (event) {
+      const channels = event.target.result;
+      if (!channels) {
+        resolve(messages);
       } else {
-        // console.log("database was not present");
-        socket.emit("Load", srvr);
+        const promises = channels.map((chnl) => {
+          return new Promise((resolve, reject) => {
+            const range = IDBKeyRange.only(chnl.cid);
+            const messageCursorRequest = roomId.openCursor(range, "prev");
+            messageCursorRequest.onsuccess = function (event) {
+              const messageCursor = event.target.result;
+              if (messageCursor) {
+                const lastMessage = messageCursor.value;
+                messages[chnl.cid] = lastMessage.mid;
+                resolve();
+              } else {
+                messages[chnl.cid] = 0;
+                resolve();
+              }
+            };
+          });
+        });
+        Promise.all(promises).then(() => {
+          resolve(messages);
+        });
       }
+    };
+  });
+}
+function getlastmedia(trxn) {
+  return new Promise((resolve) => {
+    const mediaStore = trxn.objectStore("medias");
+    const mediaRequest = mediaStore.openCursor(null, "prev");
+    mediaRequest.onsuccess = function (event) {
+      const lastMedia = event.target.result;
+      if (lastMedia != null) {
+        resolve(lastMedia.mdid);
+      } else {
+        resolve(0);
+      }
+    };
+  });
+}
+function getlastuser(trxn) {
+  return new Promise((resolve) => {
+    const userStore = trxn.objectStore("users");
+    const userRequest = userStore.openCursor(null, "prev");
+    userRequest.onsuccess = function (event) {
+      const lastUser = event.target.result.value;
+      if (lastUser) {
+        resolve(lastUser.uid);
+      } else {
+        resolve(0);
+      }
+    };
+  });
+}
+async function getStatus(srvr) {
+  console.log("getting status for " + srvr);
+  const db = DBs[srvr];
+  const status = { server: srvr };
+  const trxn = db.transaction(
+    ["channels", "messages", "users", "medias"],
+    "readonly"
+  );
+  const messages = await getlastmsg(trxn);
+  const lastmedia = await getlastmedia(trxn);
+  const lastuser = await getlastuser(trxn);
+  status["msg"] = messages;
+  status["media"] = lastmedia;
+  status["user"] = lastuser;
+  return status;
+}
+async function populateRequests() {
+  return new Promise(async (resolve) => {
+    servers.innerHTML = "";
+    const requests = [];
+    const myservers = populateServer();
+    const promises = myservers.map(async (srvr) => {
+      const db = await createDatabase(srvr, 1);
       DBs[srvr] = db[0];
+      if (db[1] == true) {
+        addserver(srvr);
+        if (localStorage.getItem("server")) {
+          if (srvr == localStorage.getItem("server")) {
+            gotoserver(srvr);
+          }
+        } else {
+          gotoserver(srvr);
+        }
+        const status = await getStatus(srvr);
+        requests.push(status);
+      } else {
+        requests.push({ server: srvr, msg: {}, media: 0, user: 0 });
+      }
     });
+    await Promise.all(promises);
+    resolve(requests)
+})}
+socket.on("connect", async function () {
+  const requests = await populateRequests();
+  requests.forEach((srvr) => {
+    console.log("sending " + srvr.server + " status to server");
+    socket.emit("Load", srvr);
   });
 });
 socket.on("server", function (data) {
-  addserver(data[0]);
-  const db = DBs[data[0]];
+  const srvr = data.server;
+  console.log(srvr + " is now up-to-date!!!");
+  addserver(srvr);
+  localStorage.setItem(srvr + "id", data.id);
+  const db = DBs[srvr];
   let bool = false;
   if (!localStorage.getItem("server")) {
-    localStorage.setItem("server", data[0]);
+    localStorage.setItem("server", srvr);
     bool = true;
+  } else {
+    if (localStorage.getItem("server") == srvr) {
+      bool = true;
+    }
   }
-  if (db) {
-    const trxn = db.transaction(["channels", "users", "medias"], "readwrite");
-    const channelStore = trxn.objectStore("channels");
-    data[1].forEach((ch) => {
-      const chnl = { cid: ch[0], name: ch[1], creator: ch[2] };
-      channelStore.put(chnl);
-      if (bool) {
-        server.innerText = data[0]; //this is not efficient
-        showing(chnl, false);
-      }
-    });
-    const mediaStore = trxn.objectStore("medias");
-    data[2].forEach((md) => {
-      const name = JSON.parse(md[2]);
-      const media = { mdid: md[0], hash: md[1], name: name[0], mime: name[1] };
-      mediaStore.put(media);
-      if (bool) {
-        addmedia(media);
-      }
-    });
-    const userStore = trxn.objectStore("users");
-    // userCount.innerText = Object.keys(data[4]).length;//later length is send by server
+  if (!db) {
+    return;
+  }
+  const trxn = db.transaction(["channels", "users", "medias"], "readwrite");
+  const channelStore = trxn.objectStore("channels");
+  const channels = data.channels;
+
+  for (const key in channels) {
+    const ch = channels[key];
+    const chnl = { cid: ch[0], name: ch[1], creator: ch[2] };
+    channelStore.put(chnl);
     if (bool) {
-      userCount.innerText = 0;
+      server.innerText = srvr; //this is not efficient
+      showing(chnl, false);
     }
-    for (let key in data[4]) {
-      const user = { uid: Number(key), name: data[3][key], sid: data[4][key] };
-      userStore.put(user);
-      if (bool) {
-        showUser(data[3][key]);
-      }
-      delete data[3][key];
+  }
+  const mediaStore = trxn.objectStore("medias");
+  const medias = data["medias"];
+  for (const key in medias) {
+    const name = JSON.parse(md[2]);
+    const media = { mdid: md[0], hash: md[1], name: name[0], mime: name[1] };
+    mediaStore.put(media);
+    if (bool) {
+      addmedia(media);
     }
-    for (let key in data[3]) {
-      const user = { uid: Number(key), name: data[3][key], sid: null };
-      userStore.put(user);
+  }
+  const userStore = trxn.objectStore("users");
+  // userCount.innerText = Object.keys(data[4]).length;//later length is send by server
+  // if (bool) {
+  //   werText = 0;
+  //   userList.innerHTML=""
+  // }
+  const live = data.live;
+  const users = data.users;
+  for (let key in live) {
+    const user = { uid: Number(key), name: users[key], sid: live[key] };
+    userStore.put(user);
+    if (bool) {
+      showUser(users[key]);
     }
+    delete users[key];
+  }
+  for (let key in users) {
+    const user = { uid: Number(key), name: users[key], sid: null };
+    userStore.put(user);
   }
 });
-
 socket.on("notify", function (data) {
   const db = DBs[data[0]];
   const trxn = db.transaction("users", "readwrite");
@@ -122,23 +216,176 @@ socket.on("notify", function (data) {
     }
   }
 });
-function showUser(name) {
-  if (!document.getElementsByClassName('U-'+name).length){
-    userCount.innerText = parseInt(userCount.innerText) + 1;
-    const user = document.createElement("li");
-    user.classList.add("U-" + name);
-    user.innerText = name;
-    user.setAttribute("onclick", 'GOTOfrnd("' + name + '")');
-    userList.appendChild(user);
+socket.on("messages", function (messages) {
+  const db = DBs[messages[0]];
+  const roomId = messages[1];
+  if (db) {
+    const trxn = db.transaction("messages", "readwrite");
+    const messagesStore = trxn.objectStore("messages");
+    messages[2].forEach((msg) => {
+      const mssg = {
+        rid: roomId,
+        mid: msg[0],
+        data: JSON.parse(msg[1]),
+        sender: msg[2],
+      };
+      messagesStore.put(mssg);
+    });
   }
-}
-function removeUser(name) {
-  const user = document.getElementsByClassName("U-" + name)[0];
-  if (user) {
-    userCount.innerText = parseInt(userCount.innerText) - 1;
-    user.remove();
+});
+socket.on("media", function (data) {
+  const db = DBs[data[0]];
+  if (db) {
+    const trxn = db.transaction(["medias"], "readwrite");
+    const mediaStore = trxn.objectStore("medias");
+    const media = {
+      mdid: data[1],
+      hash: data[2],
+      name: data[3][0],
+      mime: data[3][1],
+    };
+    mediaStore.put(media);
+    if (data[0] == localStorage.getItem("server")) {
+      addmedia(media);
+    } else {
+      shownotification("s-" + data[0]);
+    }
   }
-}
+});
+socket.on("show_message", async function (data) {
+  // TO ADD NEW CHILD OF MESSAGE //
+  const db = DBs[data[0]];
+  const roomId = data[1];
+  const trxn = db.transaction("messages", "readwrite");
+  const messagesStore = trxn.objectStore("messages");
+  const msg = { rid: roomId, mid: data[2], data: data[3], sender: data[4] };
+  messagesStore.put(msg);
+  if (data[0] == localStorage.getItem("server")) {
+    const ch = document.getElementsByClassName("c-" + String(data[1]))[0];
+    if (ch.firstChild.classList.contains("active")) {
+      let reply = data[3][2];
+      if (reply) {
+        //TODO: first check if reply exist in Msgs
+        const repreq = messagesStore.get([roomId, Number(reply)]);
+        reply = await new Promise((resolve) => {
+          repreq.onsuccess = function (event) {
+            resolve(event.target.result);
+          };
+          repreq.onerror = function () {
+            resolve(0);
+          };
+        });
+      }
+      if (msg.sender == name) {
+        chatbox.appendChild(makeMessage(msg.mid, msg.data, true, reply));
+      } else {
+        const allmsg = document.getElementsByClassName("frnd");
+        if (allmsg[allmsg.length - 1].innerText != msg.sender) {
+          chatbox.appendChild(makeFrnd(msg.sender));
+        }
+        chatbox.appendChild(makeMessage(msg.mid, msg.data, false, reply));
+      }
+      box.scrollTop = box.scrollHeight;
+    } else {
+      shownotification("c-", data[1]);
+    }
+  } else {
+    shownotification("s-", data[0]);
+  }
+});
+socket.on("reaction", function (reactData) {
+  const db = DBs[reactData[0]];
+  const roomId = reactData[1];
+  const messageId = reactData[2];
+  const trxn = db.transaction("messages", "readwrite");
+  const messagesStore = trxn.objectStore("messages");
+  const req = messagesStore.get([roomId, messageId]);
+  const userid = localStorage.getItem(reactData[0] + "id");
+  req.onsuccess = function (event) {
+    const msg = event.target.result;
+    const message = msg.data;
+    if (message[4]) {
+      if (reactData[4]) {
+        message[4][reactData[3]] = reactData[4];
+      } else {
+        delete message[4][reactData[3]];
+        if (!message[4].length) {
+          delete message[4];
+        }
+      }
+    } else {
+      message[4] = {};
+      message[4][reactData[3]] = reactData[4];
+    }
+    messagesStore.put(msg);
+    if (reactData[0] == localStorage.getItem("server")) {
+      if (reactData[1] == localStorage.getItem("channel")) {
+        const myreaction = document.getElementsByClassName(
+          "m-" + reactData[2] + "r-" + reactData[3]
+        );
+        if (myreaction.length) {
+          myreaction[0].innerText = reactData[4];
+        } else {
+          const reaction = document.getElementsByClassName("r-" + reactData[2]);
+          if (reaction.length) {
+            const EMOG = document.createElement("div");
+            EMOG.classList.add("m-" + reactData[2] + "r-" + reactData[3]);
+            EMOG.innerText = reactData[4];
+            EMOG.classList.add("react");
+            if (reactData[3] == userid) {
+              EMOG.classList.add("myreaction");
+            }
+            reaction[0].appendChild(EMOG);
+          } else {
+            const Message = document.getElementsByClassName(
+              "m-" + reactData[2]
+            );
+            if (Message.length) {
+              const reactionpallet = document.createElement("div");
+              reactionpallet.classList.add("reactions");
+              reactionpallet.classList.add("r-" + reactData[2]);
+              const EMOG = document.createElement("div");
+              EMOG.classList.add("m-" + reactData[2] + "r-" + reactData[3]);
+              EMOG.innerText = reactData[4];
+              EMOG.classList.add("react");
+              if (reactData[3] == userid) {
+                EMOG.classList.add("myreaction");
+              }
+              reactionpallet.appendChild(EMOG);
+              Message[0].appendChild(reactionpallet);
+            }
+          }
+        }
+      } else {
+        shownotification("c-", String(reactData[1]));
+      }
+    } else {
+      shownotification("s-", reactData[0]);
+    }
+  };
+});
+socket.on("show_this", function (data) {
+  // if (data.hasOwnProperty("users")) {
+  // data["users"].forEach((user) => {
+  // GOTOfrnd(user, false);
+  // });
+  // } else {
+  const ch = data["channel"];
+  const trxn = DBs[ch[0]].transaction("channels", "readwrite");
+  const channelStore = trxn.objectStore("channels");
+  const chnl = { cid: ch[1], name: ch[2], creator: ch[3] };
+  channelStore.put(chnl);
+  showing(chnl, true);
+  // }
+});
+// socket.on("dm", function (data) {
+//   GOTOfrnd(data, (GOTO = false));
+//   shownotification("f-", data);
+// });
+// socket.on("celebrate", function (data) {
+//   console.log("hurrah");
+// });
+
 function getChannels(server) {
   const transaction = DBs[server].transaction("channels", "readonly");
   const channels = transaction.objectStore("channels");
@@ -222,149 +469,6 @@ function getMessages(server, channel) {
     box.scrollTop = box.scrollHeight;
   };
 }
-socket.on("messages", function (messages) {
-  const db = DBs[messages[0]];
-  const roomId = messages[1];
-  if (db) {
-    const trxn = db.transaction("messages", "readwrite");
-    const messagesStore = trxn.objectStore("messages");
-    messages[2].forEach((msg) => {
-      const mssg = {
-        rid: roomId,
-        mid: msg[0],
-        data: JSON.parse(msg[1]),
-        sender: msg[2],
-      };
-      messagesStore.put(mssg);
-    });
-  }
-});
-socket.on("media", function (data) {
-  const db = DBs[data[0]];
-  if (db) {
-    const trxn = db.transaction(["medias"], "readwrite");
-    const mediaStore = trxn.objectStore("medias");
-    const media = { mdid:data[1] , hash:data[2] , name:data[3][0] , mime:data[3][1]};
-    mediaStore.put(media);
-    if (data[0]==localStorage.getItem("server")){
-      addmedia(media);
-    }else{
-      shownotification('s-'+data[0])
-    }
-  }
-});
-socket.on("show_message", async function (data) {
-  // TO ADD NEW CHILD OF MESSAGE //
-  const db = DBs[data[0]];
-  const roomId = data[1];
-  const trxn = db.transaction("messages", "readwrite");
-  const messagesStore = trxn.objectStore("messages");
-  const msg = { rid: roomId, mid: data[2], data: data[3], sender: data[4] };
-  messagesStore.put(msg);
-  if (data[0] == localStorage.getItem("server")) {
-    const ch = document.getElementsByClassName("c-" + String(data[1]))[0];
-    if (ch.firstChild.classList.contains("active")) {
-      let reply = data[3][2];
-      if (reply) {
-        //TODO: first check if reply exist in Msgs
-        const repreq = messagesStore.get([roomId, Number(reply)]);
-        reply = await new Promise((resolve) => {
-          repreq.onsuccess = function (event) {
-            resolve(event.target.result);
-          };
-          repreq.onerror = function () {
-            resolve(0);
-          };
-        });
-      }
-      if (msg.sender == name) {
-        chatbox.appendChild(makeMessage(msg.mid, msg.data, true,reply));
-      } else {
-        const allmsg = document.getElementsByClassName("frnd");
-        if (allmsg[allmsg.length - 1].innerText!=msg.sender) {
-          chatbox.appendChild(makeFrnd(msg.sender));
-        }
-        chatbox.appendChild(makeMessage(msg.mid, msg.data, false,reply));
-      }
-      box.scrollTop = box.scrollHeight;
-    } else {
-      shownotification("c-", data[1]);
-    }
-  } else {
-    shownotification("s-", data[0]);
-  }
-});
-socket.on("reaction", function (reactData) {
-  const db = DBs[reactData[0]];
-  const roomId = reactData[1];
-  const messageId = reactData[2];
-  const trxn = db.transaction("messages", "readwrite");
-  const messagesStore = trxn.objectStore("messages");
-  const req = messagesStore.get([roomId, messageId]);
-  req.onsuccess = function (event) {
-    const msg = event.target.result;
-    const message = msg.data;
-    if (message[4]) {
-      if (reactData[4]) {
-        message[4][reactData[3]] = reactData[4];
-      } else {
-        delete message[4][reactData[3]];
-        if (!message[4].length) {
-          delete message[4];
-        }
-      }
-    } else {
-      message[4] = {};
-      message[4][reactData[3]] = reactData[4];
-    }
-    messagesStore.put(msg);
-    if (reactData[0] == localStorage.getItem("server")) {
-      if (reactData[1] == localStorage.getItem("channel")) {
-        const myreaction = document.getElementsByClassName(
-          "m-" + reactData[2] + "r-" + reactData[3]
-        );
-        if (myreaction.length) {
-          myreaction[0].innerText = reactData[4];
-        } else {
-          const reaction = document.getElementsByClassName(
-            "r-" + reactData[2]
-          );
-          if (reaction.length) {
-            const EMOG = document.createElement("div");
-            EMOG.classList.add("m-" + reactData[2] + "r-" + reactData[3]);
-            EMOG.innerText = reactData[4];
-            EMOG.classList.add("react");
-            if (reactData[3] == userid) {
-              EMOG.classList.add("myreaction");
-            }
-            reaction[0].appendChild(EMOG);
-          } else {
-            const Message = document.getElementsByClassName(
-              "m-" + reactData[2]
-            );
-            if (Message.length) {
-              const reactionpallet = document.createElement("div");
-              reactionpallet.classList.add("reactions");
-              reactionpallet.classList.add("r-" + reactData[2]);
-              const EMOG = document.createElement("div");
-              EMOG.classList.add("m-" + reactData[2] + "r-" + reactData[3]);
-              EMOG.innerText = reactData[4];
-              EMOG.classList.add("react");
-              if (reactData[3] == userid) {
-                EMOG.classList.add("myreaction");
-              }
-              reactionpallet.appendChild(EMOG);
-              Message[0].appendChild(reactionpallet);
-            }
-          }
-        }
-      }else{
-        shownotification('c-',String(reactData[1]))
-      }
-    }else{shownotification('s-',reactData[0])}
-  };
-});
-
 function makeMessage(id, msg, bool, reply = null) {
   const message = document.createElement("div");
   message.classList.add("message");
@@ -463,6 +567,7 @@ function makeMessage(id, msg, bool, reply = null) {
     const reaction = document.createElement("div");
     reaction.classList.add("reactions");
     reaction.classList.add("r-" + id);
+    const userid = localStorage.getItem(localStorage.getItem("server") + "id");
     Object.keys(msg[4]).forEach((k) => {
       const EMOG = document.createElement("div");
       EMOG.innerText = msg[4][k];

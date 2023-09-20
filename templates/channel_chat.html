@@ -32,7 +32,7 @@
           <!-- <div class="userimg">
             <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
           </div> -->
-          <h4>{{name}}<br /><span>Server:</span>&nbsp;<span id="server">{{server}}</span></h4>
+          <h4>{{name}}<br /><span>Server:</span>&nbsp;<span id="server">None</span></h4>
         </div>
         <ion-icon id="3dot" style="height: 100%;" name="ellipsis-vertical-outline"></ion-icon>
       </div>
@@ -105,7 +105,7 @@
           <div class="channel_info">
             <div id="users" class="info">
               <ion-icon class="info_icon" name="people-outline"></ion-icon>
-              <div id="user-count">(...)</div>
+              <div id="user-count">(0)</div>
             </div>
             <!-- <div id="both" class="info" >&nbsp&nbsp&nbsp</div> -->
             <div id="attachment" class="info">
@@ -211,20 +211,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 <script>
   const name = '{{name}}';
-  const userid = Number('{{id}}');
-  const myservers = [];
+  // const userid = Number('{{id}}');
   function populateServer() {
+    const myservers=[]
     const prevserver = localStorage.getItem("server");
-    myservers.push(prevserver)
-
+    if(prevserver){
+      myservers.push(prevserver)
+    }
     {% for srvr in myservers: %}
     if ('{{srvr}}' != prevserver) {
       myservers.push('{{srvr}}')
     }
     {% endfor %}
-
+    return myservers;
   }
-  populateServer();
+  // populateServer();
 </script>
 <script src="{{url_for('static',filename='script.js')}}"></script>
 <script src="{{url_for('static',filename='indexed.js')}}"></script>
