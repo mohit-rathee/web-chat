@@ -1,4 +1,5 @@
 import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json, time
+from bidict import bidict
 from datetime import timedelta
 from flask import Flask, render_template, request, redirect, session, make_response, Response
 from werkzeug.utils import secure_filename
@@ -32,9 +33,9 @@ metadata=MetaData(bind=engine)
 Base=declarative_base(metadata=metadata)
 class users(Base):
     __tablename__="users"
-    id=db.Column(db.Integer,primary_key=True)                            #User ID
-    username=db.Column(db.String, unique=True, nullable=False)       #user name
-    password=db.Column(db.String, nullable=False)                    #user password
+    id=db.Column(db.Integer,primary_key=True)                   #User ID
+    username=db.Column(db.String, unique=True, nullable=False)  #user name
+    password=db.Column(db.String, nullable=False)               #user password
     description=db.Column(db.String, nullable=True)
 class channel(Base):
     __tablename__="channel"
@@ -46,8 +47,8 @@ class channel(Base):
 class chats(Base):
     __tablename__="chats"
     id=db.Column(db.Integer,primary_key=True)
-    key=db.Column(db.String,nullable=False)                                 #Private Key
-    data=db.Column(db.String, nullable=False)                               #actuall msg
+    key=db.Column(db.String,nullable=False)                     #Private Key
+    data=db.Column(db.String, nullable=False)                   #actuall msg
 class media(Base):
     __tablename__="media"
     id=db.Column(db.Integer,primary_key=True)
@@ -63,14 +64,12 @@ def create_channel(table_number,base,users):
     }
     channel_class = type(str(table_number), (base,), attrs)
     return channel_class
-Tables={"app":{}}
-room_dict={"app":{"/":{}}}
 inspector = inspect(engine)
 tbls = inspector.get_table_names()
+Tables={"app":{'Len':len(tbls)}}
 for tb in tbls:
     if tb.isdigit():
         Tables["app"][int(tb)]=create_channel(tb, Base,users)
-        room_dict["app"].update({int(tb):{}})
 Base.metadata.create_all(bind=engine)
 sqlsession=sessionmaker(bind=engine)
 app.config["SESSION_PERMANENT"]=False
@@ -79,6 +78,9 @@ Session(app)
 engine={"app":engine}
 server={"app":sqlsession()}
 base={"app":Base}
+socketio.server.manager.rooms['/']={}
+rooms=socketio.server.manager.rooms['/']
+rooms['app']=bidict({})
 mediaHash={}
 def private_key(a,b):
     if a<=b:
@@ -103,24 +105,23 @@ def createdb():
     metadata=MetaData(bind=Engine)
     Base=declarative_base(metadata=metadata)
     req=["users","channel","chats","media"]
-    Tables[name]={}
+    Tables[name]={'Len':0}
+    rooms[name]=bidict({})
     for table_name in req:
         table = base["app"].metadata.tables.get(table_name)
         table.tometadata(metadata)
     class users(Base):
         __tablename__ = "users"
         __table_args__ = {"extend_existing": True}
-        id = Column(db.Integer, primary_key=True)  
-        username = Column(db.String(20), unique=True, nullable=False) 
-        password = Column(db.String(30), nullable=False)
+        id = Column(db.Integer, primary_key=True)
+        username = Column(db.String, unique=True, nullable=False)
+        password = Column(db.String, nullable=False)
+        description=db.Column(db.String, nullable=True)
     Base.metadata.create_all(bind=Engine)
     app.config['SQLALCHEMY_BINDS'][name]=db_uri
     base[name]=Base
     Session=sessionmaker(bind=Engine)
     server[name]=Session()
-    room_dict[name]={
-        "/":{}
-    }
     return redirect("/login")
 @app.route('/upload',methods=["POST"])
 def upload_db():
@@ -130,35 +131,32 @@ def upload_db():
         if not file or filename[1]!="sqlite3" or filename[0] in server:
             return render_template("message.html",msg="select a valid database file (*.sqlite3) with unique name.",goto="/login")
         uploads_dir = os.path.join('db')
-        file.save(os.path.join(uploads_dir,secure_filename(file.filename))) 
+        file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
         name=filename[0]
         app.config['SQLALCHEMY_BINDS'][name] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
         try:
             Engine = create_engine(app.config['SQLALCHEMY_BINDS'][str(name)])
             metadata = MetaData(bind=engine)
             Base = declarative_base(metadata=metadata)
-            Tables[name]={}
-            room_dict[name]={
-                "/":{}
-            }
             class users(Base):
                 __tablename__ = "users"
                 __table_args__ = {"extend_existing": True}
-                id = Column(db.Integer, primary_key=True)  
-                username = Column(db.String(20), unique=True, nullable=False) 
+                id = Column(db.Integer, primary_key=True)
+                username = Column(db.String(20), unique=True, nullable=False)
                 password = Column(db.String(30), nullable=False)
             Base.metadata.create_all(bind=Engine)
             inspector = inspect(Engine)
             tbls = inspector.get_table_names()
+            Tables[name]={'Len':len(tbls)}
             for tb in tbls:
                 if tb.isdigit():
                     Tables[name][int(tb)]=create_channel(tb, Base,users)
-                    room_dict[name].update({int(tb):{}})
             Base.metadata.create_all(bind=Engine)
             base[name]=Base
             engine[name]=Engine
             Session=sessionmaker(bind=Engine)
             server[name]=Session()
+            rooms[name]=bidict({})
         except:
             app.config['SQLALCHEMY_BINDS'].pop(name,None)
             os.remove("db/"+name+".sqlite3")
@@ -180,239 +178,285 @@ def upload_db():
     #     return redirect("/servers")
 @socketio.on('disconnect')
 def on_disconnect():
-    changeServer(False)
+    # could just pop those values 
+    socketio.server.leave_room(request.sid, room=None)
+    socketio.server.leave_room(request.sid, room=request.sid)
+    for srvr in session.get("myserver"):
+        rooms[srvr].pop(session.get(srvr),None)
+        # i m doing this because of automatic deletion of bidict({}) if empty
+        # socketio.server.leave_room(session.get(srvr),room=srvr)
+        socketio.emit("notify",[srvr,session.get(srvr),session.get("name"),None],room=srvr) 
+# @socketio.on('connect')
+# def on_connect():
+#     print(socketio.namespace_handlers)
+#     rooms[None][1]=rooms[None].pop(request.sid)
+#     print(rooms)
+#     return
+#     if user_id:
+#         # print(socketio.server.manager.rooms)
+#         key_sid = rooms.pop(request.sid, None)
+#         # print('----')
+#         value_sid=key_sid.pop(request.sid)
+#         key_sid[user_id]=value_sid
+#         # print(key_sid)
+#         # print('----')
+#         # rooms.pop(None,None)
+#         if key_sid:   #You can update if user_id exist (when user has 2 sessions)
+#             rooms[user_id] = key_sid 
+#     print(socketio.server.manager.rooms)
+#     socketio.emit("celebrate",[],to=user_id)
 @socketio.on('Load')
-def Load():
-    curr=session.get('server')
-    join_room(curr)
-    room_dict[curr]["/"].update({session.get("name"):request.sid})
-    socketio.emit("serverlive",room_dict[curr]["/"],room=curr)
-    Media=server[curr].query(media).all()
-    Md=[[media.id,media.hash,media.name] for media in Media]
-    socketio.emit("medias",Md,to=request.sid)
-@socketio.on("changeServer")
-def changeServer(newServer):
+def Load(data):
+    reqsrvr=data.get('server')
+    if reqsrvr in session.get('myserver'): # And wheater the reqsrvr is in server.keys()
+        id=session.get(reqsrvr)
+        socketio.emit("notify",[reqsrvr,id,session.get("name"),request.sid],room=reqsrvr)
+        eio_sid=rooms[None][request.sid]
+        rooms[reqsrvr][id]=eio_sid
+        serverInfo={'server':reqsrvr,'id':id}
+        curr=server[reqsrvr]
+        channels=curr.query(channel).all() #later on we can limit this for sync sliding
+        chnlCount=len(data.get("msg",0))
+        serverInfo['channels']={}
+        for chnl in channels:
+            if chnl.id>chnlCount:
+                serverInfo['channels'][chnl.id]=[chnl.id,chnl.name,chnl.user.username]
+        Media=curr.query(media).filter(media.id>data.get('media',0)).all()
+        serverInfo['medias']={media.id:[media.id,media.hash,media.name] for media in Media}
+        User=curr.query(users).filter(users.id>data.get('user',0)).all()
+        serverInfo['users']={user.id:user.username for user in User}
+        serverInfo['live']=dict(rooms[reqsrvr])
+        socketio.emit("server",serverInfo,to=request.sid)
+        for chnl in channels:
+            lastid=data.get('msg').get(str(chnl.id),0)
+            ch=Tables[reqsrvr][chnl.id]
+            last_msgs=curr.query(ch).order_by(ch.id.desc()).filter(ch.id>lastid).limit(30)
+            Msgs=[reqsrvr,chnl.id]
+            Msgs.append([[msg.id,msg.data,msg.user.username] for msg in last_msgs])
+            socketio.emit("messages",Msgs,to=request.sid)
+# def changeServer(newServer):
     # REMOVE PREV 
-    change(False)
-    oldServer=session.get("server")
-    if oldServer:
-        leave_room(oldServer)
-        if room_dict[oldServer]["/"].pop(session.get("name"),None):
-            socketio.emit("serverlive",room_dict[oldServer]["/"],room=oldServer)
-    if newServer:
-        channels=server[newServer].query(channel).all()
-        session["server"]=newServer
-        join_room(newServer)
-        room_dict[newServer]["/"].update({session.get("name"):request.sid})
-        socketio.emit("serverlive",room_dict[newServer]["/"],room=newServer)
-        channel_list=[session.get("server")]
-        channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
-        socketio.emit("showNewServer",channel_list,to=request.sid)    
-        Media=server[newServer].query(media).all()
-        Md=[[media.id,media.hash,media.name] for media in Media]
-        socketio.emit("medias",Md,to=request.sid)
+    # change(False)
+    # oldServer=session.get("server")
+    # if oldServer:
+        # leave_room(oldServer)
+        # session["server"]=None
+        # if server_dict[oldServer].pop(session.get("id"),None):
+        #     socketio.emit("serverlive",server_dict[oldServer],room=oldServer)
+    # if newServer and newServer in server:
+        # channels=server[newServer].query(channel).all()
+        # session["server"]=newServer
+        # join_room(newServer)
+        # server_dict[newServer][session.get("id")]=request.sid
+        # socketio.emit("serverlive",server_dict[newServer],room=newServer)
+        # channel_list=[session.get("server")]
+        # channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
+        # socketio.emit("showNewServer",newServer,to=request.sid)
+        # Media=server[newServer].query(media).all()
+        # Md=[[media.id,media.hash,media.name] for media in Media]
+        # socketio.emit("medias",Md,to=request.sid)
 @socketio.on("create")
 def create(newchannel):
-    curr=session.get("server")
+    curr=newchannel[0]
+    if curr not in session.get("myserver"):
+        return
     id=session.get(curr)
-    Topic=channel(name=newchannel,creator_id=id)
+    Topic=channel(name=newchannel[1],creator_id=id)
     server[curr].add(Topic)
     server[curr].commit()
     Base=base[curr]
     Tables[curr][Topic.id]=create_channel(Topic.id, Base,users)
+    Tables[curr]["Len"]+=1
     Base.metadata.create_all(engine[curr])
-    room_dict[curr][Topic.id]={}
-    new={"channel":[Topic.id,Topic.name,Topic.user.username]}
+    new={"channel":[curr,Topic.id,Topic.name,Topic.user.username]}
     socketio.emit("show_this",new,room=curr)
-@socketio.on("search_text")
-def search(text):
-    curr=session.get("server")
-    user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
-    Users={"users":[user.username for user in user_list]}
-    socketio.emit("show_this",Users,to=request.sid)
-@socketio.on("change")
-def change(To):
+# @socketio.on("search_text")
+# def search(text):
+#     curr=session.get("server")
+#     user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
+#     Users={"users":[user.username for user in user_list]}
+#     socketio.emit("show_this",Users,to=request.sid)
+# @socketio.on("change")
+# def change(To):
     # IDENTIFY
-    curr = session.get("server")
-    name = session.get("name")
-    id = session.get(curr)
+    # curr = session.get("server")
+    # name = session.get("name")
+    # id = session.get(curr)
     # CLEAR PREV IF ANY AND NOTIFY THAT ROOM
-    prev = session.get('channel')
-    if not prev:
-        prev=session.get("key")
-        session["key"]=None
-        session["friend"]=None
-    session["channel"]=None
-    if prev:
-        leave_room(curr+str(prev))
-        if room_dict[curr][prev].pop(name,None):
-            socketio.emit("notify",room_dict[curr][prev],room=curr+str(prev))
+    # prev = session.get('channel')
+    # if not prev:
+    #     prev=session.get("key")
+    #     session["key"]=None
+    #     session["friend"]=None
+    # session["channel"]=None
+    # if prev:
+        # leave_room(curr+str(prev))
+        # if server_dict[curr].pop(id,None):
+            # socketio.emit("notify",server_dict[curr],room=curr+str(prev))
 
     # CLEAR
-    if not To:
-        return 
+    # if not To:
+        # return
     # GOTO CHANNEL/FRND IF ANY
-    if "channel" in To:
-        to=int(To["channel"])
-        # current_channel=server[curr].query(channel).filter_by(name=to).first()
-        session["channel"]=to
-        last_msgs=server[curr].query(Tables[curr][to]).order_by(Tables[curr][to].id.desc()).limit(30)
-        room_dict[curr][to].update({name:1})
-    if "Frnd" in To:
-        to=To["Frnd"]
-        frnd=server[curr].query(users).filter_by(username=to).first()
-        if not frnd:
-            return render_template("message.html",msg="user doesn't exist",goto="/channels")
-        to=private_key(id,frnd.id)
-        session["key"]=to
-        if frnd.id<=id:
-            me=True
-        else:
-            me=False
-        session["bool"]=me
-        session["friend"]=frnd.username
-        last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter_by(key=to).limit(30)
-        if to in room_dict[curr]:
-            room_dict[curr][to].update({name:1})
-        else:
-            room_dict[curr].update({to:{name:1}})
+    # if "channel" in To:
+    #     to=int(To["channel"])
+    #     session["channel"]=to
+    # if "Frnd" in To:
+    #     to=To["Frnd"]
+    #     frnd=server[curr].query(users).filter_by(username=to).first()
+    #     if not frnd:
+    #         return render_template("message.html",msg="user doesn't exist",goto="/channels")
+    #     to=private_key(id,frnd.id)
+    #     session["key"]=to
+    #     if frnd.id<=id:
+    #         me=True
+    #     else:
+    #         me=False
+    #     session["bool"]=me
+    #     session["friend"]=frnd.username
+    #     last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter_by(key=to).limit(30)
+        # if to in server_dict[curr]:
+        #     server_dict[curr][to].update({name:1})
+        # else:
+        #     server_dict[curr].update({to:{name:1}})
     # JOIN ROOM AND NOTIFY
-    to=to
-    join_room(curr+str(to))
-    socketio.emit("notify",room_dict[curr][to],to=curr+str(to))
+    # join_room(curr+str(to))
+    # socketio.emit("notify",server_dict[curr],to=curr+str(to))
+    # if "channel" in To:
+    #     return
     # ARRANGE MSGS IN A FORMAT
-    
-    if session.get("channel"):
-        Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
-        Msgs.append(None)
-    else:
-        Msgs=[[msg.id,msg.data] for msg in last_msgs]
-        Msgs.append(me)
-    if len(Msgs)!=31:
-        Msgs.append(0)
-        session["history"]=0
-    else:
-        Msgs.append(1)
-        session["history"]=1
-    socketio.emit('showMessages',Msgs,to=request.sid)     
+
+    # if session.get("channel"):
+        # Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
+        # Msgs.append(None)
+    # if not session.get("channel"):
+    #     Msgs=[[msg.id,msg.data] for msg in last_msgs]
+    #     Msgs.append(me)
+    # if len(Msgs)!=31:
+    #     Msgs.append(0)
+    #     session["history"]=0
+    # else:
+    #     Msgs.append(1)
+    #     session["history"]=1
+    # socketio.emit('showMessages',Msgs,to=request.sid)
 @socketio.on('message')
 def handel_message(message):
     msg={}
-    if message.get('0'):
-        msg[0]=message.get('0')
-    curr=session.get("server")
-    if message.get('1'):
-        medea=server[curr].query(media).filter_by(id=message.get('1')).first()
-        if medea==None:
+    msgData=message.get('msgData')
+    if msgData:
+        msg[0]=msgData
+    curr=message.get('server')
+    if curr not in session.get("myserver"):
+        return
+    mediaId=message.get('mediaId')
+    if mediaId:
+        Media=server[curr].query(media).filter_by(id=mediaId).first()
+        if Media==None:
             return
-        msg[1]=message.get('1')
+        msg[1]=mediaId
     id=session.get(curr)
     name=session.get("name")
-    channel_id=session.get("channel")
+    channel_id=int(message.get('channel'))
     msg[3]=datetime.datetime.now(india_timezone).strftime('%d-%m-%Y %H:%M:%S')
     # FOR CHANNEL
-    if channel_id:
-        if message.get('2'):
-            reply=server[curr].query(Tables[curr][channel_id]).filter_by(id=int(message.get('2'))).first()
+    if channel_id <= Tables[curr]['Len']:
+        replyId=message.get('replyId')
+        if replyId:
+            reply=server[curr].query(Tables[curr][channel_id]).filter_by(id=int(replyId)).first()
             if reply==None:
                 return
-            msg[2]=message.get('2')
-        msg=json.dumps(msg)
-        message=Tables[curr][channel_id](data=msg,sender_id=id)
+            msg[2]=replyId
+        Msg=json.dumps(msg)
+        message=Tables[curr][channel_id](data=Msg,sender_id=id)
         server[curr].add(message)
         server[curr].commit()
-        socketio.emit('show_message',[name,message.id,msg], room = curr+str(channel_id))
-        for srvr in room_dict.keys():
-            if srvr==curr:
-                for usr in room_dict[srvr]["/"].keys():
-                    if usr not in room_dict[srvr][channel_id].keys():    
-                        socketio.emit('currupdate',channel_id,to=room_dict[curr]["/"][usr])
-            else:
-                for usr in room_dict[srvr]["/"].keys():
-                    socketio.emit('otherupdate',curr,to=room_dict[srvr]["/"][usr])
-    # FOR DM's
-    else:
-        key=session.get("key")
-        if message.get('2'):
-            reply=server[curr].query(chats).filter_by(id=int(message.get("2"))).first()
-            if reply==None or reply.key!=key:
-                return
-            msg[2]=message.get('2')
-        msg[5]=session.get('bool')
-        msg=json.dumps(msg)
-        message=chats(data=msg,key=key)
-        server[curr].add(message)
-        server[curr].commit()
-        socketio.emit('show_message',[message.id,msg], room = curr+key)
-        if len(room_dict[curr][key])==1 and not session.get("friend")==name:
-            for srvr in room_dict.keys():
-                if srvr==curr:
-                    usr = room_dict[srvr]["/"].get(session.get("friend"))
-                    if usr!=None:
-                        socketio.emit('dm',[name],to=usr)
-                else:
-                    usr = room_dict[srvr]["/"].get(session.get("friend"))
-                    if usr!=None:
-                        socketio.emit('otherupdate',curr,to=usr)
-                        return 
+        socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
+    #  if true:
+    #     key=session.get("key")
+    #     if message.get('2'):
+    #          reply=server[curr].query(chats).filter_by(id=int(message.get("2"))).first()
+    #         if reply==None or reply.key!=key:
+    #             return
+    #         msg[2]=message.get('2')
+    #     msg[5]=session.get('bool')
+    #     msg=json.dumps(msg)
+    #     message=chats(data=msg,key=key)
+    #     server[curr].add(message)
+    #     server[curr].commit()
+    #     socketio.emit('show_dm',[message.id,msg], room = curr+key)
+    #     if len(server_dict[curr][key])==1 and not session.get("friend")==name:
+    #         for srvr in server_dict.keys():
+    #             if srvr==curr:
+    #                 usr = server_dict[srvr]["/"].get(session.get("friend"))
+    #                 if usr!=None:
+    #                     socketio.emit('dm',[name],to=usr)
+    #             else:
+    #                 usr = server_dict[srvr]["/"].get(session.get("friend"))
+    #                 if usr!=None:
+    #                     socketio.emit('otherupdate',curr,to=usr)
+    #                     return
+
 @socketio.on('reaction')
-def reaction(reactData):
-    curr=session.get("server")
+def reaction(Data):
+    curr=Data[0]
+    if curr not in session.get("myserver"):
+        return
     id=session.get(curr)
-    channel_id=session.get("channel")
+    channel_id=int(Data[1])
     # FOR CHANNEL
-    if channel_id:
-        msg=server[curr].query(Tables[curr][channel_id]).filter_by(id=reactData[0]).first()
+    if channel_id <= Tables[curr]['Len']:
+        msg=server[curr].query(Tables[curr][channel_id]).filter_by(id=Data[2]).first()
         if msg:
             message=json.loads(msg.data)
-            if reactData[1]:
+            if Data[3]:
                 if message.get('4'):
-                    message['4'][str(id)]=reactData[1]
+                    message['4'][str(id)]=Data[3]
                 else:
-                    message['4']={str(id):reactData[1]}
+                    message['4']={str(id):Data[3]}
             else:
                 message['4'].pop(str(id))
+                Data[3]=None
             data=json.dumps(message)
             msg.data=data
             server[curr].commit()
-            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+str(channel_id))
+            socketio.emit('reaction',[curr,channel_id,msg.id,id,Data[3]],to=curr)
     # FOR PRVT
-    else:
-        msg=server[curr].query(chats).filter_by(key=session.get('key')).first()
-        if msg:
-            message=json.loads(msg.data)
-            if reactData[1]:
-                if message.get('4'):
-                    message['4'][str(id)]=reactData[1]
-                else:
-                    message['4']={str(id):reactData[1]}
-            else:
-                message['4'].pop(str(id))
-            data=json.dumps(message)
-            msg.data=data
-            server[curr].commit()
-            socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+session.get('key'))
-@socketio.on('getHistory')
-def getHistory():
-    curr=session.get("server")
-    # id=session.get('id')
-    history=session.get("history")
-    channel_id=int(session.get("channel"))
-    times=session.get("history")
-    if channel_id:
-        last_msgs=server[curr].query(Tables[curr][channel_id]).order_by(Tables[curr][channel_id].id.desc()).offset(30*times).limit(30)
-        Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
-        Msgs.append(None)
-    else:
-        last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter(and_(chats.id<postID,chats.key==session.get("key"))).limit(30)
-        Msgs=[[msg.id,msg.data] for msg in last_msgs]
-        Msgs.append(me)
-    session["history"]+=1
-    if len(Msgs)!=31:
-        Msgs.append(0)
-    else:
-        Msgs.append(1)
-    socketio.emit('showMessages',Msgs,to=request.sid)
+    # else:
+    #     msg=server[curr].query(chats).filter_by(key=session.get('key')).first()
+    #     if msg:
+    #         message=json.loads(msg.data)
+    #         if reactData[1]:
+    #             if message.get('4'):
+    #                 message['4'][str(id)]=reactData[1]
+    #             else:
+    #                 message['4']={str(id):reactData[1]}
+    #         else:
+    #             message['4'].pop(str(id))
+    #         data=json.dumps(message)
+    #         msg.data=data
+    #         server[curr].commit()
+    #         socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+session.get('key'))
+# @socketio.on('getHistory')
+# def getHistory():
+#     curr=session.get("server")
+#     # id=session.get('id')
+#     history=session.get("history")
+#     channel_id=int(session.get("channel"))
+#     times=session.get("history")
+#     if channel_id:
+#         last_msgs=server[curr].query(Tables[curr][channel_id]).order_by(Tables[curr][channel_id].id.desc()).offset(30*times).limit(30)
+#         Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
+#         Msgs.append(None)
+#     else:
+#         last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter(and_(chats.id<postID,chats.key==session.get("key"))).limit(30)
+#         Msgs=[[msg.id,msg.data] for msg in last_msgs]
+#         Msgs.append(me)
+#     session["history"]+=1
+#     if len(Msgs)!=31:
+#         Msgs.append(0)
+#     else:
+#         Msgs.append(1)
+#     socketio.emit('showMessages',Msgs,to=request.sid)
 @app.route('/',methods=["GET","POST"])
 def index():
     if request.method=="GET":
@@ -445,7 +489,7 @@ def loginlogic(name,password):
                         myServer.append(srvr)
                     else:
                         undone.append(srvr)
-                else:            
+                else:
                     if pswdHash != user.password:
                         if sha256_crypt.verify(str(name+password), user.password):
                             user.password=pswdHash
@@ -551,10 +595,10 @@ def handel_media():
             session.add(Media)
             session.commit()
             os.rename("media/"+unique_id,"media/"+file_hash) #file uploaded
-            socketio.emit("media",[Media.id,Media.hash,name],room=curr)
+            socketio.emit("media",[curr,Media.id,Media.hash,name],room=curr)
             return Media.id
         elif not os.path.exists("media/"+file_hash): #file is reuploaded and saved
-            os.rename("media/"+unique_id,"media/"+file_hash) 
+            os.rename("media/"+unique_id,"media/"+file_hash)
             return check.id
         else:
             os.remove("media/"+unique_id) # duplicate file deleted
@@ -602,26 +646,21 @@ def channel_chat():
     myserver=session.get("myserver")
     curr=session.get("server")
     id=session.get(curr)
-    channels=server[curr].query(channel).all()
-    return render_template("channel_chat.html",name=name,id=id,server=curr,mysrvr=myserver,channels=channels)  
+    return render_template("channel_chat.html",name=name,id=id,server=curr,myservers=myserver)
 @app.route('/download/<server>',methods=["GET"])
 def download_database(server):
-    if server and app.config['SQLALCHEMY_BINDS'].get(str(server)):
+    if app.config['SQLALCHEMY_BINDS'].get(str(server)):
         path =str(app.config['SQLALCHEMY_BINDS'][str(server)]).rsplit("///")[1]
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
 if __name__ == '__main__':
     socketio.run(app)
-
 # TODO:
-    # Add Media Id and use that instead of hash
-    # Streaming of media when asked
-    # Update chunksize acc.to internet speed
-    # Send all the chats on load 
-    # Add browser storage for quick response and maintainse
-    # (learning how to deal with tampering attacks)
-    # Use reddis db for storing peoples who are online
-    # this is commited because streak wont increase after commit on IndexedDB branch
-    # this too is a commit for streak i created a system where users can get/store
-    # all messages they may use into indexedDB 
+    # Add Media Id and use that instead of hash                       --done
+    # Streaming of media when asked                                   --x
+    # Update chunksize acc.to internet speed                          --x
+    # Send all the chats on load                                      --done
+    # Add browser storage for quick response and maintainse           --done
+    # (learning how to deal with tampering attacks)   --can't-be-delt --done
+    # Use reddis db for storing peoples who are online                --x

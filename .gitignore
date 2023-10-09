@@ -2,8 +2,5 @@ venv/
 __pycache__/
 flask_session
 db/
-templates/webRTC.html
-script.py
-fun.sqlite3
-todo.sqlite3
+media/
 test.sqlite3
