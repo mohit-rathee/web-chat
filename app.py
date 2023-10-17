@@ -36,13 +36,13 @@ class users(Base):
     id=db.Column(db.Integer,primary_key=True)                   #User ID
     username=db.Column(db.String, unique=True, nullable=False)  #user name
     password=db.Column(db.String, nullable=False)               #user password
-    description=db.Column(db.String, nullable=True)
+    description=db.Column(db.String, nullable=True)             #user bio
 class channel(Base):
     __tablename__="channel"
     id=db.Column(db.Integer,primary_key=True)                   #topic ID
     name=db.Column(db.String, nullable=False)                   #topic name
     creator_id=db.Column(db.Integer,db.ForeignKey('users.id'))  #creator ID
-    description=db.Column(db.String, nullable=True)
+    description=db.Column(db.String, nullable=True)             #description
     user=db.relationship('users')
 class chats(Base):
     __tablename__="chats"
@@ -96,6 +96,8 @@ if not os.path.exists(os.path.join("db")):
 @app.route('/create',methods=["POST"])
 def createdb():
     name=str(request.form.get("name"))
+    if " " in name:
+        return render_template("message.html",msg="Don't use spaces", goto="/login")
     if name in server or "/" in name:
         return render_template("message.html",msg="select a unique and valid name.",goto="/")
     db_uri = f'sqlite:///db/{name}.sqlite3'
@@ -104,7 +106,7 @@ def createdb():
     engine[name]=Engine
     metadata=MetaData(bind=Engine)
     Base=declarative_base(metadata=metadata)
-    req=["users","channel","chats","media"]
+    req=["serverinfo","users","channel","chats","media"]
     Tables[name]={'Len':0}
     rooms[name]=bidict({})
     for table_name in req:
@@ -186,25 +188,6 @@ def on_disconnect():
         # i m doing this because of automatic deletion of bidict({}) if empty
         # socketio.server.leave_room(session.get(srvr),room=srvr)
         socketio.emit("notify",[srvr,session.get(srvr),session.get("name"),None],room=srvr) 
-# @socketio.on('connect')
-# def on_connect():
-#     print(socketio.namespace_handlers)
-#     rooms[None][1]=rooms[None].pop(request.sid)
-#     print(rooms)
-#     return
-#     if user_id:
-#         # print(socketio.server.manager.rooms)
-#         key_sid = rooms.pop(request.sid, None)
-#         # print('----')
-#         value_sid=key_sid.pop(request.sid)
-#         key_sid[user_id]=value_sid
-#         # print(key_sid)
-#         # print('----')
-#         # rooms.pop(None,None)
-#         if key_sid:   #You can update if user_id exist (when user has 2 sessions)
-#             rooms[user_id] = key_sid 
-#     print(socketio.server.manager.rooms)
-#     socketio.emit("celebrate",[],to=user_id)
 @socketio.on('Load')
 def Load(data):
     reqsrvr=data.get('server')
@@ -223,7 +206,7 @@ def Load(data):
                 serverInfo['channels'][chnl.id]=[chnl.id,chnl.name,chnl.user.username]
         Media=curr.query(media).filter(media.id>data.get('media',0)).all()
         serverInfo['medias']={media.id:[media.id,media.hash,media.name] for media in Media}
-        User=curr.query(users).filter(users.id>data.get('user',0)).all()
+        User=curr.query(users).all()
         serverInfo['users']={user.id:user.username for user in User}
         serverInfo['live']=dict(rooms[reqsrvr])
         socketio.emit("server",serverInfo,to=request.sid)
@@ -234,27 +217,6 @@ def Load(data):
             Msgs=[reqsrvr,chnl.id]
             Msgs.append([[msg.id,msg.data,msg.user.username] for msg in last_msgs])
             socketio.emit("messages",Msgs,to=request.sid)
-# def changeServer(newServer):
-    # REMOVE PREV 
-    # change(False)
-    # oldServer=session.get("server")
-    # if oldServer:
-        # leave_room(oldServer)
-        # session["server"]=None
-        # if server_dict[oldServer].pop(session.get("id"),None):
-        #     socketio.emit("serverlive",server_dict[oldServer],room=oldServer)
-    # if newServer and newServer in server:
-        # channels=server[newServer].query(channel).all()
-        # session["server"]=newServer
-        # join_room(newServer)
-        # server_dict[newServer][session.get("id")]=request.sid
-        # socketio.emit("serverlive",server_dict[newServer],room=newServer)
-        # channel_list=[session.get("server")]
-        # channel_list.append([[channel.id,channel.name,channel.user.username] for channel in channels])
-        # socketio.emit("showNewServer",newServer,to=request.sid)
-        # Media=server[newServer].query(media).all()
-        # Md=[[media.id,media.hash,media.name] for media in Media]
-        # socketio.emit("medias",Md,to=request.sid)
 @socketio.on("create")
 def create(newchannel):
     curr=newchannel[0]
@@ -276,69 +238,6 @@ def create(newchannel):
 #     user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
 #     Users={"users":[user.username for user in user_list]}
 #     socketio.emit("show_this",Users,to=request.sid)
-# @socketio.on("change")
-# def change(To):
-    # IDENTIFY
-    # curr = session.get("server")
-    # name = session.get("name")
-    # id = session.get(curr)
-    # CLEAR PREV IF ANY AND NOTIFY THAT ROOM
-    # prev = session.get('channel')
-    # if not prev:
-    #     prev=session.get("key")
-    #     session["key"]=None
-    #     session["friend"]=None
-    # session["channel"]=None
-    # if prev:
-        # leave_room(curr+str(prev))
-        # if server_dict[curr].pop(id,None):
-            # socketio.emit("notify",server_dict[curr],room=curr+str(prev))
-
-    # CLEAR
-    # if not To:
-        # return
-    # GOTO CHANNEL/FRND IF ANY
-    # if "channel" in To:
-    #     to=int(To["channel"])
-    #     session["channel"]=to
-    # if "Frnd" in To:
-    #     to=To["Frnd"]
-    #     frnd=server[curr].query(users).filter_by(username=to).first()
-    #     if not frnd:
-    #         return render_template("message.html",msg="user doesn't exist",goto="/channels")
-    #     to=private_key(id,frnd.id)
-    #     session["key"]=to
-    #     if frnd.id<=id:
-    #         me=True
-    #     else:
-    #         me=False
-    #     session["bool"]=me
-    #     session["friend"]=frnd.username
-    #     last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter_by(key=to).limit(30)
-        # if to in server_dict[curr]:
-        #     server_dict[curr][to].update({name:1})
-        # else:
-        #     server_dict[curr].update({to:{name:1}})
-    # JOIN ROOM AND NOTIFY
-    # join_room(curr+str(to))
-    # socketio.emit("notify",server_dict[curr],to=curr+str(to))
-    # if "channel" in To:
-    #     return
-    # ARRANGE MSGS IN A FORMAT
-
-    # if session.get("channel"):
-        # Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
-        # Msgs.append(None)
-    # if not session.get("channel"):
-    #     Msgs=[[msg.id,msg.data] for msg in last_msgs]
-    #     Msgs.append(me)
-    # if len(Msgs)!=31:
-    #     Msgs.append(0)
-    #     session["history"]=0
-    # else:
-    #     Msgs.append(1)
-    #     session["history"]=1
-    # socketio.emit('showMessages',Msgs,to=request.sid)
 @socketio.on('message')
 def handel_message(message):
     msg={}
@@ -371,7 +270,7 @@ def handel_message(message):
         server[curr].add(message)
         server[curr].commit()
         socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
-    #  if true:
+    # FOR PRIVATE
     #     key=session.get("key")
     #     if message.get('2'):
     #          reply=server[curr].query(chats).filter_by(id=int(message.get("2"))).first()
@@ -395,7 +294,6 @@ def handel_message(message):
     #                 if usr!=None:
     #                     socketio.emit('otherupdate',curr,to=usr)
     #                     return
-
 @socketio.on('reaction')
 def reaction(Data):
     curr=Data[0]
@@ -436,27 +334,21 @@ def reaction(Data):
     #         msg.data=data
     #         server[curr].commit()
     #         socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+session.get('key'))
-# @socketio.on('getHistory')
-# def getHistory():
-#     curr=session.get("server")
-#     # id=session.get('id')
-#     history=session.get("history")
-#     channel_id=int(session.get("channel"))
-#     times=session.get("history")
-#     if channel_id:
-#         last_msgs=server[curr].query(Tables[curr][channel_id]).order_by(Tables[curr][channel_id].id.desc()).offset(30*times).limit(30)
-#         Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
-#         Msgs.append(None)
-#     else:
-#         last_msgs=server[curr].query(chats).order_by(chats.id.desc()).filter(and_(chats.id<postID,chats.key==session.get("key"))).limit(30)
-#         Msgs=[[msg.id,msg.data] for msg in last_msgs]
-#         Msgs.append(me)
-#     session["history"]+=1
-#     if len(Msgs)!=31:
-#         Msgs.append(0)
-#     else:
-#         Msgs.append(1)
-#     socketio.emit('showMessages',Msgs,to=request.sid)
+@socketio.on('getHistory')
+def getHistory(data):
+    curr=data.get("server")
+    try:
+        lastMsg=int(data.get('lastMsg'))
+        channelId=int(data.get('channel'))
+    except:
+        return
+    if curr in session.get("myserver") and channelId <= Tables[curr]['Len']:
+        channel=Tables[curr][channelId]
+        last_msgs=server[curr].query(channel).order_by(channel.id.desc()).filter(channel.id<lastMsg).limit(30)
+        Msgs=[[msg.user.username,msg.id,msg.data] for msg in last_msgs]
+        Msgs=[curr,channelId]
+        Msgs.append([[msg.id,msg.data,msg.user.username] for msg in last_msgs])
+        socketio.emit("messages",Msgs,to=request.sid)
 @app.route('/',methods=["GET","POST"])
 def index():
     if request.method=="GET":
@@ -566,26 +458,23 @@ def login():
                 return redirect("/channels")
             else:
                 return render_template("message.html",msg="YOUR OLD PASSWORD IS UPDATED WITH NEWONE",goto="/channels")
-@app.route("/media/<id>",methods=["GET"])
-def handel_get_Media(id):
-    srvr=session.get('server')
-    if not srvr:
+@app.route("/media/<srvr>/<id>",methods=["GET"])
+def handel_get_Media(srvr,id):
+    if srvr not in session.get("myserver"):
         return "0"
     Media=server[srvr].query(media).filter_by(id=id).first()
     if Media != None:
-        # ext=mimetypes.guess_extension(json.loads(Media.name)[1])
-        # if ext == None:
-        #     ext=""
         file_path="media/"+Media.hash
         if os.path.exists(file_path):
-            return send_file(file_path) #if this doesnt work put mimetype = (binary)
+            return send_file(file_path)
         else:
             return make_response('Not found',404)
     else:
         return make_response('Not found',404)
 @app.route("/media",methods=["POST"])
 def handel_media():
-    def uploadSuccess(unique_id,file_hash,curr):
+    def uploadSuccess(unique_id,file_hash):
+        curr=mediaHash[unique_id][3]
         session=server[curr]
         check=session.query(media).filter_by(hash=file_hash).first()
         if check==None:
@@ -613,8 +502,7 @@ def handel_media():
         if not request.form.get('dN'):
             return "1"
         file_hash=hasher.hexdigest()
-        curr = session.get("server")
-        data = uploadSuccess(unique_id,file_hash,curr)
+        data = uploadSuccess(unique_id,file_hash)
         mediaHash.pop(unique_id)
         if data:
             return [data,file_hash]
@@ -622,17 +510,17 @@ def handel_media():
 
     name=str(request.form['name'])
     typ=str(request.form['typ'])
+    curr=str(request.form['server'])
     chunk=request.files['chunk'].read()
     unique_id = str(uuid.uuid4())
     with open("media/"+ unique_id ,"wb") as file:
         file.write(chunk)
     hasher=hashlib.sha256()
     hasher.update(chunk)
-    mediaHash[unique_id]=[hasher,name,typ]  #store name,typ,hasher in List :
+    mediaHash[unique_id]=[hasher,name,typ,curr]  #store name,typ,hasher in List :
     if request.form.get('dN'):
         file_hash=hasher.hexdigest()
-        curr = session.get("server")
-        data = uploadSuccess(unique_id,file_hash,curr)
+        data = uploadSuccess(unique_id,file_hash)
         mediaHash.pop(unique_id)
         if data:
             return [data,file_hash]
@@ -657,10 +545,7 @@ def download_database(server):
 if __name__ == '__main__':
     socketio.run(app)
 # TODO:
-    # Add Media Id and use that instead of hash                       --done
+    # Allow user to customise their server        -- Trying to figure out
     # Streaming of media when asked                                   --x
     # Update chunksize acc.to internet speed                          --x
-    # Send all the chats on load                                      --done
-    # Add browser storage for quick response and maintainse           --done
-    # (learning how to deal with tampering attacks)   --can't-be-delt --done
     # Use reddis db for storing peoples who are online                --x

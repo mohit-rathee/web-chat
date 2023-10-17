@@ -69,8 +69,8 @@ function getlastmedia(trxn) {
     const mediaRequest = mediaStore.openCursor(null, "prev");
     mediaRequest.onsuccess = function (event) {
       const lastMedia = event.target.result;
-      if (lastMedia != null) {
-        resolve(lastMedia.mdid);
+      if (lastMedia) {
+        resolve(lastMedia.value.mdid);
       } else {
         resolve(0);
       }
@@ -84,7 +84,7 @@ function getlastuser(trxn) {
     userRequest.onsuccess = function (event) {
       const lastUser = event.target.result;
       if (lastUser) {
-        resolve(lastUser.uid);
+        resolve(lastUser.value.uid);
       } else {
         resolve(0);
       }
@@ -99,13 +99,19 @@ async function getStatus(srvr) {
     ["channels", "messages", "users", "medias"],
     "readonly"
   );
-  const messages = await getlastmsg(trxn);
-  const lastmedia = await getlastmedia(trxn);
-  const lastuser = await getlastuser(trxn);
-  status["msg"] = messages;
-  status["media"] = lastmedia;
-  status["user"] = lastuser;
-  return status;
+  try {
+    const [messages, lastmedia, lastuser] = await Promise.all([
+      getlastmsg(trxn),
+      getlastmedia(trxn),
+      getlastuser(trxn),
+    ]);
+    status["msg"] = messages;
+    status["media"] = lastmedia;
+    status["user"] = lastuser;
+    return status;
+  } catch (error) {
+    console.log(error);
+  }
 }
 async function populateRequests() {
   return new Promise(async (resolve) => {
@@ -131,8 +137,9 @@ async function populateRequests() {
       }
     });
     await Promise.all(promises);
-    resolve(requests)
-})}
+    resolve(requests);
+  });
+}
 socket.on("connect", async function () {
   const requests = await populateRequests();
   requests.forEach((srvr) => {
@@ -174,7 +181,7 @@ socket.on("server", function (data) {
   const mediaStore = trxn.objectStore("medias");
   const medias = data["medias"];
   for (const key in medias) {
-    const md=medias[key]
+    const md = medias[key];
     const name = JSON.parse(md[2]);
     const media = { mdid: md[0], hash: md[1], name: name[0], mime: name[1] };
     mediaStore.put(media);
@@ -222,7 +229,9 @@ socket.on("messages", function (messages) {
   const roomId = messages[1];
   if (db) {
     const trxn = db.transaction("messages", "readwrite");
-    const messagesStore = trxn.objectStore("messages");
+    const chatStore = trxn.objectStore("messages");
+    const Msgs = Array.from({ length: messages[2].length }, () => 0);
+    var i = Msgs.length-1;
     messages[2].forEach((msg) => {
       const mssg = {
         rid: roomId,
@@ -230,8 +239,13 @@ socket.on("messages", function (messages) {
         data: JSON.parse(msg[1]),
         sender: msg[2],
       };
-      messagesStore.put(mssg);
+      Msgs[i] = mssg;
+      i--;
+      chatStore.put(mssg);
     });
+    const prevState = box.scrollHeight;
+    listMessages(Msgs, chatStore);
+    box.scrollTop = box.scrollHeight-prevState;
   }
 });
 socket.on("media", function (data) {
@@ -256,6 +270,9 @@ socket.on("media", function (data) {
 socket.on("show_message", async function (data) {
   // TO ADD NEW CHILD OF MESSAGE //
   const db = DBs[data[0]];
+  if (db == null) {
+    return;
+  }
   const roomId = data[1];
   const trxn = db.transaction("messages", "readwrite");
   const messagesStore = trxn.objectStore("messages");
@@ -386,7 +403,28 @@ socket.on("show_this", function (data) {
 // socket.on("celebrate", function (data) {
 //   console.log("hurrah");
 // });
-
+function gethistory() {
+  const srvr = localStorage.getItem("server");
+  const chnl = localStorage.getItem("channel");
+  const db = DBs[srvr];
+  const trxn = db.transaction("messages", "readonly");
+  const messagesStore = trxn.objectStore("messages");
+  const roomId = messagesStore.index("by_rid");
+  const range = IDBKeyRange.only(Number(chnl));
+  const messageCursorRequest = roomId.openCursor(range, "next");
+  messageCursorRequest.onsuccess = function (event) {
+    const msg = event.target.result;
+    if (msg) {
+      socket.emit("getHistory", {
+        server: srvr,
+        channel: chnl,
+        lastMsg: msg.primaryKey[1],
+      });
+    } else {
+      return;
+    }
+  };
+}
 function getChannels(server) {
   const transaction = DBs[server].transaction("channels", "readonly");
   const channels = transaction.objectStore("channels");
@@ -433,42 +471,45 @@ function getMessages(server, channel) {
   const req = roomIndex.getAll(IDBKeyRange.only(Number(channel)));
   req.onsuccess = async function (event) {
     const Msgs = event.target.result;
-    if (Msgs.length >= 30) {
-      Top.style.visibility = "visible";
-    } else {
-      Top.style.visibility = "hidden";
-    }
-    for (var i = Msgs.length - 1; i > -1; i--) {
-      let reply = Number(Msgs[i].data[2]);
-      if (reply) {
-        //TODO: first check if reply exist in Msgs
-        const repreq = chatStore.get([Number(channel), reply]);
-        reply = await new Promise((resolve) => {
-          repreq.onsuccess = function (event) {
-            resolve(event.target.result);
-          };
-          repreq.onerror = function () {
-            resolve(0);
-          };
-        });
-      }
-      if (Msgs[i].sender == name) {
-        chatbox.insertAdjacentElement(
-          "afterbegin",
-          makeMessage(Msgs[i].mid, Msgs[i].data, true, reply)
-        );
-      } else {
-        chatbox.insertAdjacentElement(
-          "afterbegin",
-          makeMessage(Msgs[i].mid, Msgs[i].data, false, reply)
-        );
-        if (i == 0 || Msgs[i].sender != Msgs[i - 1].sender) {
-          chatbox.insertAdjacentElement("afterbegin", makeFrnd(Msgs[i].sender));
-        }
-      }
-    }
+    listMessages(Msgs, chatStore);
     box.scrollTop = box.scrollHeight;
   };
+}
+async function listMessages(Msgs, chatStore) {
+  if (Msgs.length >= 30) {
+    Top.style.visibility = "visible";
+  } else {
+    Top.style.visibility = "hidden";
+  }
+  for (var i = Msgs.length - 1; i > -1; i--) {
+    let reply = Number(Msgs[i].data[2]);
+    if (reply) {
+      //TODO: first check if reply exist in Msgs
+      const repreq = chatStore.get([Number(channel), reply]);
+      reply = await new Promise((resolve) => {
+        repreq.onsuccess = function (event) {
+          resolve(event.target.result);
+        };
+        repreq.onerror = function () {
+          resolve(0);
+        };
+      });
+    }
+    if (Msgs[i].sender == name) {
+      chatbox.insertAdjacentElement(
+        "afterbegin",
+        makeMessage(Msgs[i].mid, Msgs[i].data, true, reply)
+      );
+    } else {
+      chatbox.insertAdjacentElement(
+        "afterbegin",
+        makeMessage(Msgs[i].mid, Msgs[i].data, false, reply)
+      );
+      if (i == 0 || Msgs[i].sender != Msgs[i - 1].sender) {
+        chatbox.insertAdjacentElement("afterbegin", makeFrnd(Msgs[i].sender));
+      }
+    }
+  }
 }
 function makeMessage(id, msg, bool, reply = null) {
   const message = document.createElement("div");

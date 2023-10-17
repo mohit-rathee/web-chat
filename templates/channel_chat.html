@@ -74,19 +74,34 @@
           </li>
         </ul>
       </div>
+      <div class="header">
+        <div class="imgtext">
+          <h2 id="topic" onclick="showinfo(this.innerText)">&nbsp<br/></h2>
+        </div>
+        <div class="channel_info">
+          <div id="users" class="info">
+            <ion-icon class="info_icon" name="people-outline"></ion-icon>
+            <div id="user-count">(0)</div>
+          </div>
+          <div id="attachment" class="info">
+            <ion-icon class="info_icon" name="attach-outline"></ion-icon>
+          </div>
+        </div>
+      </div>
       <div id="userside" style="display: block;">
-        <div class="header">
+        <!-- <div class="header">
           <div class="useless">
-            <a id="download" href="#">Download State</a>
+            <a style="display: none;" id="download" href="#">Download State</a> -->
             <!-- <form action="/" method="post">
               <input id="delete" type="submit" value="Logout">
             </form>
             <form id="logout" action="/" method="post" style="display: none;"></form> -->
-          </div>
+          <!-- </div>
         </div>
-        <div class="chatbox" id="user">
-          <p><h2>Select any chant.</h2></p>
-        </div>
+      -->
+        <div class="chatbox" id="Info">
+        <p><h2>Select any channel</h2></p>
+       </div>
         <!-- <div id="newform" class="chatbox_input"> -->
         <!-- <form class="form" id="newform"> -->
         <!-- <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel"> -->
@@ -97,22 +112,6 @@
         <!-- </div> -->
       </div>
       <div id="chatside" style="display: none;">
-        <div class="header">
-          <div class="imgtext">
-            <h2 id="topic">&nbsp<br /></h2>
-
-          </div>
-          <div class="channel_info">
-            <div id="users" class="info">
-              <ion-icon class="info_icon" name="people-outline"></ion-icon>
-              <div id="user-count">(0)</div>
-            </div>
-            <!-- <div id="both" class="info" >&nbsp&nbsp&nbsp</div> -->
-            <div id="attachment" class="info">
-              <ion-icon class="info_icon" name="attach-outline"></ion-icon>
-            </div>
-          </div>
-        </div>
         <div id="box" class="chatbox">
           <div class="arrow" onclick="gethistory()" id="UP">
             <ion-icon name="arrow-up-outline"></ion-icon>
