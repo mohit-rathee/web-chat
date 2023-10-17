@@ -244,7 +244,7 @@ socket.on("messages", function (messages) {
       chatStore.put(mssg);
     });
     const prevState = box.scrollHeight;
-    listMessages(Msgs, chatStore);
+    listMessages(Msgs, messages[1],chatStore);
     box.scrollTop = box.scrollHeight-prevState;
   }
 });
@@ -471,11 +471,11 @@ function getMessages(server, channel) {
   const req = roomIndex.getAll(IDBKeyRange.only(Number(channel)));
   req.onsuccess = async function (event) {
     const Msgs = event.target.result;
-    listMessages(Msgs, chatStore);
+    listMessages(Msgs, Number(channel),chatStore);
     box.scrollTop = box.scrollHeight;
   };
 }
-async function listMessages(Msgs, chatStore) {
+async function listMessages(Msgs, channel,chatStore) {
   if (Msgs.length >= 30) {
     Top.style.visibility = "visible";
   } else {
@@ -485,7 +485,7 @@ async function listMessages(Msgs, chatStore) {
     let reply = Number(Msgs[i].data[2]);
     if (reply) {
       //TODO: first check if reply exist in Msgs
-      const repreq = chatStore.get([Number(channel), reply]);
+      const repreq = chatStore.get([channel, reply]);
       reply = await new Promise((resolve) => {
         repreq.onsuccess = function (event) {
           resolve(event.target.result);
