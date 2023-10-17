@@ -14,6 +14,7 @@ const userlive = document.getElementById("userlive");
 const userList = document.getElementById("user-list");
 const both = document.getElementById("both");
 const listblock = document.getElementById("listblock");
+const Info = document.getElementById("Info")
 const Users = document.getElementById("users");
 const userCount = document.getElementById("user-count");
 const Top = document.getElementById("UP");
@@ -498,6 +499,7 @@ document.getElementById("upload").onclick = async function () {
   const metaData = new FormData();
   metaData.append("name", file.name);
   metaData.append("typ", file.type);
+  metaData.append("server", localStorage.getItem("server"));
   let offset = chunkSize;
   if (Size < offset) {
     offset = Size;
@@ -616,7 +618,7 @@ function showpinned(id, hash, name, mime) {
   let url = localStorage.getItem(hash);
   if (!url) {
     // loading new media
-    fetch("/media/" + id.toString())
+    fetch("/media/" + localStorage.getItem("server") + "/" + id.toString())
       .then((response) => {
         if (response.status == 200) {
           return response.blob();
@@ -657,17 +659,27 @@ function createChannel() {
   search_input.focus();
   search_input.style.border = "2px solid aliceblue";
   search_form.setAttribute("data-create", "y");
-  search_input.addEventListener("blur", () => {
-    search_input.placeholder = "Search Channel";
-    search_form.setAttribute("data-create", "n");
-    search_input.style.border = "none";
+  let done = true;
+  document.addEventListener("click", function e(event) {
+    if (!done) {
+      if (event.target.classList.contains("emoG")||event.target==emoji_btn|| event.target==search_input) {
+        return;
+      } else {
+        document.removeEventListener("click", e);
+        search_input.placeholder = "Search Channel";
+        search_form.setAttribute("data-create", "n");
+        search_input.style.border = "none";
+      }
+    } else {
+      done = false;
+    }
   });
 }
 function add(emoji) {
-  if (chatside.style.display == "block") {
+  if (search_form.dataset.create == "n") {
     message_input.value += emoji + " ";
   } else {
-    newChannel.value += emoji + " ";
+    search_input.value += emoji + " ";
   }
 }
 function rearrange(chnlName) {
@@ -680,10 +692,6 @@ function rearrange(chnlName) {
       );
     }
   });
-}
-function gethistory() {
-  console.log("getHistory() feature is in under Maintainance!!!")
-  // socket.emit("getHistory");
 }
 function show(side) {
   if (side === "chatside") {
@@ -757,18 +765,18 @@ function ready4change(Newserver) {
     B4Change(Newserver);
     mediaPool.innerHTML = "";
     Newserver = Newserver.innerText;
-    gotoserver(Newserver)
+    gotoserver(Newserver);
   }
 }
-function gotoserver(Newserver){
+function gotoserver(Newserver) {
   server.innerText = Newserver;
-  if (Newserver != "app") {
-    download.href = "/download/" + Newserver;
-    download.style.visibility = "visible";
-  } else {
-    download.href = "#";
-    download.style.visibility = "hidden";
-  }
+  // if (Newserver != "app") {
+    // download.href = "/download/" + Newserver;
+    // download.style.visibility = "visible";
+  // } else {
+    // download.href = "#";
+    // download.style.visibility = "hidden";
+  // }
   localStorage.setItem("server", Newserver);
   show("userside");
   channel_list.innerHTML = "";
@@ -845,18 +853,25 @@ function addmedia(data) {
   );
   const forward = document.createElement("div");
   forward.classList.add("forward");
-  forward.style.display="none"
-  forward.setAttribute("onclick", 'reply("' + true + '","' + data.mdid + '","'+name+'")');
+  forward.style.display = "none";
+  forward.setAttribute(
+    "onclick",
+    'reply("' + true + '","' + data.mdid + '","' + name + '")'
+  );
   mediaplate.classList.add("mediatitle");
   mediaplate.appendChild(nameplate);
   mediaplate.appendChild(forward);
   mediaplate.classList.add("M-" + data.mdid);
-  mediaplate.addEventListener("mouseenter",()=>{forward.style.display="block"})
-  mediaplate.addEventListener("mouseleave",()=>{forward.style.display="none"})
+  mediaplate.addEventListener("mouseenter", () => {
+    forward.style.display = "block";
+  });
+  mediaplate.addEventListener("mouseleave", () => {
+    forward.style.display = "none";
+  });
   mediaPool.appendChild(mediaplate);
 }
 function addserver(data) {
-  if (document.getElementsByClassName('s-'+data).length==0){
+  if (document.getElementsByClassName("s-" + data).length == 0) {
     const maindiv = document.createElement("div");
     maindiv.classList.add("text-block");
     maindiv.classList.add("s-" + data);
@@ -878,7 +893,7 @@ function makeFrnd(name) {
   var Frnd = document.createElement("div");
   Frnd.classList.add("message");
   Frnd.classList.add("frnd");
-  Frnd.innerHTML = "<p onclick = GOTOfrnd('" + name + "')></p>"; 
+  Frnd.innerHTML = "<p onclick = GOTOfrnd('" + name + "')></p>";
   var frndname = document.createElement("div");
   frndname.innerText = name;
   Frnd.firstChild.appendChild(frndname);
@@ -895,9 +910,9 @@ function Focus(id) {
   }
 }
 function react(emoji, id) {
-  const server=localStorage.getItem("server");
-  const channel=localStorage.getItem('channel')
-  socket.emit("reaction", [server,channel,id, emoji]);
+  const server = localStorage.getItem("server");
+  const channel = localStorage.getItem("channel");
+  socket.emit("reaction", [server, channel, id, emoji]);
 }
 function showmoremenu(message) {
   if (message.childElementCount == 2) {
@@ -939,8 +954,9 @@ function reply(media = false, id, content = null) {
     plate.classList.add("replydiv");
     box.style.height = "70vh";
     if (!media) {
-      if(!content){
-        content=document.getElementsByClassName('m-'+id)[0].children[1].innerText;
+      if (!content) {
+        content = document.getElementsByClassName("m-" + id)[0].children[1]
+          .innerText;
       }
       plate.innerHTML =
         '<p class="replyplate repmsg"><small> "Reply:\n</small>' +
@@ -957,8 +973,9 @@ function reply(media = false, id, content = null) {
     chatinput.insertAdjacentElement("afterbegin", plate);
   } else {
     if (media == null) {
-      if(!content){
-        content=document.getElementsByClassName('m-'+id)[0].children[1].innerText;
+      if (!content) {
+        content = document.getElementsByClassName("m-" + id)[0].children[1]
+          .innerText;
       }
       reply_id.value = id;
       const repmsg = document.getElementsByClassName("repmsg")[0];
@@ -1024,17 +1041,23 @@ function showreactions(message) {
     var done = true;
     document.addEventListener("click", function e(event) {
       if (!done) {
-        if(event.target!=emoji_btn){
+        if (event.target != emoji_btn) {
           document.removeEventListener("click", e);
-          
+
           message.lastElementChild.remove();
           if (!message.contains(event.target)) {
             message.lastChild.style.display = "none";
           }
-          if (event.target.classList.contains('emoG')){
-            event.stopPropagation()
-            react(event.target.innerText,message.firstChild.classList[0].split('-')[1])
-            message_input.value=message_input.value.slice(0,message_input.value.length-3)
+          if (event.target.classList.contains("emoG")) {
+            event.stopPropagation();
+            react(
+              event.target.innerText,
+              message.firstChild.classList[0].split("-")[1]
+            );
+            message_input.value = message_input.value.slice(
+              0,
+              message_input.value.length - 3
+            );
           }
         }
       }
@@ -1045,7 +1068,7 @@ function showreactions(message) {
   }
 }
 function GOTOfrnd(user, GOTO = true) {
-  console.log("DM's are not included in this version")
+  console.log("DM's are not included in this version");
   // const frnd = document.getElementsByClassName("f-" + user)[0];
   // if (!frnd) {
   //   const friend = document.createElement("div");
@@ -1079,7 +1102,7 @@ function GOTOfrnd(user, GOTO = true) {
 function shownotification(to, name) {
   const Notify = document.getElementsByClassName(to + name);
   if (Notify.length) {
-    const notify=Notify[0].firstElementChild
+    const notify = Notify[0].firstElementChild;
     if (notify.childElementCount != 3) {
       let num = document.createElement("p");
       num.classList.add("update");
@@ -1108,8 +1131,10 @@ function shownotification(to, name) {
 }
 function showUser(name) {
   if (!document.getElementsByClassName("U-" + name).length) {
-    let live=parseInt(userCount.innerText);
-    if (!live){live=0;}
+    let live = parseInt(userCount.innerText);
+    if (!live) {
+      live = 0;
+    }
     userCount.innerText = live + 1;
     const user = document.createElement("li");
     user.classList.add("U-" + name);
@@ -1126,7 +1151,7 @@ function removeUser(name) {
   }
 }
 search_form.onsubmit = function () {
-  if(options.style.display=="block"){
+  if (options.style.display == "block") {
     const clickEvent = new Event("click");
     threeDot.dispatchEvent(clickEvent);
   }
@@ -1137,7 +1162,7 @@ search_form.onsubmit = function () {
       search_input.placeholder = "Search Channel";
       search_form.setAttribute("data-create", "n");
       search_input.style.border = "none";
-      socket.emit("create", [localStorage.getItem('server'),chnlName]);
+      socket.emit("create", [localStorage.getItem("server"), chnlName]);
     } else {
       rearrange(chnlName);
       channel_list.scrollTop = "";
@@ -1205,5 +1230,8 @@ function showing(data, top) {
   } else {
     channel_list.appendChild(channel);
   }
+}
+function showinfo(ch){
+  // Info.innerHTML=""
 }
 localStorage.clear();

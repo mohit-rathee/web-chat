@@ -392,6 +392,7 @@ nav {
   display: none;
 }
 #topic {
+  cursor: pointer;
   width: 100%;
   color: #262626;
   font-weight: 700;
