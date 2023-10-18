@@ -1,33 +1,37 @@
-# web-chat
-A lightweight web based chatting application [web-chat](https://web-chat.onrender.com) .
-![image](https://github.com/mohit-rathee/web-chat/assets/89066152/fd9a022e-487f-4e9b-8170-276bee282808)
+# Web-Chat 🚀
 
- ## Features
-- Integrated with [web-sockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) for live updates of users.
-- Just like discord, you can create your own server or join others server.
-- You can have channels over which you can communicate with other members.
-- We allow you to remove your server from web-chat and download the state of server locally.
-- You can upload it later and resume your state.
-- There can be multiple servers on web-chat you can access.
-- You can share media files on server which is available to all members of the server.
-- Your messages/media are cached on your device for quick and offline access.[[IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)]
+A lightweight web-based chatting application that brings real-time communication to your fingertips. Join the conversation at [web-chat](https://web-chat.onrender.com).
 
-## Future Ideas.
-- Add some features for customising server.
-- Add a feature to create a description to things.
-- Use some frontend framework someday.
-- Add a personal encryption & decryption protocol at p2p level.
-  
-## Running locally on linux:
-1. Clone this repo.
-2. Then open folder and create a virtual environment `python3 -m venv venv`
-3. Run `. venv/bin/activate`
-4. Install the essential things `pip install -r requirement.txt`
-5. Run `export DATABASE_URI=sqlite:///test.sqlite3` and `export SECRET_KEY=<a_secret_key>`.
-6. Start the service by cmd `gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker app:app`  
+![Web-Chat](https://github.com/mohit-rathee/web-chat/assets/89066152/fd9a022e-487f-4e9b-8170-276bee282808)
 
-# To Approach:
-- My mail : mohit.rathee2505@gmail.com
+## Features
+- **Real-Time Updates:** Powered by [WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) for live user interaction.
+- **Create or Join Servers:** Just like Discord, you can create your own server or join existing ones.
+- **Channel Communication:** Organize your conversations with channels for seamless communication.
+- **Server State Management:** Download and save your server's state locally, making it easy to resume later.
+- **Multi-Server Access:** Connect to multiple servers on Web-Chat for diverse conversations.
+- **Media Sharing:** Share media files with all server members for a richer chat experience.
+- **Local Caching:** Your messages and media are cached on your device for quick and offline access using [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
 
-## For developers:
-Your are free to add/change the feature according to your will but don't forget to show me your creation.
+## Future Ideas
+- **Custom Server Features:** Allow users to customize their servers to their liking.
+- **Descriptions:** Add the ability to include descriptions to your server or content.
+- **Frontend Framework:** Consider incorporating a frontend framework to enhance the user interface.
+- **Private Messaging(Comming Soon):** Messages will be stored only on your device, ensuring the utmost privacy.
+- **Security:**  Private messaging feature with robust end-to-end encryption (on p2p level).
+
+## Running Locally on Linux
+1. Clone this repository.
+2. Navigate to the folder and create a virtual environment: `python3 -m venv venv`
+3. Activate the virtual environment: `. venv/bin/activate`
+4. Install the necessary dependencies: `pip install -r requirements.txt`
+5. Set up environment variables: 
+   - `export DATABASE_URI=sqlite:///test.sqlite3`
+   - `export SECRET_KEY=<a_secret_key>`
+6. Start the service with Gunicorn: `gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker app:app`
+
+## How to Reach Me
+- 📧 Email: mohit.rathee2505@gmail.com
+
+## For Developers
+Feel free to contribute, add, or modify features according to your creative ideas. Don't forget to share your creations with me!
