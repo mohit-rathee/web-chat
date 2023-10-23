@@ -1234,4 +1234,11 @@ function showing(data, top) {
 function showinfo(ch){
   // Info.innerHTML=""
 }
+function sendDM(msg,id){
+  socket.emit("chat",{'server':localStorage.getItem("server"),'to':id,'msgData':msg})
+  console.log("sent")
+}
+socket.on('dm',(data)=>{
+  console.log(data)
+})
 localStorage.clear();
