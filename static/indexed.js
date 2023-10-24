@@ -97,7 +97,6 @@ function getlastuser(trxn) {
   });
 }
 async function getStatus(srvr) {
-  console.log("getting status for " + srvr);
   const db = DBs[srvr];
   const status = { server: srvr };
   const trxn = db.transaction(
@@ -145,25 +144,17 @@ async function populateRequests() {
     resolve(requests);
   });
 }
-worker.onmessage = async function (e) {
-  const data = e.data;
-  const opr = data.operation;
-  if (opr == 0) {
-    socket.emit("setPubKey", e.data.key.n);
-    console.log("public key sent");
-    on_connect();
-  }
-};
-
-async function on_connect() {
-  const requests = await populateRequests();
-  requests.forEach((srvr) => {
-    console.log("sending " + srvr.server + " status to server");
-    socket.emit("Load", srvr);
-  });
-}
 socket.on("connect", async function () {
-  worker.postMessage({ operation: 0 }); //Generate key pairs
+  worker.postMessage({ operation: 0 }); //Give Public key
+  waitforworker(0).then(async (data) => {
+    socket.emit("setPubKey", data.key.n);
+    console.log("public key sent");
+    const requests = await populateRequests();
+    requests.forEach((srvr) => {
+      console.log("sending " + srvr.server + " status to server");
+      socket.emit("Load", srvr);
+    });
+  });
 });
 socket.on("server", function (data) {
   const srvr = data.server;
@@ -243,12 +234,12 @@ socket.on("notify", function (data) {
     const userStore = trxn.objectStore("users");
     const user = { uid: data[1], name: data[2], key: data[3] };
     userStore.put(user);
-    if(user.key){
+    if (user.key) {
       worker.postMessage({
         operation: 1,
         id: user.uid,
         server: data[0],
-        key: user.key
+        key: user.key,
       });
     }
     if (data[0] == localStorage.getItem("server")) {

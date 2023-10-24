@@ -1,13 +1,18 @@
-const key = self.crypto.subtle.generateKey(
-  {
-    name: "RSA-OAEP",
-    modulusLength: 2048,
-    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-    hash: "SHA-256",
-  },
-  false,
-  ["encrypt", "decrypt"]
-);
+const key = crypto.subtle
+  .generateKey(
+    {
+      name: "RSA-OAEP",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+      hash: "SHA-256",
+    },
+    false,
+    ["encrypt", "decrypt"]
+  )
+  .then((k) => {
+    console.log('keys generated')
+    return k;
+  });
 const pubKeys = {};
 onmessage = async function (e) {
   const data = e.data;
@@ -20,7 +25,6 @@ onmessage = async function (e) {
         await key
       ).publicKey
     );
-    console.log("keys generated");
     self.postMessage({ operation: 0, key: publicKey });
   } else if (opr == 1) {
     //import the pub key
@@ -54,7 +58,11 @@ onmessage = async function (e) {
       self.postMessage(data);
     }
   } else if (opr == 3) {
-    const encmsgbuffer = new Uint8Array(atob(data.msg).split('').map(c => c.charCodeAt(0)));
+    const encmsgbuffer = new Uint8Array(
+      atob(data.msg)
+        .split("")
+        .map((c) => c.charCodeAt(0))
+    );
     const dcrptmsgbuffer = await crypto.subtle.decrypt(
       { name: "RSA-OAEP" },
       (
@@ -65,4 +73,4 @@ onmessage = async function (e) {
     data.msg = new TextDecoder().decode(dcrptmsgbuffer);
     self.postMessage(data);
   }
-}
+};
