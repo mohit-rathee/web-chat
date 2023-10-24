@@ -281,16 +281,17 @@ def handel_message(message):
         socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
 @socketio.on('chat')
 def handel_chat(chat):
+    print(chat.get('msg'))
     curr=chat.get('server')
-    reciever=chat.get('to')
-    msg=chat.get('msgData')
+    reciever=chat.get('id')
+    msg=chat.get('msg')
     if curr not in session.get('myserver') or not msg or not isinstance(reciever,int):
         return
     id=session.get(curr)
     resvrEID=socketio.server.manager.rooms['/'][curr].get(reciever)
     if resvrEID:
         resvrSID=socketio.server.manager.rooms['/'][None].inverse.get(resvrEID)
-        socketio.emit('dm',[id,msg],to=resvrSID)
+        socketio.emit('dm',[curr,id,msg],to=resvrSID)
     else:
         print('friend is offline')
 

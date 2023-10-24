@@ -216,7 +216,7 @@ socket.on("server", function (data) {
   const live = data.live;
   const users = data.users;
   for (let key in live) {
-    const user = { uid: Number(key), name: users[key], sid: live[key] };
+    const user = { uid: Number(key), name: users[key], key: live[key] };
     userStore.put(user);
     if (user.name != name) {
       worker.postMessage({
@@ -232,21 +232,31 @@ socket.on("server", function (data) {
     delete users[key];
   }
   for (let key in users) {
-    const user = { uid: Number(key), name: users[key], sid: null };
+    const user = { uid: Number(key), name: users[key], key: null };
     userStore.put(user);
   }
 });
 socket.on("notify", function (data) {
   const db = DBs[data[0]];
-  const trxn = db.transaction("users", "readwrite");
-  const userStore = trxn.objectStore("users");
-  const user = { uid: data[1], name: data[2], sid: data[3] };
-  userStore.put(user);
-  if (data[0] == localStorage.getItem("server")) {
-    if (data[3]) {
-      showUser(data[2]);
-    } else {
-      removeUser(data[2]);
+  if (db) {
+    const trxn = db.transaction("users", "readwrite");
+    const userStore = trxn.objectStore("users");
+    const user = { uid: data[1], name: data[2], key: data[3] };
+    userStore.put(user);
+    if(user.key){
+      worker.postMessage({
+        operation: 1,
+        id: user.uid,
+        server: data[0],
+        key: user.key
+      });
+    }
+    if (data[0] == localStorage.getItem("server")) {
+      if (data[3]) {
+        showUser(data[2]);
+      } else {
+        removeUser(data[2]);
+      }
     }
   }
 });
@@ -481,7 +491,7 @@ function getPeople(server) {
     const users = event.target.result;
     users.forEach((user) => {
       // you can show all live + some offline users to populate the list
-      if (user.sid) {
+      if (user.key) {
         showUser(user.name);
       }
     });
