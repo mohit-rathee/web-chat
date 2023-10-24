@@ -1238,7 +1238,7 @@ function showing(data, top) {
 function showinfo(ch) {
   // Info.innerHTML=""
 }
-async function sendDM(msg, id, server) {
+function sendDM(msg, id, server) {
   if (localStorage.getItem(server + "id") == id) {
     console.log("saved");
     return; // save it into database.
@@ -1249,10 +1249,11 @@ async function sendDM(msg, id, server) {
     id: id,
     server: server,
   });
-  const encmsg = await waitforworker(2);
-  delete encmsg["operation"];
-  socket.emit("chat", encmsg); //send it to another user and save if action completed.
-  // console.log(encmsg);
+  waitforworker(2).then((encmsg)=>{
+    delete encmsg["operation"];
+    socket.emit("chat", encmsg);
+    //send it to another user and save if action completed.
+  })
 }
 function waitforworker(opNum) {//worker,operation_number
   return new Promise((resolve) => {
@@ -1270,7 +1271,8 @@ socket.on("dm", (data) => {
     server: data[0],
     msg: data[2],
   });
-  const dcrptmsg = waitforworker(3);
-  // console.log(dcrptmsg);
+  waitforworker(3).then((dcrptmsg)=>{
+    console.log(dcrptmsg);
+  })
 });
 localStorage.clear();

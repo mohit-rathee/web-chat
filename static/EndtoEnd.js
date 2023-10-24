@@ -48,13 +48,13 @@ onmessage = async function (e) {
         pubKeys[data.server + data.id],
         msgbuffer
       );
-      data.msg = new TextDecoder().decode(encmsgbuffer);
+      data.msg = btoa(String.fromCharCode(...new Uint8Array(encmsgbuffer)));
       self.postMessage(data);
     } else {
       self.postMessage(data);
     }
   } else if (opr == 3) {
-    const encmsgbuffer = new TextEncoder().encode(data.msg);
+    const encmsgbuffer = new Uint8Array(atob(data.msg).split('').map(c => c.charCodeAt(0)));
     const dcrptmsgbuffer = await crypto.subtle.decrypt(
       { name: "RSA-OAEP" },
       (

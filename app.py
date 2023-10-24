@@ -281,7 +281,6 @@ def handel_message(message):
         socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
 @socketio.on('chat')
 def handel_chat(chat):
-    print(chat.get('msg'))
     curr=chat.get('server')
     reciever=chat.get('id')
     msg=chat.get('msg')
