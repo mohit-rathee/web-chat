@@ -225,6 +225,7 @@
     return myservers;
   }
   // populateServer();
+  const worker = new Worker("{{url_for('static',filename='EndtoEnd.js')}}");
 </script>
 <script src="{{url_for('static',filename='script.js')}}"></script>
 <script src="{{url_for('static',filename='indexed.js')}}"></script>

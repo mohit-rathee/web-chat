@@ -14,7 +14,7 @@ const userlive = document.getElementById("userlive");
 const userList = document.getElementById("user-list");
 const both = document.getElementById("both");
 const listblock = document.getElementById("listblock");
-const Info = document.getElementById("Info")
+const Info = document.getElementById("Info");
 const Users = document.getElementById("users");
 const userCount = document.getElementById("user-count");
 const Top = document.getElementById("UP");
@@ -662,7 +662,11 @@ function createChannel() {
   let done = true;
   document.addEventListener("click", function e(event) {
     if (!done) {
-      if (event.target.classList.contains("emoG")||event.target==emoji_btn|| event.target==search_input) {
+      if (
+        event.target.classList.contains("emoG") ||
+        event.target == emoji_btn ||
+        event.target == search_input
+      ) {
         return;
       } else {
         document.removeEventListener("click", e);
@@ -771,11 +775,11 @@ function ready4change(Newserver) {
 function gotoserver(Newserver) {
   server.innerText = Newserver;
   // if (Newserver != "app") {
-    // download.href = "/download/" + Newserver;
-    // download.style.visibility = "visible";
+  // download.href = "/download/" + Newserver;
+  // download.style.visibility = "visible";
   // } else {
-    // download.href = "#";
-    // download.style.visibility = "hidden";
+  // download.href = "#";
+  // download.style.visibility = "hidden";
   // }
   localStorage.setItem("server", Newserver);
   show("userside");
@@ -1231,7 +1235,44 @@ function showing(data, top) {
     channel_list.appendChild(channel);
   }
 }
-function showinfo(ch){
+function showinfo(ch) {
   // Info.innerHTML=""
 }
+function sendDM(msg, id, server) {
+  if (localStorage.getItem(server + "id") == id) {
+    console.log("saved");
+    return; // save it into database.
+  }
+  worker.postMessage({
+    operation: 2,
+    msg: msg,
+    id: id,
+    server: server,
+  });
+  waitforworker(2).then((encmsg)=>{
+    delete encmsg["operation"];
+    socket.emit("chat", encmsg);
+    //send it to another user and save if action completed.
+  })
+}
+function waitforworker(opNum) {//worker,operation_number
+  return new Promise((resolve) => {
+    worker.onmessage = function (event) {
+      const receivedMessage = event.data;
+      if (receivedMessage.operation == opNum) {
+        resolve(receivedMessage); // Resolve the promise with the received message.
+      }
+    };
+  });
+}
+socket.on("dm", (data) => {
+  worker.postMessage({
+    operation: 3,
+    server: data[0],
+    msg: data[2],
+  });
+  waitforworker(3).then((dcrptmsg)=>{
+    console.log(dcrptmsg);
+  })
+});
 localStorage.clear();

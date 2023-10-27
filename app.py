@@ -44,11 +44,11 @@ class channel(Base):
     creator_id=db.Column(db.Integer,db.ForeignKey('users.id'))  #creator ID
     description=db.Column(db.String, nullable=True)             #description
     user=db.relationship('users')
-class chats(Base):
-    __tablename__="chats"
-    id=db.Column(db.Integer,primary_key=True)
-    key=db.Column(db.String,nullable=False)                     #Private Key
-    data=db.Column(db.String, nullable=False)                   #actuall msg
+# class chats(Base):          # I decided to make chats only store at client side.
+#     __tablename__="chats"   # Sever will be used to just transfer encrypted message.
+#     id=db.Column(db.Integer,primary_key=True)     #This way I can
+#     key=db.Column(db.String,nullable=False)       #implement p2p encryption.
+#     data=db.Column(db.String, nullable=False)     #in JavaScript
 class media(Base):
     __tablename__="media"
     id=db.Column(db.Integer,primary_key=True)
@@ -178,6 +178,11 @@ def upload_db():
     #     os.remove("db/"+str(deldb).rsplit("-")[1])
     #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
     #     return redirect("/servers")
+@socketio.on('setPubKey')
+def handel_Pub_Key(pub_key):
+    if isinstance(pub_key,str) and len(pub_key):
+        mydata=rooms[request.sid]
+        mydata.inverse[mydata[request.sid]]=pub_key
 @socketio.on('disconnect')
 def on_disconnect():
     # could just pop those values 
@@ -193,8 +198,8 @@ def Load(data):
     reqsrvr=data.get('server')
     if reqsrvr in session.get('myserver'): # And wheater the reqsrvr is in server.keys()
         id=session.get(reqsrvr)
-        socketio.emit("notify",[reqsrvr,id,session.get("name"),request.sid],room=reqsrvr)
-        eio_sid=rooms[None][request.sid]
+        (pub_key,eio_sid)=next(iter(rooms[request.sid].items()))
+        socketio.emit("notify",[reqsrvr,id,session.get("name"),pub_key],room=reqsrvr)
         rooms[reqsrvr][id]=eio_sid
         serverInfo={'server':reqsrvr,'id':id}
         curr=server[reqsrvr]
@@ -208,7 +213,12 @@ def Load(data):
         serverInfo['medias']={media.id:[media.id,media.hash,media.name] for media in Media}
         User=curr.query(users).all()
         serverInfo['users']={user.id:user.username for user in User}
-        serverInfo['live']=dict(rooms[reqsrvr])
+        Dict={}
+        for id,eid in rooms[reqsrvr].items():
+            sid=rooms[None].inverse.get(eid)
+            (pub_key,_)=next(iter(rooms[sid].items()))
+            Dict.update({id:pub_key})
+        serverInfo['live']=Dict
         socketio.emit("server",serverInfo,to=request.sid)
         for chnl in channels:
             lastid=data.get('msg').get(str(chnl.id),0)
@@ -234,10 +244,10 @@ def create(newchannel):
     socketio.emit("show_this",new,room=curr)
 # @socketio.on("search_text")
 # def search(text):
-#     curr=session.get("server")
-#     user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
-#     Users={"users":[user.username for user in user_list]}
-#     socketio.emit("show_this",Users,to=request.sid)
+    curr=session.get("server")
+    user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
+    Users={"users":[user.username for user in user_list]}
+    socketio.emit("show_this",Users,to=request.sid)
 @socketio.on('message')
 def handel_message(message):
     msg={}
@@ -257,7 +267,6 @@ def handel_message(message):
     name=session.get("name")
     channel_id=int(message.get('channel'))
     msg[3]=datetime.datetime.now(india_timezone).strftime('%d-%m-%Y %H:%M:%S')
-    # FOR CHANNEL
     if channel_id <= Tables[curr]['Len']:
         replyId=message.get('replyId')
         if replyId:
@@ -270,30 +279,21 @@ def handel_message(message):
         server[curr].add(message)
         server[curr].commit()
         socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
-    # FOR PRIVATE
-    #     key=session.get("key")
-    #     if message.get('2'):
-    #          reply=server[curr].query(chats).filter_by(id=int(message.get("2"))).first()
-    #         if reply==None or reply.key!=key:
-    #             return
-    #         msg[2]=message.get('2')
-    #     msg[5]=session.get('bool')
-    #     msg=json.dumps(msg)
-    #     message=chats(data=msg,key=key)
-    #     server[curr].add(message)
-    #     server[curr].commit()
-    #     socketio.emit('show_dm',[message.id,msg], room = curr+key)
-    #     if len(server_dict[curr][key])==1 and not session.get("friend")==name:
-    #         for srvr in server_dict.keys():
-    #             if srvr==curr:
-    #                 usr = server_dict[srvr]["/"].get(session.get("friend"))
-    #                 if usr!=None:
-    #                     socketio.emit('dm',[name],to=usr)
-    #             else:
-    #                 usr = server_dict[srvr]["/"].get(session.get("friend"))
-    #                 if usr!=None:
-    #                     socketio.emit('otherupdate',curr,to=usr)
-    #                     return
+@socketio.on('chat')
+def handel_chat(chat):
+    curr=chat.get('server')
+    reciever=chat.get('id')
+    msg=chat.get('msg')
+    if curr not in session.get('myserver') or not msg or not isinstance(reciever,int):
+        return
+    id=session.get(curr)
+    resvrEID=socketio.server.manager.rooms['/'][curr].get(reciever)
+    if resvrEID:
+        resvrSID=socketio.server.manager.rooms['/'][None].inverse.get(resvrEID)
+        socketio.emit('dm',[curr,id,msg],to=resvrSID)
+    else:
+        print('friend is offline')
+
 @socketio.on('reaction')
 def reaction(Data):
     curr=Data[0]
@@ -318,22 +318,6 @@ def reaction(Data):
             msg.data=data
             server[curr].commit()
             socketio.emit('reaction',[curr,channel_id,msg.id,id,Data[3]],to=curr)
-    # FOR PRVT
-    # else:
-    #     msg=server[curr].query(chats).filter_by(key=session.get('key')).first()
-    #     if msg:
-    #         message=json.loads(msg.data)
-    #         if reactData[1]:
-    #             if message.get('4'):
-    #                 message['4'][str(id)]=reactData[1]
-    #             else:
-    #                 message['4']={str(id):reactData[1]}
-    #         else:
-    #             message['4'].pop(str(id))
-    #         data=json.dumps(message)
-    #         msg.data=data
-    #         server[curr].commit()
-    #         socketio.emit('reaction',[reactData[0],id,reactData[1]],to=curr+session.get('key'))
 @socketio.on('getHistory')
 def getHistory(data):
     curr=data.get("server")

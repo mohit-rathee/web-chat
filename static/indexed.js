@@ -9,10 +9,15 @@ function createDatabase(name, version) {
       db.createObjectStore("channels", { keyPath: "cid" });
       db.createObjectStore("users", { keyPath: "uid" });
       db.createObjectStore("medias", { keyPath: "mdid" });
-      const chatStore = db.createObjectStore("messages", {
+      const messageStore = db.createObjectStore("messages", {
         keyPath: ["rid", "mid"],
       });
-      chatStore.createIndex("by_rid", "rid");
+      messageStore.createIndex("by_rid", "rid");
+      const chatStore = db.createObjectStore("chats", {
+        keyPath: "id",
+        autoIncrement: true,
+      });
+      chatStore.createIndex("by_uid", "uid", { unique: false });
       present = false;
     };
 
@@ -92,7 +97,6 @@ function getlastuser(trxn) {
   });
 }
 async function getStatus(srvr) {
-  console.log("getting status for " + srvr);
   const db = DBs[srvr];
   const status = { server: srvr };
   const trxn = db.transaction(
@@ -141,10 +145,15 @@ async function populateRequests() {
   });
 }
 socket.on("connect", async function () {
-  const requests = await populateRequests();
-  requests.forEach((srvr) => {
-    console.log("sending " + srvr.server + " status to server");
-    socket.emit("Load", srvr);
+  worker.postMessage({ operation: 0 }); //Give Public key
+  waitforworker(0).then(async (data) => {
+    socket.emit("setPubKey", data.key.n);
+    console.log("public key sent");
+    const requests = await populateRequests();
+    requests.forEach((srvr) => {
+      console.log("sending " + srvr.server + " status to server");
+      socket.emit("Load", srvr);
+    });
   });
 });
 socket.on("server", function (data) {
@@ -198,29 +207,47 @@ socket.on("server", function (data) {
   const live = data.live;
   const users = data.users;
   for (let key in live) {
-    const user = { uid: Number(key), name: users[key], sid: live[key] };
+    const user = { uid: Number(key), name: users[key], key: live[key] };
     userStore.put(user);
+    if (user.name != name) {
+      worker.postMessage({
+        operation: 1,
+        id: key,
+        server: localStorage.getItem("server"),
+        key: live[key],
+      });
+    }
     if (bool) {
       showUser(users[key]);
     }
     delete users[key];
   }
   for (let key in users) {
-    const user = { uid: Number(key), name: users[key], sid: null };
+    const user = { uid: Number(key), name: users[key], key: null };
     userStore.put(user);
   }
 });
 socket.on("notify", function (data) {
   const db = DBs[data[0]];
-  const trxn = db.transaction("users", "readwrite");
-  const userStore = trxn.objectStore("users");
-  const user = { uid: data[1], name: data[2], sid: data[3] };
-  userStore.put(user);
-  if (data[0] == localStorage.getItem("server")) {
-    if (data[3]) {
-      showUser(data[2]);
-    } else {
-      removeUser(data[2]);
+  if (db) {
+    const trxn = db.transaction("users", "readwrite");
+    const userStore = trxn.objectStore("users");
+    const user = { uid: data[1], name: data[2], key: data[3] };
+    userStore.put(user);
+    if (user.key) {
+      worker.postMessage({
+        operation: 1,
+        id: user.uid,
+        server: data[0],
+        key: user.key,
+      });
+    }
+    if (data[0] == localStorage.getItem("server")) {
+      if (data[3]) {
+        showUser(data[2]);
+      } else {
+        removeUser(data[2]);
+      }
     }
   }
 });
@@ -231,7 +258,7 @@ socket.on("messages", function (messages) {
     const trxn = db.transaction("messages", "readwrite");
     const chatStore = trxn.objectStore("messages");
     const Msgs = Array.from({ length: messages[2].length }, () => 0);
-    var i = Msgs.length-1;
+    var i = Msgs.length - 1;
     messages[2].forEach((msg) => {
       const mssg = {
         rid: roomId,
@@ -244,8 +271,8 @@ socket.on("messages", function (messages) {
       chatStore.put(mssg);
     });
     const prevState = box.scrollHeight;
-    listMessages(Msgs, messages[1],chatStore);
-    box.scrollTop = box.scrollHeight-prevState;
+    listMessages(Msgs, messages[1], chatStore);
+    box.scrollTop = box.scrollHeight - prevState;
   }
 });
 socket.on("media", function (data) {
@@ -455,7 +482,7 @@ function getPeople(server) {
     const users = event.target.result;
     users.forEach((user) => {
       // you can show all live + some offline users to populate the list
-      if (user.sid) {
+      if (user.key) {
         showUser(user.name);
       }
     });
@@ -471,11 +498,11 @@ function getMessages(server, channel) {
   const req = roomIndex.getAll(IDBKeyRange.only(Number(channel)));
   req.onsuccess = async function (event) {
     const Msgs = event.target.result;
-    listMessages(Msgs, Number(channel),chatStore);
+    listMessages(Msgs, Number(channel), chatStore);
     box.scrollTop = box.scrollHeight;
   };
 }
-async function listMessages(Msgs, channel,chatStore) {
+async function listMessages(Msgs, channel, chatStore) {
   if (Msgs.length >= 30) {
     Top.style.visibility = "visible";
   } else {
