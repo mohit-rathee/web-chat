@@ -4,3 +4,4 @@ flask_session
 db/
 media/
 test.sqlite3
+.vscode/

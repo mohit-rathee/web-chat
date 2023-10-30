@@ -17,8 +17,7 @@ const pubKeys = {};
 onmessage = async function (e) {
   const data = e.data;
   const opr = data.operation;
-  if (opr == 0) {
-    //export the pub key
+  if (opr == 0) {         //export the pub key
     const publicKey = await crypto.subtle.exportKey(
       "jwk",
       (
@@ -26,8 +25,11 @@ onmessage = async function (e) {
       ).publicKey
     );
     self.postMessage({ operation: 0, key: publicKey });
-  } else if (opr == 1) {
-    //import the pub key
+  } else if (opr == 1) {  //import the pub key
+    if (!data.key){
+      delete pubKeys[data.server+data.id]
+      return
+    }
     const publicKey = await crypto.subtle.importKey(
       "jwk",
       {
@@ -43,9 +45,10 @@ onmessage = async function (e) {
     );
     pubKeys[data.server + data.id] = publicKey;
     console.log("pub key set for " + data.server + data.id);
-  } else if (opr == 2) {
+  } else if (opr == 2) {  //encrypt msg
     if (data.server + data.id in pubKeys) {
       // encrypt using the publicKey by updating the msg key
+      data['present']=true
       const msgbuffer = new TextEncoder().encode(data.msg);
       const encmsgbuffer = await crypto.subtle.encrypt(
         { name: "RSA-OAEP" },
@@ -55,9 +58,10 @@ onmessage = async function (e) {
       data.msg = btoa(String.fromCharCode(...new Uint8Array(encmsgbuffer)));
       self.postMessage(data);
     } else {
+      data['present']=false
       self.postMessage(data);
     }
-  } else if (opr == 3) {
+  } else if (opr == 3) {  //decrypt msg
     const encmsgbuffer = new Uint8Array(
       atob(data.msg)
         .split("")

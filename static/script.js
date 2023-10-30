@@ -487,7 +487,7 @@ document.getElementById("media").addEventListener("change", function () {
     attachment.dispatchEvent(clickEvent);
   }
 });
-let chunkSize = 51200; // 500 KB in bytes
+let chunkSize = 51200; // 500 KB in by
 document.getElementById("upload").onclick = async function () {
   if (document.getElementById("media").files[0] == null) {
     return;
@@ -734,11 +734,15 @@ function goto(This) {
   topic.innerText = This.innerText.split("\n")[0];
   emphasize();
   B4Change(This);
-  // socket.emit("change", { Frnd: to[1] });
+  const server = localStorage.getItem("server");
   if (to[0] == "c") {
-    const server = localStorage.getItem("server");
-    localStorage.setItem("channel", to[1]);
+    localStorage.setItem("prvt", false);
+    localStorage.setItem("to", to[1]);
     getMessages(server, to[1]);
+  } else {
+    localStorage.setItem("prvt", true);
+    localStorage.setItem("to", to[1]);
+    // getChats(server, to[1]);
   }
 }
 function B4Change(to) {
@@ -897,7 +901,8 @@ function makeFrnd(name) {
   var Frnd = document.createElement("div");
   Frnd.classList.add("message");
   Frnd.classList.add("frnd");
-  Frnd.innerHTML = "<p onclick = GOTOfrnd('" + name + "')></p>";
+  Frnd.innerHTML = "<p> </p>";
+    //onclick = GOTOfrnd('" + name + "')>
   var frndname = document.createElement("div");
   frndname.innerText = name;
   Frnd.firstChild.appendChild(frndname);
@@ -915,7 +920,7 @@ function Focus(id) {
 }
 function react(emoji, id) {
   const server = localStorage.getItem("server");
-  const channel = localStorage.getItem("channel");
+  const channel = localStorage.getItem("to");
   socket.emit("reaction", [server, channel, id, emoji]);
 }
 function showmoremenu(message) {
@@ -1048,231 +1053,199 @@ function showreactions(message) {
         if (event.target != emoji_btn) {
           document.removeEventListener("click", e);
 
-          message.lastElementChild.remove();
-          if (!message.contains(event.target)) {
-            message.lastChild.style.display = "none";
-          }
-          if (event.target.classList.contains("emoG")) {
-            event.stopPropagation();
-            react(
-              event.target.innerText,
-              message.firstChild.classList[0].split("-")[1]
-            );
-            message_input.value = message_input.value.slice(
-              0,
-              message_input.value.length - 3
-            );
-          }
+            message.lastElementChild.remove();
+            if (!message.contains(event.target)) {
+                message.lastChild.style.display = "none";
+            }
+            if (event.target.classList.contains("emoG")) {
+                event.stopPropagation();
+                react(
+                    event.target.innerText,
+                    message.firstChild.classList[0].split("-")[1]
+                );
+                message_input.value = message_input.value.slice(
+                    0,
+                    message_input.value.length - 3
+                );
+            }
         }
       }
-      if (done && event.target == message.children[1]) {
-        done = false;
-      }
+        if (done && event.target == message.children[1]) {
+            done = false;
+        }
     });
   }
 }
-function GOTOfrnd(user, GOTO = true) {
-  console.log("DM's are not included in this version");
-  // const frnd = document.getElementsByClassName("f-" + user)[0];
-  // if (!frnd) {
-  //   const friend = document.createElement("div");
-  //   friend.classList.add("f-" + user);
-  //   friend.setAttribute("onclick", "goto(this)");
-  //   const block = document.createElement("div");
-  //   block.classList.add("block");
-  //   block.innerHTML =
-  //     '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name">' +
-  //     user +
-  //     "</div></div>";
-  //   friend.appendChild(block);
-  //   const isActive = document.getElementsByClassName("active")[0];
-  //   if (isActive && isActive.parentElement == channel_list.firstElementChild) {
-  //     channel_list.insertBefore(
-  //       friend,
-  //       isActive.parentElement.nextElementSibling
-  //     );
-  //   } else {
-  //     channel_list.insertAdjacentElement("afterbegin", friend);
-  //     friend.scrollIntoView();
-  //   }
-  //   if (GOTO) {
-  //     goto(friend);
-  //   }
-  // }
-  // if (GOTO) {
-  //   goto(frnd);
-  // }
+function GOTOfrnd(id, name , GOTO = true) {
+    // console.log("DM's are not included in this version");
+    const frnd = document.getElementsByClassName("f-" + id)[0];
+    if (!frnd) {
+        const friend = document.createElement("div");
+        friend.classList.add("f-" + id);
+        friend.setAttribute("onclick", "goto(this)");
+        const block = document.createElement("div");
+        block.classList.add("block");
+        block.innerHTML =
+            '<div class="imgbx"><img src="/static/person.png" alt="pic" class="cover"></div><div class="details"><div class="name">' +
+            name +
+            "</div></div>";
+        friend.appendChild(block);
+        const isActive = document.getElementsByClassName("active")[0];
+        if (isActive && isActive.parentElement == channel_list.firstElementChild) {
+            channel_list.insertBefore(
+                friend,
+                isActive.parentElement.nextElementSibling
+            );
+        } else {
+            channel_list.insertAdjacentElement("afterbegin", friend);
+            friend.scrollIntoView();
+        }
+        if (GOTO) {
+            goto(friend);
+        }
+        return;
+    }
+    if (GOTO) {
+        goto(frnd);
+    }
 }
 function shownotification(to, name) {
-  const Notify = document.getElementsByClassName(to + name);
-  if (Notify.length) {
-    const notify = Notify[0].firstElementChild;
-    if (notify.childElementCount != 3) {
-      let num = document.createElement("p");
-      num.classList.add("update");
-      num.innerText = "1";
-      notify.appendChild(num);
-    } else {
-      let num = parseInt(notify.children[2].innerText);
-      notify.children[2].innerText = num + 1;
+    const Notify = document.getElementsByClassName(to + name);
+    if (Notify.length) {
+        const notify = Notify[0].firstElementChild;
+        if (notify.childElementCount != 3) {
+            let num = document.createElement("p");
+            num.classList.add("update");
+            num.innerText = "1";
+            notify.appendChild(num);
+        } else {
+            let num = parseInt(notify.children[2].innerText);
+            notify.children[2].innerText = num + 1;
+        }
+        if (to != "s-") {
+            const isActive = document.getElementsByClassName("active")[0];
+            if (
+                isActive &&
+                isActive.parentElement == channel_list.firstElementChild
+            ) {
+                channel_list.insertBefore(
+                    notify.parentElement,
+                    isActive.parentElement.nextElementSibling
+                );
+            } else {
+                channel_list.insertAdjacentElement("afterbegin", notify.parentElement);
+                notify.scrollIntoView();
+            }
+        }
     }
-    if (to != "s-") {
-      const isActive = document.getElementsByClassName("active")[0];
-      if (
-        isActive &&
-        isActive.parentElement == channel_list.firstElementChild
-      ) {
-        channel_list.insertBefore(
-          notify.parentElement,
-          isActive.parentElement.nextElementSibling
-        );
-      } else {
-        channel_list.insertAdjacentElement("afterbegin", notify.parentElement);
-        notify.scrollIntoView();
-      }
-    }
-  }
 }
-function showUser(name) {
-  if (!document.getElementsByClassName("U-" + name).length) {
-    let live = parseInt(userCount.innerText);
-    if (!live) {
-      live = 0;
+function showUser(data) {
+    if (!document.getElementsByClassName("U-" + data.uid).length) {
+        let live = parseInt(userCount.innerText);
+        if (!live) {
+            live = 0;
+        }
+        userCount.innerText = live + 1;
+        const user = document.createElement("li");
+        user.classList.add("U-" + data.uid);
+        user.innerText = data.name;
+        user.setAttribute("onclick", 'GOTOfrnd(' + data.uid + ',"' + data.name + '")');
+        userList.appendChild(user);
     }
-    userCount.innerText = live + 1;
-    const user = document.createElement("li");
-    user.classList.add("U-" + name);
-    user.innerText = name;
-    user.setAttribute("onclick", 'GOTOfrnd("' + name + '")');
-    userList.appendChild(user);
-  }
 }
-function removeUser(name) {
-  const user = document.getElementsByClassName("U-" + name)[0];
-  if (user) {
-    userCount.innerText = parseInt(userCount.innerText) - 1;
-    user.remove();
-  }
+function removeUser(data) {
+    const user = document.getElementsByClassName("U-" + data.uid)[0];
+    if (user) {
+        userCount.innerText = parseInt(userCount.innerText) - 1;
+        user.remove();
+    }
 }
 search_form.onsubmit = function () {
-  if (options.style.display == "block") {
-    const clickEvent = new Event("click");
-    threeDot.dispatchEvent(clickEvent);
-  }
-  const chnlName = search_input.value.trim();
-  if (chnlName.length != 0) {
-    search_input.value = "";
-    if (search_form.dataset.create == "y") {
-      search_input.placeholder = "Search Channel";
-      search_form.setAttribute("data-create", "n");
-      search_input.style.border = "none";
-      socket.emit("create", [localStorage.getItem("server"), chnlName]);
-    } else {
-      rearrange(chnlName);
-      channel_list.scrollTop = "";
+    if (options.style.display == "block") {
+        const clickEvent = new Event("click");
+        threeDot.dispatchEvent(clickEvent);
     }
-  }
-  return false;
+    const chnlName = search_input.value.trim();
+    if (chnlName.length != 0) {
+        search_input.value = "";
+        if (search_form.dataset.create == "y") {
+            search_input.placeholder = "Search Channel";
+            search_form.setAttribute("data-create", "n");
+            search_input.style.border = "none";
+            socket.emit("create", [localStorage.getItem("server"), chnlName]);
+        } else {
+            rearrange(chnlName);
+            channel_list.scrollTop = "";
+        }
+    }
+    return false;
 };
 message_form.onsubmit = function () {
-  let message = message_input.value.trim();
-  if (!message.length) {
-    if (!media_id.value) {
-      return false;
+    let message = message_input.value.trim();
+    if (!message.length) {
+        if (!media_id.value) {
+            return false;
+        }
     }
-  }
-  const server = localStorage.getItem("server");
-  const channel = localStorage.getItem("channel");
-  if (!server || !channel) {
-    return;
-  }
-  let msg = { msgData: message, server: server, channel: channel };
-  if (media_id.value || reply_id.value) {
-    document.getElementsByClassName("replydiv")[0].remove();
-    box.style.height = "74vh";
-  }
-  if (reply_id.value) {
-    msg["replyId"] = reply_id.value;
-    reply_id.value = "";
-  }
-  if (media_id.value) {
-    msg["mediaId"] = media_id.value;
-    media_id.value = "";
-  }
-  channel_list.insertAdjacentElement(
-    "afterbegin",
-    document.getElementsByClassName("active")[0].parentElement
-  );
-  socket.emit("message", msg);
-  message_input.value = "";
-  return false;
+    const to = parseInt(localStorage.getItem("to"));
+    const server = localStorage.getItem("server");
+    if (!server || !to) {
+        return false;
+    }
+    if (localStorage.getItem("prvt")=='true') {
+        sendDM(message, to, server);
+    } else {
+        let msg = { msgData: message, server: server, channel: to };
+        if (media_id.value || reply_id.value) {
+            document.getElementsByClassName("replydiv")[0].remove();
+            box.style.height = "74vh";
+        }
+        if (reply_id.value) {
+            msg["replyId"] = reply_id.value;
+            reply_id.value = "";
+        }
+        if (media_id.value) {
+            msg["mediaId"] = media_id.value;
+            media_id.value = "";
+        }
+        channel_list.insertAdjacentElement(
+            "afterbegin",
+            document.getElementsByClassName("active")[0].parentElement
+        );
+        socket.emit("message", msg);
+    }
+    message_input.value = "";
+    return false;
 };
 function showing(data, top) {
-  const channel = document.createElement("div");
-  channel.setAttribute("onclick", "goto(this)");
-  channel.classList.add("c-" + data.cid);
-  const block = document.createElement("div");
-  block.classList.add("block");
-  block.innerHTML =
-    '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name">' +
-    data.name +
-    '</h4></div><div class="creator"><p>created by ' +
-    data.creator +
-    '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>';
-  channel.appendChild(block);
-  if (top) {
-    const isActive = document.getElementsByClassName("active")[0];
-    if (isActive && isActive.parentElement == channel_list.firstElementChild) {
-      channel_list.insertBefore(
-        channel,
-        isActive.parentElement.nextElementSibling
-      );
+    const channel = document.createElement("div");
+    channel.setAttribute("onclick", "goto(this)");
+    channel.classList.add("c-" + data.cid);
+    const block = document.createElement("div");
+    block.classList.add("block");
+    block.innerHTML =
+        '<div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div><div class="details"><div class="name">' +
+        data.name +
+        '</h4></div><div class="creator"><p>created by ' +
+        data.creator +
+        '</p><!-- <b onclick="location.href="/delete">x</b> --></div></div>';
+    channel.appendChild(block);
+    if (top) {
+        const isActive = document.getElementsByClassName("active")[0];
+        if (isActive && isActive.parentElement == channel_list.firstElementChild) {
+            channel_list.insertBefore(
+                channel,
+                isActive.parentElement.nextElementSibling
+            );
+        } else {
+            channel_list.insertAdjacentElement("afterbegin", channel);
+            channel.scrollIntoView();
+        }
     } else {
-      channel_list.insertAdjacentElement("afterbegin", channel);
-      channel.scrollIntoView();
+        channel_list.appendChild(channel);
     }
-  } else {
-    channel_list.appendChild(channel);
-  }
 }
 function showinfo(ch) {
-  // Info.innerHTML=""
+    // Info.innerHTML=""
 }
-function sendDM(msg, id, server) {
-  if (localStorage.getItem(server + "id") == id) {
-    console.log("saved");
-    return; // save it into database.
-  }
-  worker.postMessage({
-    operation: 2,
-    msg: msg,
-    id: id,
-    server: server,
-  });
-  waitforworker(2).then((encmsg)=>{
-    delete encmsg["operation"];
-    socket.emit("chat", encmsg);
-    //send it to another user and save if action completed.
-  })
-}
-function waitforworker(opNum) {//worker,operation_number
-  return new Promise((resolve) => {
-    worker.onmessage = function (event) {
-      const receivedMessage = event.data;
-      if (receivedMessage.operation == opNum) {
-        resolve(receivedMessage); // Resolve the promise with the received message.
-      }
-    };
-  });
-}
-socket.on("dm", (data) => {
-  worker.postMessage({
-    operation: 3,
-    server: data[0],
-    msg: data[2],
-  });
-  waitforworker(3).then((dcrptmsg)=>{
-    console.log(dcrptmsg);
-  })
-});
 localStorage.clear();
