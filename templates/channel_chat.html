@@ -13,25 +13,10 @@
 <body>
   <div class="container" id="container">
     <div class="servers" id="servers">
-      <!-- {% for srvr in mysrvr: %}
-      <div class="text-block s-{{srvr}}" onclick=gotoserver(this.firstElementChild)>
-        <div>
-          <div>
-            <div class="SERVER" data-key="{{srvr}}">{{srvr}}</div>
-          </div>
-          <div></div>
-        </div>
-      </div>
-      {% endfor %} -->
     </div>
     <div class="leftside">
       <div class="header">
         <div class="imgtext">
-          <!-- <a class="arrow" id="back" style="text-decoration: none; font-size: 1.1em;display: none;"><ion-icon
-              name="arrow-back-outline"></ion-icon></a> -->
-          <!-- <div class="userimg">
-            <img src="{{url_for('static',filename='profile.webp')}}" alt="pic" class="cover" />
-          </div> -->
           <h4>{{name}}<br /><span>Server:</span>&nbsp;<span id="server">None</span></h4>
         </div>
         <ion-icon id="3dot" style="height: 100%;" name="ellipsis-vertical-outline"></ion-icon>
@@ -45,21 +30,6 @@
         </div>
       </div>
       <div class="channel_list" id="channel_list">
-        <!-- {% for channel in channels: %}
-        <div class=" c-{{channel.id}}" onclick="goto(this)">
-          <div class="block">
-            <div class="imgbx"><img src="/static/profile.webp" alt="pic" class="cover"></div>
-            <div class="details">
-              <div class="name">
-                {{channel.name}}
-              </div>
-              <div class="creator">
-                <p>created by {{channel.user.username}}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %} -->
       </div>
     </div>
     <div class="rightside">
@@ -89,27 +59,9 @@
         </div>
       </div>
       <div id="userside" style="display: block;">
-        <!-- <div class="header">
-          <div class="useless">
-            <a style="display: none;" id="download" href="#">Download State</a> -->
-            <!-- <form action="/" method="post">
-              <input id="delete" type="submit" value="Logout">
-            </form>
-            <form id="logout" action="/" method="post" style="display: none;"></form> -->
-          <!-- </div>
-        </div>
-      -->
         <div class="chatbox" id="Info">
         <p><h2>Select any channel</h2></p>
        </div>
-        <!-- <div id="newform" class="chatbox_input"> -->
-        <!-- <form class="form" id="newform"> -->
-        <!-- <input autocomplete="off" id="newchannel" placeholder="Add channel" type="text" class="search_channel"> -->
-        <!-- <input type="submit" value="Add Topic"> -->
-        <!-- <button class="send" type="submit"><ion-icon name="arrow-forward-outline"></ion-icon></button> -->
-        <!-- </form> -->
-
-        <!-- </div> -->
       </div>
       <div id="chatside" style="display: none;">
         <div id="box" class="chatbox">
@@ -118,55 +70,14 @@
           </div>
           <div id="chats">
             <hr id="breaker" />
-            <!-- <div  class="useless">
-                      <button onclick="darkfunction()" style="align-items:center;">chat useless</button>                   
-                      <button onclick="location.href='/delete_short'" id="delete">Delete</button>
-                  </div>
-                  <script>
-                      function darkfunction() {
-                          var mybody=document.body
-                          var hide=document.getElementById("inputfield")
-                          if (hide.value=="True"){
-                              mybody.classList.remove("darkbody");
-                              hide.value="False";
-                          }
-                          else {
-                              hide.value="True";
-                              mybody.classList.toggle("darkbody");
-                          }
-                      }
-                  </script>
-                  <div class="shortBox" id="shortBox"> <p>under maintainance...<z/p>
-                      {% for post in feelings: %}
-                          {% if post.sender_id==name.id: %}
-                              <div class="short my_short">
-                                  <p>{{post.data}}</span> </p>
-                              </div>
-                          {% else: %}
-                              <div class="short frnd_short">
-                                  <p >{{post.data}} - <span>{{post.sender.username}}</p>
-                              </div>
-                          {% endif %}
-                      {% endfor %}
-                  </div> -->
-            <!-- <script>
-              // var objDiv1 = document.getElementById("shortBox");
-              var objDiv2 = document.getElementById("box");
-              // objDiv1.scrollTop = objDiv1.scrollHeight;
-              objDiv2.scrollTop = objDiv2.scrollHeight;
-            </script> -->
           </div>
         </div>
-
         <div class="chatbox_input" id="chatinput">
           <div style="display: flex;width: 100%;flex-direction: row;">
             <form class="form">
               <input autofocus autocomplete="off" type="text" placeholder="Message" id="text_message" />
               <input autocomplete="off" type="hidden" id="reply_id" />
               <input autocomplete="off" type="hidden" id="media_id" />
-              <!-- <div contenteditable="true" 
-            id="text_message" class ="inputarea" data-text="Message">       
-             </div> -->
             </form>
             <button id="emoji_btn" class="emoji">&#x1F603;</button>
           </div>
@@ -224,7 +135,6 @@
     {% endfor %}
     return myservers;
   }
-  // populateServer();
   const worker = new Worker("{{url_for('static',filename='EndtoEnd.js')}}");
 </script>
 <script src="{{url_for('static',filename='script.js')}}"></script>
