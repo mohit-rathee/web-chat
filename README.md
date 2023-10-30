@@ -1,12 +1,15 @@
 # Web-Chat 🚀
 
-A lightweight web-based chatting application that brings real-time communication to your fingertips. Join the conversation at [web-chat](https://web-chat.onrender.com).
+A lightweight web-based chatting application that brings real-time communication to your fingertips.
+
+Join the conversation at [web-chat](https://web-chat.onrender.com) (Initial server startup may take some time).
 
 ![Web-Chat](https://github.com/mohit-rathee/web-chat/assets/89066152/fd9a022e-487f-4e9b-8170-276bee282808)
 
 ## Features
 - **Real-Time Updates:** Powered by [WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) for live user interaction.
-- **Create or Join Servers:** Just like Discord, you can create your own server or join existing ones.
+- **Create or Host Servers:** Create and host your servers with one click.
+- **Login/Signup:** Signup on servers to join them and Login if already joined.
 - **Channel Communication:** Organize your conversations with channels for seamless communication.
 - **Server State Management:** Download and save your server's state locally, making it easy to resume later.
 - **Multi-Server Access:** Connect to multiple servers on Web-Chat for diverse conversations.
