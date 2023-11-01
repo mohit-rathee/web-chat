@@ -423,38 +423,44 @@ socket.on("show_this", function (data) {
 });
 
 function sendDM(msg, id, server) {
-    if (localStorage.getItem(server + "id") == id) {
-        return; // save it into database.
-    }
-    worker.postMessage({
-        operation: 2,
-        msg: msg,
-        id: id,
-        server: server,
-    });
-    waitforworker(2).then((encmsg) => {
-        delete encmsg["operation"];
-        if (encmsg["present"]) {
-            delete encmsg["present"];
-            const db = DBs[encmsg.server];
-            if (db) {
-                const trxn = db.transaction("chats", "readwrite");
-                const chatStore = trxn.objectStore("chats");
-                const Msg={
-                    uid:id,
-                    my:true,
-                    data:msg
+    const db = DBs[encmsg.server];
+    if (db) {
+        const trxn = db.transaction("chats", "readwrite");
+        const chatStore = trxn.objectStore("chats");
+        if (localStorage.getItem(server + "id") == id) {
+            const Msg={uid:id,my:true,data:msg}
+            chatStore.put(Msg)
+            chatbox.appendChild(makechat(msg,true))
+            box.scrollTop=box.scrollHeight;
+        }else{
+            worker.postMessage({
+                operation: 2,
+                msg: msg,
+                id: id,
+                server: server,
+            });
+            waitforworker(2).then((encmsg) => {
+                delete encmsg["operation"];
+                if (encmsg["present"]) {
+                    delete encmsg["present"];
+                    const Msg={
+                        uid:id,
+                        my:true,
+                        data:msg
+                    }
+                    chatStore.put(Msg)
+                    socket.emit("chat", encmsg); //send it to friend and save if action completed.
+                        chatbox.appendChild(makechat(msg,true));
+                    box.scrollTop = box.scrollHeight;
+                } else {
+                    console.log(encmsg.server + encmsg.id + " is offline");
                 }
-                chatStore.put(Msg)
-                socket.emit("chat", encmsg); //send it to friend and save if action completed.
-                chatbox.appendChild(makechat(msg,true));
-                box.scrollTop = box.scrollHeight;
-            }  
-        } else {
-            console.log(encmsg.server + encmsg.id + " is offline");
+            });
         }
-    });
+    }
+    return false
 }
+
 function waitforworker(opNum) {
     //worker,operation_number
     return new Promise((resolve) => {
@@ -477,10 +483,10 @@ socket.on("dm", (data) => {
         const frndid = String(data[1]);
         const db = DBs[msg.server];
         if (db) {
-            const trxn = db.transaction(["chats","users"], "readwrite");
+            const trxn = db.transaction("chats","readwrite");
             const chatStore = trxn.objectStore("chats");
             const Msg = {
-                uid: frndid,
+                uid: data[1],
                 my:false,
                 data: msg.msg,
             };
@@ -489,36 +495,22 @@ socket.on("dm", (data) => {
             if(frnd.length){
                 if(frnd[0].firstChild.classList.contains("active")){
                     chatbox.appendChild(makechat(Msg.data,Msg.my));
+                    box.scrollTop = box.scrollHeight;
+                    return false;
                 }
             }else{
                 const user = document.getElementsByClassName('U-'+frndid);
                 if(user){
                     GOTOfrnd(frndid,user[0].innerText,GOTO=false)
-                    shownotification('f-',frndid);
                 }
             }
-            box.scrollTop = box.scrollHeight;
+            shownotification('f-',frndid);
         }
     });
 })
 
-function makechat(msg,Bool){
-        const message = document.createElement("div");
-        message.classList.add("message");
-        const msgPara = document.createElement("p");
-        var text = document.createElement("div");
-        text.innerText = msg;
-        msgPara.appendChild(text);
-        message.appendChild(msgPara);
-        if (Bool) {
-            message.classList.add("my_message");
-        } else {
-            message.classList.add("frnd_message");
-        }
-        return message;
-        
-}
     function gethistory() {
+        if(localStorage.getItem("prvt")=='true'){return}
         const srvr = localStorage.getItem("server");
         const chnl = localStorage.getItem("to");
         const db = DBs[srvr];
@@ -576,6 +568,40 @@ function makechat(msg,Bool){
             });
         };
     }
+
+function getChats(server,friend) {
+    const transaction = DBs[server].transaction(
+        "chats",
+        "readonly"
+    );
+    const chatStore = transaction.objectStore("chats");
+    const userIndex = chatStore.index("by_uid");
+    const req = userIndex.getAll(IDBKeyRange.only(Number(friend)));
+    req.onsuccess =  function (event) {
+        const Msgs = event.target.result;
+        for(let i = 0;i<Msgs.length;i++){
+            chatbox.appendChild(makechat(Msgs[i].data,Msgs[i].my))
+        }
+        box.scrollTop = box.scrollHeight;
+    };
+}
+
+function makechat(msg,Bool){
+    const message = document.createElement("div");
+    message.classList.add("message");
+    const msgPara = document.createElement("p");
+    var text = document.createElement("div");
+    text.innerText = msg;
+    msgPara.appendChild(text);
+    message.appendChild(msgPara);
+    if (Bool==true) {
+        message.classList.add("my_message");
+    } else {
+        message.classList.add("frnd_message");
+    }
+    return message;
+}
+
     function getMessages(server, channel) {
         const transaction = DBs[server].transaction(
             ["users", "messages"],

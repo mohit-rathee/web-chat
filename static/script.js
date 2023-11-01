@@ -742,7 +742,7 @@ function goto(This) {
   } else {
     localStorage.setItem("prvt", true);
     localStorage.setItem("to", to[1]);
-    // getChats(server, to[1]);
+    getChats(server, to[1]);
   }
 }
 function B4Change(to) {
