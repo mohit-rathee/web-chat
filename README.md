@@ -11,6 +11,7 @@ Join the conversation at [web-chat](https://web-chat.onrender.com) (Initial serv
 - **Create or Host Servers:** Create and host your servers with one click.
 - **Login/Signup:** Signup on servers to join them and Login if already joined.
 - **Channel Communication:** Organize your conversations with channels for seamless communication.
+- **Persnal Communication:** Enjoy private conversations with end-to-end encryption, ensuring your privacy.
 - **Server State Management:** Download and save your server's state locally, making it easy to resume later.
 - **Multi-Server Access:** Connect to multiple servers on Web-Chat for diverse conversations.
 - **Media Sharing:** Share media files with all server members for a richer chat experience.
@@ -20,8 +21,6 @@ Join the conversation at [web-chat](https://web-chat.onrender.com) (Initial serv
 - **Custom Server Features:** Allow users to customize their servers to their liking.
 - **Descriptions:** Add the ability to include descriptions to your server or content.
 - **Frontend Framework:** Consider incorporating a frontend framework to enhance the user interface.
-- **Private Messaging(Comming Soon):** Messages will be stored only on your device, ensuring the utmost privacy.
-- **Security:**  Private messaging feature with robust end-to-end encryption (on p2p level).
 
 ## Running Locally on Linux
 1. Clone this repository.
