@@ -82,12 +82,6 @@ socketio.server.manager.rooms['/']={}
 rooms=socketio.server.manager.rooms['/']
 rooms['app']=bidict({})
 mediaHash={}
-def private_key(a,b):
-    if a<=b:
-        key=str(a)+"-"+str(b)
-    else:
-        key=str(b)+"-"+str(a)
-    return hashlib.md5(key.encode()).hexdigest()
 uploads_dir = os.path.join('db')
 if not os.path.exists(os.path.join("media")):
     os.makedirs(os.path.join("media"))
@@ -165,17 +159,11 @@ def upload_db():
             server.pop(name,None)
             session.clear()
             return render_template("message.html",msg="NOT A VALID DATABASE",goto="/login")
-        # UPDATING ROOM_DICT WITH NEW SERVER
         session.clear()
     return redirect("/login")
 #  WHEN HAVE TO DELETE THE SERVER(not up-to-date)
-
-    # try:
-    #     deldb=request.form['deldb']
-    # except:
-    #     deldb=False
-    # if deldb:
     #     os.remove("db/"+str(deldb).rsplit("-")[1])
+<<<<<<< HEAD
     #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
     #     return redirect("/servers")
 @socketio.on('setPubKey')
@@ -183,6 +171,8 @@ def handel_Pub_Key(pub_key):
     if isinstance(pub_key,str) and len(pub_key):
         mydata=rooms[request.sid]
         mydata.inverse[mydata[request.sid]]=pub_key
+=======
+>>>>>>> 291153f (ideas)
 @socketio.on('disconnect')
 def on_disconnect():
     # could just pop those values 
@@ -190,7 +180,7 @@ def on_disconnect():
     socketio.server.leave_room(request.sid, room=request.sid)
     for srvr in session.get("myserver"):
         rooms[srvr].pop(session.get(srvr),None)
-        # i m doing this because of automatic deletion of bidict({}) if empty
+        # I m doing this because I don't want to delete the bidict({}) if empty
         # socketio.server.leave_room(session.get(srvr),room=srvr)
         socketio.emit("notify",[srvr,session.get(srvr),session.get("name"),None],room=srvr) 
 @socketio.on('Load')
@@ -204,8 +194,8 @@ def Load(data):
         serverInfo={'server':reqsrvr,'id':id}
         curr=server[reqsrvr]
         channels=curr.query(channel).all() #later on we can limit this for sync sliding
-        chnlCount=len(data.get("msg",0))
-        serverInfo['channels']={}
+        chnlCount=len(data.get("msg",0))   # I can definately use the dict which store
+        serverInfo['channels']={}          # all the channels i just need time.
         for chnl in channels:
             if chnl.id>chnlCount:
                 serverInfo['channels'][chnl.id]=[chnl.id,chnl.name,chnl.user.username]
@@ -279,6 +269,7 @@ def handel_message(message):
         server[curr].add(message)
         server[curr].commit()
         socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
+<<<<<<< HEAD
 @socketio.on('chat')
 def handel_chat(chat):
     curr=chat.get('server')
@@ -294,6 +285,8 @@ def handel_chat(chat):
     else:
         print('friend is offline')
 
+=======
+>>>>>>> 291153f (ideas)
 @socketio.on('reaction')
 def reaction(Data):
     curr=Data[0]
@@ -530,6 +523,6 @@ if __name__ == '__main__':
     socketio.run(app)
 # TODO:
     # Allow user to customise their server        -- Trying to figure out
-    # Streaming of media when asked                                   --x
-    # Update chunksize acc.to internet speed                          --x
-    # Use reddis db for storing peoples who are online                --x
+    # Make it fast 
+    #   -- 1. use the dictionary to check for channesl instead of checking database.
+    #   -- 2. If i can rewrite loginlogic func again.
