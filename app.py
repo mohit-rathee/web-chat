@@ -231,10 +231,10 @@ def create(newchannel):
     socketio.emit("show_this",new,room=curr)
 # @socketio.on("search_text")
 # def search(text):
-    curr=session.get("server")
-    user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
-    Users={"users":[user.username for user in user_list]}
-    socketio.emit("show_this",Users,to=request.sid)
+#    curr=session.get("server")
+#    user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
+#    Users={"users":[user.username for user in user_list]}
+#    socketio.emit("show_this",Users,to=request.sid)
 @socketio.on('message')
 def handel_message(message):
     msg={}
