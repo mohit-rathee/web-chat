@@ -163,7 +163,6 @@ def upload_db():
     return redirect("/login")
 #  WHEN HAVE TO DELETE THE SERVER(not up-to-date)
     #     os.remove("db/"+str(deldb).rsplit("-")[1])
-<<<<<<< HEAD
     #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
     #     return redirect("/servers")
 @socketio.on('setPubKey')
@@ -171,8 +170,6 @@ def handel_Pub_Key(pub_key):
     if isinstance(pub_key,str) and len(pub_key):
         mydata=rooms[request.sid]
         mydata.inverse[mydata[request.sid]]=pub_key
-=======
->>>>>>> 291153f (ideas)
 @socketio.on('disconnect')
 def on_disconnect():
     # could just pop those values 
@@ -269,7 +266,6 @@ def handel_message(message):
         server[curr].add(message)
         server[curr].commit()
         socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
-<<<<<<< HEAD
 @socketio.on('chat')
 def handel_chat(chat):
     curr=chat.get('server')
@@ -285,8 +281,6 @@ def handel_chat(chat):
     else:
         print('friend is offline')
 
-=======
->>>>>>> 291153f (ideas)
 @socketio.on('reaction')
 def reaction(Data):
     curr=Data[0]
