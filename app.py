@@ -1,3 +1,5 @@
+# Imports
+
 import os, uuid, asyncio, mimetypes, hashlib , datetime, pytz, json, time
 from bidict import bidict
 from datetime import timedelta
@@ -14,9 +16,10 @@ from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy import create_engine, MetaData, Column, text, String, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr, declarative_base
 from flask_socketio import SocketIO, join_room, emit, leave_room,send
-import gevent
 from gevent import monkey
 monkey.patch_all()
+
+# Setting up app with Flask.
 app = Flask(__name__)
 app.debug=True
 app.config.from_object(__name__)
@@ -28,16 +31,21 @@ app.config['SQLALCHEMY_BINDS']={}
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
 india_timezone = pytz.timezone('Asia/Kolkata')
 db = SQLAlchemy(app)
+
+# Connecting to Main Database.
 engine=create_engine(os.getenv('DATABASE_URI'))
 metadata=MetaData()
 metadata.bind=engine
 Base=declarative_base(metadata=metadata)
+
+# Classes/Tables for Main Database.
 class users(Base):
     __tablename__="users"
     id=db.Column(db.Integer,primary_key=True)                   #User ID
     username=db.Column(db.String, unique=True, nullable=False)  #user name
     password=db.Column(db.String, nullable=False)               #user password
     description=db.Column(db.String, nullable=True)             #user bio
+
 class channel(Base):
     __tablename__="channel"
     id=db.Column(db.Integer,primary_key=True)                   #topic ID
@@ -45,16 +53,14 @@ class channel(Base):
     creator_id=db.Column(db.Integer,db.ForeignKey('users.id'))  #creator ID
     description=db.Column(db.String, nullable=True)             #description
     user=db.relationship('users')
-# class chats(Base):          # I decided to make chats only store at client side.
-#     __tablename__="chats"   # Sever will be used to just transfer encrypted message.
-#     id=db.Column(db.Integer,primary_key=True)     #This way I can
-#     key=db.Column(db.String,nullable=False)       #implement p2p encryption.
-#     data=db.Column(db.String, nullable=False)     #in JavaScript
+     
 class media(Base):
     __tablename__="media"
     id=db.Column(db.Integer,primary_key=True)
     hash=db.Column(db.String,unique=True)
     name=db.Column(db.String, nullable=False)
+
+# Creating table on the fly.
 def create_channel(table_number,base,users):
     attrs = {
         '__tablename__': str(table_number),
@@ -65,29 +71,43 @@ def create_channel(table_number,base,users):
     }
     channel_class = type(str(table_number), (base,), attrs)
     return channel_class
+
+# Loading data from Main Database.
 inspector = inspect(engine)
 tbls = inspector.get_table_names()
 Tables={"app":{'Len':len(tbls)}}
 for tb in tbls:
     if tb.isdigit():
         Tables["app"][int(tb)]=create_channel(tb, Base,users)
+# Recreating the session.
 Base.metadata.create_all(bind=engine)
 sqlsession=sessionmaker(bind=engine)
+
+# Session management.
 app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_TYPE"]="filesystem"
 Session(app)
+
+# Database connection related details.
 engine={"app":engine}
 server={"app":sqlsession()}
 base={"app":Base}
+
+# Manually creating spaces and rooms in socketio. coz I m A-Fish-ant.
 socketio.server.manager.rooms['/']={}
 rooms=socketio.server.manager.rooms['/']
-rooms['app']=bidict({})
+rooms['app']=bidict({}) # Structure is lib specific.
+
+# Incomming media storage.
 mediaHash={}
+
+# Creating some Important folder.
 uploads_dir = os.path.join('db')
 if not os.path.exists(os.path.join("media")):
     os.makedirs(os.path.join("media"))
-if not os.path.exists(os.path.join("db")):
-    os.makedirs(os.path.join("db"))
+if not os.path.exists(uploads_dir):
+    os.makedirs(uploads_dir)
+
 @app.route('/create',methods=["POST"])
 def createdb():
     name=str(request.form.get("name"))
@@ -96,18 +116,21 @@ def createdb():
     if name in server or "/" in name:
         return render_template("message.html",msg="select a unique and valid name.",goto="/")
     db_uri = f'sqlite:///db/{name}.sqlite3'
+
+    # Creating a connection.
     Engine = create_engine(db_uri)
     Engine.connect()
     engine[name]=Engine
-    newmetadata=MetaData()
-    newmetadata.bind=Engine
-    Base=declarative_base(metadata=newmetadata)
+    metadata=MetaData()
+    metadata.bind=Engine
+    Base=declarative_base(metadata=metadata)
+    # coping these 3 table structure from Main Database.
     req=["users","channel","media"]
-    Tables[name]={'Len':0}
-    rooms[name]=bidict({})
     for table_name in req:
         table = metadata.tables.get(table_name)
+        print(table)
         table.tometadata(newmetadata)
+    # reviving the user realtionships. this is too daam awkward.
     class users(Base):
         __tablename__ = "users"
         __table_args__ = {"extend_existing": True}
@@ -115,12 +138,17 @@ def createdb():
         username = Column(db.String, unique=True, nullable=False)
         password = Column(db.String, nullable=False)
         description=db.Column(db.String, nullable=True)
+    # Creating tables and storing session.
     Base.metadata.create_all(bind=Engine)
     app.config['SQLALCHEMY_BINDS'][name]=db_uri
     base[name]=Base
     Session=sessionmaker(bind=Engine)
     server[name]=Session()
+    # Initialising room for the database.
+    Tables[name]={'Len':0}
+    rooms[name]=bidict({})
     return redirect("/login")
+
 @app.route('/upload',methods=["POST"])
 def upload_db():
     files=request.files.getlist('files')
@@ -128,10 +156,10 @@ def upload_db():
         filename=(secure_filename(file.filename).split("."))
         if not file or filename[1]!="sqlite3" or filename[0] in server:
             return render_template("message.html",msg="select a valid database file (*.sqlite3) with unique name.",goto="/login")
-        uploads_dir = os.path.join('db')
         file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
         name=filename[0]
         app.config['SQLALCHEMY_BINDS'][name] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
+        # Try to connect with recieved file.
         try:
             Engine = create_engine(app.config['SQLALCHEMY_BINDS'][str(name)])
             metadata = MetaData(bind=engine)
@@ -143,6 +171,7 @@ def upload_db():
                 username = Column(db.String(20), unique=True, nullable=False)
                 password = Column(db.String(30), nullable=False)
             Base.metadata.create_all(bind=Engine)
+            # Inspecting, re-creating tables, storing session, Initialising room.
             inspector = inspect(Engine)
             tbls = inspector.get_table_names()
             Tables[name]={'Len':len(tbls)}
@@ -156,7 +185,7 @@ def upload_db():
             Session.bind=Engine
             server[name]=Session()
             rooms[name]=bidict({})
-        except:
+        except:# Sorry, I changed the structure of file. Really Sorry.
             app.config['SQLALCHEMY_BINDS'].pop(name,None)
             os.remove("db/"+name+".sqlite3")
             server.pop(name,None)
@@ -164,15 +193,23 @@ def upload_db():
             return render_template("message.html",msg="NOT A VALID DATABASE",goto="/login")
         session.clear()
     return redirect("/login")
+
 #  WHEN HAVE TO DELETE THE SERVER(not up-to-date)
     #     os.remove("db/"+str(deldb).rsplit("-")[1])
     #     app.config['SQLALCHEMY_DATABASE_URI'] ="sqlite:///db.sqlite3"
     #     return redirect("/servers")
+
+# HERE ME OUT ON THIS.
+
+    # I will explain this later
+    # I guess I did explain in one of the issues on github.(see closed ones)
+
 @socketio.on('setPubKey')
 def handel_Pub_Key(pub_key):
     if isinstance(pub_key,str) and len(pub_key):
         mydata=rooms[request.sid]
         mydata.inverse[mydata[request.sid]]=pub_key
+
 @socketio.on('disconnect')
 def on_disconnect():
     # could just pop those values 
@@ -183,6 +220,7 @@ def on_disconnect():
         # I m doing this because I don't want to delete the bidict({}) if empty
         # socketio.server.leave_room(session.get(srvr),room=srvr)
         socketio.emit("notify",[srvr,session.get(srvr),session.get("name"),None],room=srvr) 
+
 @socketio.on('Load')
 def Load(data):
     reqsrvr=data.get('server')
@@ -217,6 +255,7 @@ def Load(data):
             Msgs=[reqsrvr,chnl.id]
             Msgs.append([[msg.id,msg.data,msg.user.username] for msg in last_msgs])
             socketio.emit("messages",Msgs,to=request.sid)
+
 @socketio.on("create")
 def create(newchannel):
     curr=newchannel[0]
@@ -232,12 +271,14 @@ def create(newchannel):
     Base.metadata.create_all(engine[curr])
     new={"channel":[curr,Topic.id,Topic.name,Topic.user.username]}
     socketio.emit("show_this",new,room=curr)
+
 # @socketio.on("search_text")
 # def search(text):
 #    curr=session.get("server")
 #    user_list=server[curr].query(users).filter(users.username.like("%"+text+"%")).all()
 #    Users={"users":[user.username for user in user_list]}
 #    socketio.emit("show_this",Users,to=request.sid)
+
 @socketio.on('message')
 def handel_message(message):
     msg={}
@@ -269,22 +310,24 @@ def handel_message(message):
         server[curr].add(message)
         server[curr].commit()
         socketio.emit('show_message',[curr,channel_id,message.id,msg,name], room = curr)
+
+# This is what E2EE looks like.
 @socketio.on('chat')
 def handel_chat(chat):
     curr=chat.get('server')
     reciever=chat.get('id')
-    msg=chat.get('msg')
-    if curr not in session.get('myserver') or not msg or not isinstance(reciever,int):
+    enc_msg=chat.get('msg')
+    if curr not in session.get('myserver') or not enc_msg or not isinstance(reciever,int):
         return
     id=session.get(curr)
     resvrEID=socketio.server.manager.rooms['/'][curr].get(reciever)
     if resvrEID:
         resvrSID=socketio.server.manager.rooms['/'][None].inverse.get(resvrEID)
-        socketio.emit('dm',[curr,id,msg],to=resvrSID)
+        socketio.emit('dm',[curr,id,enc_msg],to=resvrSID)
     else:
         print('friend is offline')
 
-@socketio.on('reaction')
+@socketio.on('reaction') # Name is enough.
 def reaction(Data):
     curr=Data[0]
     if curr not in session.get("myserver"):
@@ -308,7 +351,8 @@ def reaction(Data):
             msg.data=data
             server[curr].commit()
             socketio.emit('reaction',[curr,channel_id,msg.id,id,Data[3]],to=curr)
-@socketio.on('getHistory')
+
+@socketio.on('getHistory') # Name is enough.
 def getHistory(data):
     curr=data.get("server")
     try:
@@ -323,6 +367,8 @@ def getHistory(data):
         Msgs=[curr,channelId]
         Msgs.append([[msg.id,msg.data,msg.user.username] for msg in last_msgs])
         socketio.emit("messages",Msgs,to=request.sid)
+
+# just redirecting.
 @app.route('/',methods=["GET","POST"])
 def index():
     if request.method=="GET":
@@ -332,6 +378,8 @@ def index():
             return redirect("/channels")
     session.clear()
     return redirect("/")
+
+# I confess my loginlogic may be bad, but their will be issues with other logic too.
 def loginlogic(name,password):
     myServer=session.get("myserver")
     pswdHash=None
@@ -375,6 +423,7 @@ def loginlogic(name,password):
         session[srvr]=user.id
     session["myserver"]=myServer[:]
     return True
+
 @app.route('/login',methods=["GET","POST"])
 def login():
     # REDIRECT IF LOGGED IN
@@ -432,6 +481,8 @@ def login():
                 return redirect("/channels")
             else:
                 return render_template("message.html",msg="YOUR OLD PASSWORD IS UPDATED WITH NEWONE",goto="/channels")
+
+# Only you(valid person) should know about the file.
 @app.route("/media/<srvr>/<id>",methods=["GET"])
 def handel_get_Media(srvr,id):
     if srvr not in session.get("myserver"):
@@ -445,29 +496,33 @@ def handel_get_Media(srvr,id):
             return make_response('Not found',404)
     else:
         return make_response('Not found',404)
+
+# Filename will be changed (from: uuid ==> hash)
+def uploadSuccess(unique_id,file_hash):
+    curr=mediaHash[unique_id][3]
+    session=server[curr]
+    check=session.query(media).filter_by(hash=file_hash).first()
+    if check==None:
+        data=mediaHash[unique_id]
+        name=[data[1],data[2]] #store only name & typ 
+        Media=media(hash=file_hash,name=json.dumps(name))
+        session.add(Media)
+        session.commit()
+        os.rename("media/"+unique_id,"media/"+file_hash) #file saved for the first time.
+        socketio.emit("media",[curr,Media.id,Media.hash,name],room=curr)
+        return Media.id
+    elif not os.path.exists("media/"+file_hash): # Previously uploaded file saved.
+        os.rename("media/"+unique_id,"media/"+file_hash)
+        return check.id
+    else:
+        os.remove("media/"+unique_id) # duplicate file detected.
+        return 0
+
 @app.route("/media",methods=["POST"])
 def handel_media():
-    def uploadSuccess(unique_id,file_hash):
-        curr=mediaHash[unique_id][3]
-        session=server[curr]
-        check=session.query(media).filter_by(hash=file_hash).first()
-        if check==None:
-            data=mediaHash[unique_id]
-            name=[data[1],data[2]] #store only name & typ 
-            Media=media(hash=file_hash,name=json.dumps(name))
-            session.add(Media)
-            session.commit()
-            os.rename("media/"+unique_id,"media/"+file_hash) #file uploaded
-            socketio.emit("media",[curr,Media.id,Media.hash,name],room=curr)
-            return Media.id
-        elif not os.path.exists("media/"+file_hash): #file is reuploaded and saved
-            os.rename("media/"+unique_id,"media/"+file_hash)
-            return check.id
-        else:
-            os.remove("media/"+unique_id) # duplicate file deleted
-            return 0
     unique_id=request.form.get('uuid')
     if unique_id:
+        # for big files.
         chunk=request.files['chunk'].read()
         hasher = mediaHash[unique_id][0]
         hasher.update(chunk)
@@ -492,6 +547,7 @@ def handel_media():
     hasher=hashlib.sha256()
     hasher.update(chunk)
     mediaHash[unique_id]=[hasher,name,typ,curr]  #store name,typ,hasher in List :
+    # For small files. I don't have time to reimplement this
     if request.form.get('dN'):
         file_hash=hasher.hexdigest()
         data = uploadSuccess(unique_id,file_hash)
@@ -500,6 +556,7 @@ def handel_media():
             return [data,file_hash]
         return "0"
     return unique_id
+ 
 @app.route("/channels",methods=["GET"])
 def channel_chat():
     if not session.get("name"):
@@ -509,6 +566,7 @@ def channel_chat():
     curr=session.get("server")
     id=session.get(curr)
     return render_template("channel_chat.html",name=name,id=id,server=curr,myservers=myserver)
+
 @app.route('/download/<server>',methods=["GET"])
 def download_database(server):
     if app.config['SQLALCHEMY_BINDS'].get(str(server)):
@@ -516,10 +574,13 @@ def download_database(server):
         return send_file(path, as_attachment=True)
     else:
         return make_response('Not Found',404)
+
+# Bless me God.
 if __name__ == '__main__':
     socketio.run(app)
+
 # TODO:
     # Allow user to customise their server        -- Trying to figure out
     # Make it fast 
-    #   -- 1. use the dictionary to check for channesl instead of checking database.
+    #   -- 1. use the dictionary to check for channels instead of checking database.
     #   -- 2. If i can rewrite loginlogic func again.
