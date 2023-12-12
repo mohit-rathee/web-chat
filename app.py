@@ -29,7 +29,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
 india_timezone = pytz.timezone('Asia/Kolkata')
 db = SQLAlchemy(app)
 engine=create_engine(os.getenv('DATABASE_URI'))
-metadata=MetaData(bind=engine)
+metadata=MetaData()
+metadata.bind=engine
 Base=declarative_base(metadata=metadata)
 class users(Base):
     __tablename__="users"
@@ -98,14 +99,15 @@ def createdb():
     Engine = create_engine(db_uri)
     Engine.connect()
     engine[name]=Engine
-    metadata=MetaData(bind=Engine)
-    Base=declarative_base(metadata=metadata)
-    req=["serverinfo","users","channel","chats","media"]
+    newmetadata=MetaData()
+    newmetadata.bind=Engine
+    Base=declarative_base(metadata=newmetadata)
+    req=["users","channel","media"]
     Tables[name]={'Len':0}
     rooms[name]=bidict({})
     for table_name in req:
-        table = base["app"].metadata.tables.get(table_name)
-        table.tometadata(metadata)
+        table = metadata.tables.get(table_name)
+        table.tometadata(newmetadata)
     class users(Base):
         __tablename__ = "users"
         __table_args__ = {"extend_existing": True}
@@ -150,7 +152,8 @@ def upload_db():
             Base.metadata.create_all(bind=Engine)
             base[name]=Base
             engine[name]=Engine
-            Session=sessionmaker(bind=Engine)
+            Session=sessionmaker()
+            Session.bind=Engine
             server[name]=Session()
             rooms[name]=bidict({})
         except:
