@@ -127,9 +127,8 @@ def createdb():
     # coping these 3 table structure from Main Database.
     req=["users","channel","media"]
     for table_name in req:
-        table = metadata.tables.get(table_name)
-        print(table)
-        table.tometadata(newmetadata)
+        table = base["app"].metadata.tables.get(table_name)
+        table.tometadata(metadata)
     # reviving the user realtionships. this is too daam awkward.
     class users(Base):
         __tablename__ = "users"
@@ -162,14 +161,16 @@ def upload_db():
         # Try to connect with recieved file.
         try:
             Engine = create_engine(app.config['SQLALCHEMY_BINDS'][str(name)])
-            metadata = MetaData(bind=engine)
+            metadata = MetaData()
+            metadata.bind=engine
             Base = declarative_base(metadata=metadata)
             class users(Base):
                 __tablename__ = "users"
                 __table_args__ = {"extend_existing": True}
                 id = Column(db.Integer, primary_key=True)
-                username = Column(db.String(20), unique=True, nullable=False)
-                password = Column(db.String(30), nullable=False)
+                username = Column(db.String, unique=True, nullable=False)
+                password = Column(db.String, nullable=False)
+                description=db.Column(db.String, nullable=True)
             Base.metadata.create_all(bind=Engine)
             # Inspecting, re-creating tables, storing session, Initialising room.
             inspector = inspect(Engine)
@@ -181,8 +182,7 @@ def upload_db():
             Base.metadata.create_all(bind=Engine)
             base[name]=Base
             engine[name]=Engine
-            Session=sessionmaker()
-            Session.bind=Engine
+            Session=sessionmaker(bind=Engine)
             server[name]=Session()
             rooms[name]=bidict({})
         except:# Sorry, I changed the structure of file. Really Sorry.
