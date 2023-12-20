@@ -60,6 +60,13 @@ class media(Base):
     hash=db.Column(db.String,unique=True)
     name=db.Column(db.String, nullable=False)
 
+class admin(Base):
+    __tablename__="admin"
+    id=db.Column(db.Integer,primary_key=True) #Conventional key
+    #key=db.Column(db.String,unique=True)
+    value=db.Column(db.String) #Respective value
+
+
 # Creating table on the fly.
 def create_channel(table_number,base,users):
     attrs = {
@@ -125,7 +132,7 @@ def createdb():
     metadata.bind=Engine
     Base=declarative_base(metadata=metadata)
     # coping these 3 table structure from Main Database.
-    req=["users","channel","media"]
+    req=["users","channel","media","admin"]
     for table_name in req:
         table = base["app"].metadata.tables.get(table_name)
         table.tometadata(metadata)
@@ -143,6 +150,8 @@ def createdb():
     base[name]=Base
     Session=sessionmaker(bind=Engine)
     server[name]=Session()
+    # setup
+    setup(server[name])
     # Initialising room for the database.
     Tables[name]={'Len':0}
     rooms[name]=bidict({})
@@ -216,10 +225,12 @@ def on_disconnect():
     socketio.server.leave_room(request.sid, room=None)
     socketio.server.leave_room(request.sid, room=request.sid)
     for srvr in session.get("myserver"):
-        rooms[srvr].pop(session.get(srvr),None)
-        # I m doing this because I don't want to delete the bidict({}) if empty
-        # socketio.server.leave_room(session.get(srvr),room=srvr)
-        socketio.emit("notify",[srvr,session.get(srvr),session.get("name"),None],room=srvr) 
+        myserver = rooms.get(srvr)
+        if myserver:
+            myserver.pop(session.get(srvr),None)
+            # I m doing this because I don't want to delete the bidict({}) if empty
+            # socketio.server.leave_room(session.get(srvr),room=srvr)
+            socketio.emit("notify",[srvr,session.get(srvr),session.get("name"),None],room=srvr) 
 
 @socketio.on('Load')
 def Load(data):
@@ -259,9 +270,14 @@ def Load(data):
 @socketio.on("create")
 def create(newchannel):
     curr=newchannel[0]
+    id=session.get(curr)
+    isCreationAllowed = server[curr].query(admin).filter_by(id=4).first()
+    if not int(isCreationAllowed.value) :
+        adminAccount = server[curr].query(admin).filter_by(id=1).first()
+        if int(adminAccount.value) != id:
+            return
     if curr not in session.get("myserver"):
         return
-    id=session.get(curr)
     Topic=channel(name=newchannel[1],creator_id=id)
     server[curr].add(Topic)
     server[curr].commit()
@@ -379,6 +395,23 @@ def index():
     session.clear()
     return redirect("/")
 
+# server setup
+def setup(curr):
+    adminAccount = users(username="admin",password=sha256_crypt.encrypt(str("adminadmin"))
+)
+    curr.add(adminAccount)
+    creator = admin(value="1")            #id = 1
+    curr.add(creator)
+    adminUser = admin(value="1")          #id = 2
+    curr.add(adminUser)
+    registration = admin(value="0")    #id = 3
+    curr.add(registration)
+    channelCreation = admin(value="0") #id = 4 
+    curr.add(channelCreation)
+    prvtMessaging = admin(value="1")   #id = 5 
+    curr.add(prvtMessaging)
+    curr.commit()
+
 # I confess my loginlogic may be bad, but their will be issues with other logic too.
 def loginlogic(name,password):
     myServer=session.get("myserver")
@@ -453,6 +486,9 @@ def login():
             if len(serverList)==0:
                 return render_template("message.html",msg="Select atleast one server", goto="/login")
             for srvr in serverList:
+                isRegisterAllowed = server[srvr].query(admin).filter_by(id=3).first()
+                if not int(isRegisterAllowed.value):
+                    return render_template("message.html",msg="Registration not allowed on this server", goto="/login")
                 user=server[srvr].query(users).filter_by(username=name).first()
                 if user!=None:
                     if sha256_crypt.verify(str(name+password), user.password):
