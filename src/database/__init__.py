@@ -1,6 +1,6 @@
 from .. import  Base, engine, server
 from .models import users
-from .model_utils import create_channel
+from .database_utils import create_channel
 from sqlalchemy import inspect
 from sqlalchemy.orm import sessionmaker
 
