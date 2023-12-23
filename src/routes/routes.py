@@ -1,38 +1,81 @@
-from .. import app, server
-from ..authentication.signIN import loginlogic
+from .. import app, server, db_dir, os
+from ..authentication.auth_utils import loginlogic, registrationlogic
 from ..database.database_utils import create_conn
 from flask import render_template, redirect, session, request, send_file, make_response, Blueprint
 from werkzeug.utils import secure_filename
 
 # Create a Blueprint named 'routes'
-routes = Blueprint("routes", __name__, template_folder="../../templates")
+routes = Blueprint("routes", __name__, 
+                   template_folder="../../templates")
+
+    
+@routes.route('/',methods=["GET","POST"])
+def index():
+    if request.method=="GET":
+        if session.get("name")==None:
+            return redirect("/login")
+        else:
+            return redirect("/channels")
+    session.clear()
+    return redirect("/")
+
 
 @routes.route('/create',methods=["POST"])
 def createdb():
     name=str(request.form.get("name"))
-    if " " in name:
-        return render_template("message.html",msg="Don't use spaces", goto="/login")
     if name in server or "/" in name:
-        return render_template("message.html",msg="select a unique and valid name.",goto="/")
-    db_uri = f'sqlite:///db/{name}.sqlite3'
-
-    create_conn(name,db_uri)
+        return render_template("message.html",
+                               msg="select a unique and valid name.",
+                               goto="/")
+    
+    db_uri = f'sqlite:///db/{secure_filename(name)}.sqlite3'
     # Creating a connection.
-    return redirect("/login")
+    if create_conn(name,db_uri):
+        return redirect("/login")
+    else:
+        session.clear()
+        os.remove("db/"+name+".sqlite3")
+        return render_template("message.html",msg="Can't create your server.",goto="/login")
+
 
 @routes.route('/upload',methods=["POST"])
 def upload_db():
     files=request.files.getlist('files')
+    success = True
     for file in files:
-        filename=(secure_filename(file.filename).split("."))
-        if not file or filename[1]!="sqlite3" or filename[0] in server:
+        name = str(file.filename)
+        fileName=secure_filename(name)
+        filePart = fileName.split('.')
+        if not file or filePart[1]!="sqlite3" or filePart[0] in server:
             return render_template("message.html",msg="select a valid database file (*.sqlite3) with unique name.",goto="/login")
-        file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
-        name=filename[0]
-        app.config['SQLALCHEMY_BINDS'][name] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
-        create_conn(name,app.config['SQLALCHEMY_BINDS'][name])
+        fullPath = os.path.join(db_dir,fileName)
+        file.save(fullPath)
+        name=filePart[0]
+        db_uri = f'sqlite:///db/{secure_filename(name)}.sqlite3'
         session.clear()
-    return redirect("/login")
+        if not create_conn(name,db_uri):
+            success = False
+    if success:
+        return redirect("/login")
+    else:
+        return render_template("message.html",msg="NOT A VALID DATABASE",goto="/login")
+
+@routes.route("/channels",methods=["GET"])
+def channel_chat():
+    if not session.get("name"):
+        return redirect("/login")
+    name=session.get("name")
+    myserver=session.get("myserver")
+    return render_template("channel_chat.html",name=name,myservers=myserver)
+
+@routes.route('/download/<server>',methods=["GET"])
+def download_database(server):
+    if app.config['SQLALCHEMY_BINDS'].get(str(server)):
+        path =str(app.config['SQLALCHEMY_BINDS'][str(server)]).rsplit("///")[1]
+        return send_file(path, as_attachment=True)
+    else:
+        return make_response('Not Found',404)
+
 
 @routes.route('/login',methods=["GET","POST"])
 def login():
@@ -45,44 +88,34 @@ def login():
             return render_template("login.html",servers=allServers)
         else:
             return redirect("/channels")
-    else:
-        session.clear()
-        name=str(request.form.get("username"))
-        password=str(request.form.get("password"))
-        operation=request.form.get("operation")
-        if operation == "login":
-            done=loginlogic(name, password,[])
-            if done:
+    #else: When method == POST
+    session.clear()
+    name=str(request.form.get("username"))
+    password=str(request.form.get("password"))
+    operation=request.form.get("operation")
+    if operation == "login":
+        if loginlogic(name, password):
+            return redirect("/channels")
+        else:
+            return render_template("message.html",
+                msg="Username or password are incorrect",
+                goto="/login")
+    elif operation == "register":
+        serverList = request.form.getlist("server[]")
+        if len(serverList)==0:
+            return render_template("message.html",
+                                   msg="Select at least one server")
+        [result,pending] = registrationlogic(name,password,serverList)
+        if result:
+            return redirect("/channels")
+        else:
+            if session.get('myservers'):
                 return redirect("/channels")
             else:
-                return render_template("message.html",msg="Username or password are incorrect",goto="/login")
-
-@routes.route('/',methods=["GET","POST"])
-def index():
-    if request.method=="GET":
-        if session.get("name")==None:
-            return redirect("/login")
-        else:
-            return redirect("/channels")
-    session.clear()
-    return redirect("/")
-
-@routes.route("/channels",methods=["GET"])
-def channel_chat():
-    if not session.get("name"):
-        return redirect("/login")
-    name=session.get("name")
-    myserver=session.get("myserver")
-    curr=session.get("server")
-    id=session.get(curr)
-    return render_template("channel_chat.html",name=name,id=id,server=curr,myservers=myserver)
-
-@routes.route('/download/<server>',methods=["GET"])
-def download_database(server):
-    if app.config['SQLALCHEMY_BINDS'].get(str(server)):
-        path =str(app.config['SQLALCHEMY_BINDS'][str(server)]).rsplit("///")[1]
-        return send_file(path, as_attachment=True)
+                return render_template("message.html",
+                    msg="Username exists in all servers.\n Find a unique name.",
+                    goto="/login")
     else:
-        return make_response('Not Found',404)
+        return redirect('/login')
 
 
