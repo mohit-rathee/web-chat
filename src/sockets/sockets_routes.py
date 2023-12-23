@@ -1,10 +1,12 @@
-from flask import request, session
-from .. import socketio, rooms
+from flask import request, session, Blueprint
+from .. import socketio, rooms, server
 from bidict import bidict
 
+sockets = Blueprint("sockets",__name__)
 
 # Manually creating spaces and rooms in socketio. coz I m A-Fish-ant.
 rooms['app']=bidict({}) # Structure is lib specific.
+
 @socketio.on('setPubKey')
 def handel_Pub_Key(pub_key):
     if isinstance(pub_key,str) and len(pub_key):

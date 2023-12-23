@@ -41,7 +41,18 @@ engine={"app":engine}
 base={"app":Base}
 server={}
 tables = {}
+rooms = {}
 
-socketio.server.manager.rooms['/']={}
-rooms=socketio.server.manager.rooms['/']
+from .database import load_database
+load_database(Base,engine["app"])
 
+socketio.server.manager.rooms['/']=rooms
+#rooms=socketio.server.manager.rooms['/']
+
+from .routes.routes import routes
+from .database.models import structure
+from .sockets.sockets_routes import sockets
+
+app.register_blueprint(routes)
+app.register_blueprint(structure)
+app.register_blueprint(sockets)

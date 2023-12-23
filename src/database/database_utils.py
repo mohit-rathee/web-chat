@@ -27,7 +27,7 @@ def create_conn(name,uri):
     for table_name in req:
         table = base["app"].metadata.tables.get(table_name)
         table.tometadata(metadata)
-    # reviving the user realtionships. this is too daam awkward.
+    # reviving the user realtionships. this is awkward.
     class users(Base):
         __tablename__ = "users"
         __table_args__ = {"extend_existing": True}

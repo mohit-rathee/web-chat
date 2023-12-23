@@ -1,4 +1,7 @@
 from .. import db, Base
+from flask import Blueprint
+
+structure = Blueprint('structure',__name__)
 
 class users(Base):
     __tablename__="users"

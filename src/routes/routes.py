@@ -1,9 +1,13 @@
 from .. import app, server
+from ..authentication.signIN import loginlogic
 from ..database.database_utils import create_conn
-from flask import render_template, redirect, session, request, send_file, make_response 
+from flask import render_template, redirect, session, request, send_file, make_response, Blueprint
 from werkzeug.utils import secure_filename
 
-@app.route('/create',methods=["POST"])
+# Create a Blueprint named 'routes'
+routes = Blueprint("routes", __name__, template_folder="../../templates")
+
+@routes.route('/create',methods=["POST"])
 def createdb():
     name=str(request.form.get("name"))
     if " " in name:
@@ -16,7 +20,21 @@ def createdb():
     # Creating a connection.
     return redirect("/login")
 
-@app.route('/login',methods=["GET","POST"])
+@routes.route('/upload',methods=["POST"])
+def upload_db():
+    files=request.files.getlist('files')
+    for file in files:
+        filename=(secure_filename(file.filename).split("."))
+        if not file or filename[1]!="sqlite3" or filename[0] in server:
+            return render_template("message.html",msg="select a valid database file (*.sqlite3) with unique name.",goto="/login")
+        file.save(os.path.join(uploads_dir,secure_filename(file.filename)))
+        name=filename[0]
+        app.config['SQLALCHEMY_BINDS'][name] ="sqlite:///"+str(os.path.join(uploads_dir,secure_filename(file.filename)))
+        create_conn(name,app.config['SQLALCHEMY_BINDS'][name])
+        session.clear()
+    return redirect("/login")
+
+@routes.route('/login',methods=["GET","POST"])
 def login():
     # REDIRECT IF LOGGED IN
     if request.method=="GET":
@@ -33,48 +51,38 @@ def login():
         password=str(request.form.get("password"))
         operation=request.form.get("operation")
         if operation == "login":
-            done=loginlogic(name, password)
+            done=loginlogic(name, password,[])
             if done:
                 return redirect("/channels")
             else:
                 return render_template("message.html",msg="Username or password are incorrect",goto="/login")
-        if operation == "register":
-            pswdHash=""
-            myserver=[]
-            serverList=request.form.getlist("server[]")
-            if len(serverList)==0:
-                return render_template("message.html",msg="Select atleast one server", goto="/login")
-            for srvr in serverList:
-                #isRegisterAllowed = server[srvr].query(admin).filter_by(id=3).first()
-                #if not int(isRegisterAllowed.value):
-                 #   return render_template("message.html",msg="Registration not allowed on this server", goto="/login")
-                user=server[srvr].query(users).filter_by(username=name).first()
-                if user!=None:
-                    if sha256_crypt.verify(str(name+password), user.password):
-                        pswdHash=user.password
-                        session[srvr]=user.id
-                        myserver.append(srvr)
-                        session["name"]=user.username
-                    else:
-                        return render_template("message.html",msg="Username exist",goto="/login")
-            if not pswdHash:
-                pswdHash=sha256_crypt.encrypt(str(name+password))
-            for srvr in serverList:
-                if srvr not in myserver:
-                    user=users(username=name,password=pswdHash)
-                    server[srvr].add(user)
-                    server[srvr].commit()
-                    session[srvr]=user.id
-                    session["name"]=user.username
-                    myserver.append(srvr)
-            session["myserver"]=myserver[:]
-            session["server"]=myserver[0]
-            if len(serverList)==len(server):
-                return redirect("/channels")
-            done=loginlogic(name, password)
-            if done:
-                return redirect("/channels")
-            else:
-                return render_template("message.html",msg="YOUR OLD PASSWORD IS UPDATED WITH NEWONE",goto="/channels")
+
+@routes.route('/',methods=["GET","POST"])
+def index():
+    if request.method=="GET":
+        if session.get("name")==None:
+            return redirect("/login")
+        else:
+            return redirect("/channels")
+    session.clear()
+    return redirect("/")
+
+@routes.route("/channels",methods=["GET"])
+def channel_chat():
+    if not session.get("name"):
+        return redirect("/login")
+    name=session.get("name")
+    myserver=session.get("myserver")
+    curr=session.get("server")
+    id=session.get(curr)
+    return render_template("channel_chat.html",name=name,id=id,server=curr,myservers=myserver)
+
+@routes.route('/download/<server>',methods=["GET"])
+def download_database(server):
+    if app.config['SQLALCHEMY_BINDS'].get(str(server)):
+        path =str(app.config['SQLALCHEMY_BINDS'][str(server)]).rsplit("///")[1]
+        return send_file(path, as_attachment=True)
+    else:
+        return make_response('Not Found',404)
 
 
