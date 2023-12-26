@@ -46,6 +46,13 @@ def create_conn(name,uri):
             table = base["app"].metadata.tables.get(table_name)
             table.tometadata(metadata)
         # reviving the user realtionships. this is awkward.
+        class users(Base):
+            __tablename__ = "users"
+            __table_args__ = {"extend_existing": True}
+            id = Column(db.Integer, primary_key=True)
+            username = Column(db.String, unique=True, nullable=False)
+            password = Column(db.String, nullable=False)
+            description=db.Column(db.String, nullable=True)
         # Creating tables and storing session.
         Base.metadata.create_all(bind=Engine)
         #app.config['SQLALCHEMY_BINDS'][name]=db_uri
