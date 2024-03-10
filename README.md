@@ -18,9 +18,10 @@ Join the conversation at [web-chat](https://web-chat.onrender.com) (Initial serv
 - **Local Caching:** Your messages and media are cached on your device for quick and offline access using [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
 
 ## Future Ideas
+- **Role Based Access Control:** User permissions are judged on the basis of their roles.
 - **Custom Server Features:** Allow users to customize their servers to their liking.
-- **Descriptions:** Add the ability to include descriptions to your server or content.
-- **Frontend Framework:** Consider incorporating a frontend framework to enhance the user interface.
+- **Profiling:** Add the ability to include descriptions to your server or content.
+- **Frontend Framework:** Consider incorporating a frontend framework to enhance the user expirence.
 
 ## Running Locally on Linux
 1. Clone this repository.
