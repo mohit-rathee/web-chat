@@ -19,7 +19,7 @@
         <div class="imgtext">
           <h4>{{name}}<br /><span>Server:</span>&nbsp;<span id="server">None</span></h4>
         </div>
-        <ion-icon id="3dot" style="height: 100%;" name="ellipsis-vertical-outline"></ion-icon>
+        <ion-icon id="3dot" class="info_icon" name="ellipsis-vertical-outline"></ion-icon>
       </div>
       <div class="search_channel">
         <div id="search_form" data-create="n">
@@ -58,12 +58,12 @@
           </div>
         </div>
       </div>
-      <div id="userside" style="display: block;">
+      <div id="userside" class="mainside" style="display: block;">
         <div class="chatbox" id="Info">
         <p><h2>Select any channel</h2></p>
        </div>
       </div>
-      <div id="chatside" style="display: none;">
+      <div id="chatside"  class="mainside" style="display: none;">
         <div id="box" class="chatbox">
           <div class="arrow" onclick="gethistory()" id="UP">
             <ion-icon name="arrow-up-outline"></ion-icon>
@@ -95,6 +95,12 @@
       <div id="mediaPool">
       </div>
       <input id="media" style="display: flex; flex-wrap: wrap;" type="file" name="files" autocomplete="off" />
+      <div style="">
+      <input type="radio" required id="Public" name="visibility" value="Public" checked>
+      <label for="Public">Public</label><br>
+      <input type="radio" id="Private" name="visibility" value="Private">
+      <label for="Private">Private</label><br>
+      </div>
       <div style="display: flex;"> <button id="upload">Send</button>
         <div id="loading-circle"></div>
       </div>
@@ -107,7 +113,7 @@
       <div id="pinname" style="cursor: auto;" class="navitems center-items"></div>
       <div class="navitems right-items">
         <div></div>
-        <ion-icon name="browsers-sharp"
+        <ion-icon name="browsers-sharp" 
           onclick="pintab.classList.toggle('pintab');pintab.classList.toggle('fullscreen')"></ion-icon>
         <ion-icon name="close-outline" onclick="cancelpinned()"></ion-icon>
       </div>
@@ -128,9 +134,9 @@
     if(prevserver){
       myservers.push(prevserver)
     }
-    {% for srvr in myservers: %}
+    {% for srvr in myservers.keys(): %}
     if ('{{srvr}}' != prevserver) {
-      myservers.push('{{srvr}}')
+      myservers.push(['{{srvr}}','{{myservers[srvr]}}'])
     }
     {% endfor %}
     return myservers;

@@ -1,50 +1,46 @@
 from flask import session
 from .. import server
-from ..database.models import users
+from ..database.database_utils import check_credential, add_user, get_default_role
 import bcrypt
 
 # I confess my loginlogic may be bad, but their will be issues with other logic too.
 
 def loginlogic(name,password):
     myServers=[]
+    pswd = password.encode('utf-8')
     for srvr in server.keys():
-        user = server[srvr].query(users).filter_by(username=name).first()
-        if user!=None:
-            if bcrypt.checkpw(password.encode('utf-8'), user.password):
-                session["name"]=name
-                session[srvr]=user.id
-                myServers.append(srvr)
+        credentials = check_credential(srvr,name,pswd)
+        if credentials:
+            myServers.append(srvr)
+            session["name"]=credentials[0]
+            session[srvr]=credentials[1]
     if len(myServers)==0:
             return False
     session["myserver"]=myServers
     return True
 
 def registrationlogic(name,password,serverList):
-    pswdHash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    pswd = password.encode('utf-8')
+    pswdHash = bcrypt.hashpw(pswd, bcrypt.gensalt())
     myserver=[]
-    pending=[]
-    result = True
     for srvr in serverList:
-        #isRegisterAllowed = server[srvr].query(admin).filter_by(id=3).first()
-        #if not int(isRegisterAllowed.value):
-            #return render_template("message.html",msg="Registration not allowed on this server", goto="/login")
-        user=server[srvr].query(users).filter_by(username=name).first()
-        if user!=None: # login if already registrated
-            if bcrypt.checkpw(pswdHash,user.password):
-                pswdHash=user.password
-                session[srvr]=user.id
-                myserver.append(srvr)
-                session["name"]=user.username
-            else:
-                result = False
-                pending.append(srvr) #username is occupied
-        else:
-            user=users(username=name,password=pswdHash)
-            server[srvr].add(user)
-            server[srvr].commit()
-            session[srvr]=user.id
-            session["name"]=user.username
+        credentials = check_credential(srvr,name,pswd)
+        if credentials != None and credentials !=[False]: # credentials matched
             myserver.append(srvr)
-    session["myserver"]=myserver
-    return result,pending
+            session["name"]=credentials[0]
+            session[srvr]=credentials[1]
+        elif credentials == [False]:
+            continue # password not matched
+        else:
+            default_role = get_default_role(srvr)
+            credentials = add_user(srvr,name,pswdHash,default_role)
+            session[srvr] = credentials[0]
+            session["name"] = credentials[1]
+            myserver.append(srvr)
+
+    if len(myserver)!=0:
+        session["myserver"]=myserver
+        return True
+    else:
+        return False
 

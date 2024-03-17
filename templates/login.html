@@ -30,6 +30,10 @@
       box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
     }
 
+    .hidden {
+        display:none;
+    }
+
     .container .registration {
       display: none;
     }
@@ -296,9 +300,9 @@
   <div class="serversPage">
     <h2>Running Servers</h2>
     <ul>
-      {% for db in servers: %}
+      {% for db in servers.keys(): %}
       <li class="form-list">
-        {{db}}
+        {{servers[db]}}
       </li>
       {% endfor %}
     </ul>
@@ -318,7 +322,13 @@
       <ul>
         <input class="form-list createdb" name="name" required type="text" placeholder="Server name"
           autocomplete="off" />
-        <li><input id="create" type="submit" value="Create" /></li>
+      </ul>
+      <ul>
+            <input id="admin_name" required class="form-list createdb" name="admin_name" placeholder="Admin's name">
+      </ul>
+    <ul>
+            <input id="admin_password"  required class="form-list createdb" name="admin_password" placeholder="Admin's password">
+    <li><input id="create" type="submit" value="Create" /></li>
       </ul>
     </form>
   </div>
@@ -345,8 +355,8 @@
           <input name="username" required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
           <input name="password" required type="password" placeholder="Create a password" />
           <div class="server-container">
-            {% for server in servers: %}
-            <input class="server" type="checkbox" name="server[]" value="{{server}}">{{server}}
+            {% for server in servers.keys(): %}
+            <input class="server" type="checkbox" name="server[]" value="{{server}}">{{servers[server]}}
             {% endfor %}
           </div>
           <input type="hidden" name="operation" value="register" />

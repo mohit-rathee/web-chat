@@ -2,13 +2,11 @@ import json, datetime
 from .. import socketio, rooms, server, tables, india_timezone
 from flask import request, session, Blueprint
 from ..database.models import media, channel, users
-from ..database.database_utils import createChannel
+from ..database.database_utils import create_channel
 from bidict import bidict
 
 sockets = Blueprint("sockets",__name__)
 
-# Manually creating spaces and rooms in socketio. coz I m A-Fish-ant.
-rooms['app']=bidict({}) # Structure is lib specific.
 
 @socketio.on('setPubKey')
 def handel_Pub_Key(pub_key):
@@ -31,36 +29,51 @@ def on_disconnect():
 
 @socketio.on('Load')
 def Load(data):
-    reqsrvr=data.get('server')
-    if reqsrvr in session.get('myserver'): # And wheater the reqsrvr is in server.keys()
-        id=session.get(reqsrvr)
+    srvr=data.get('server')
+    if srvr in session.get('myserver'): # And wheater the reqsrvr is in server.keys()
+        id=session.get(srvr)
         (pub_key,eio_sid)=next(iter(rooms[request.sid].items()))
-        socketio.emit("notify",[reqsrvr,id,session.get("name"),pub_key],to=reqsrvr)
-        rooms[reqsrvr][id]=eio_sid
-        serverInfo={'server':reqsrvr,'id':id}
-        curr=server[reqsrvr]
-        channels=curr.query(channel).all() #later on we can limit this for sync sliding
+        socketio.emit("notify",[srvr,id,session.get("name"),pub_key],to=srvr)
+        rooms[srvr][id]=eio_sid
+        db=server[srvr]
+
+        serverInfo={'server':srvr,'id':id,'name':tables[srvr]["Name"]}
+
+        channels=db.query(channel).all()   # later on we can limit this for sync sliding
         chnlCount=len(data.get("msg",0))   # I can definately use the dict which store
-        serverInfo['channels']={}          # all the channels i just need time.
+
+        serverInfo['channels']=[]          # all the channels i just need time.
         for chnl in channels:
             if chnl.id>chnlCount:
-                serverInfo['channels'][chnl.id]=[chnl.id,chnl.name,chnl.user.username]
-        Media=curr.query(media).filter(media.id>data.get('media',0)).all()
-        serverInfo['medias']={media.id:[media.id,media.hash,media.name] for media in Media}
-        User=curr.query(users).all()
-        serverInfo['users']={user.id:user.username for user in User}
-        Dict={}
-        for id,eid in rooms[reqsrvr].items():
+                serverInfo['channels'].append({'id':chnl.id,
+                                             'name':chnl.name,
+                                             'creator':chnl.user.username})
+
+        Media=db.query(media).filter(media.id>data.get('media',0)).all()
+        serverInfo['medias']=[{'id':media.id,
+                               'hash':media.hash,
+                               'name':media.name,
+                               'permissions':media.permissions
+                               } for media in Media]
+
+        User=db.query(users).all()
+        serverInfo['users']={user.id:{ 'name':user.username,
+                                       'role':user.role.id
+                                     } for user in User}
+        peers={}
+        for id,eid in rooms[srvr].items():
             sid=rooms[None].inverse.get(eid)
             (pub_key,_)=next(iter(rooms[sid].items()))
-            Dict.update({id:pub_key})
-        serverInfo['live']=Dict
-        socketio.emit("server",serverInfo,to=request.sid)
+            peers.update({id:pub_key})
+        serverInfo['live']=peers
+
+        socketio.emit("server",serverInfo,to=request.sid) # send serverInfo
+
         for chnl in channels:
-            lastid=data.get('msg').get(str(chnl.id),0)
-            ch=tables[reqsrvr][chnl.id]
-            last_msgs=curr.query(ch).order_by(ch.id.desc()).filter(ch.id>lastid).limit(30)
-            Msgs=[reqsrvr,chnl.id]
+            last_msg_id=data.get('msg').get(str(chnl.id),0)
+            ch=tables[srvr][chnl.id]
+            last_msgs=db.query(ch).order_by(ch.id.desc()).filter(ch.id>last_msg_id).limit(30)
+            Msgs=[srvr,chnl.id]
             Msgs.append([[msg.id,msg.data,msg.user.username] for msg in last_msgs])
             socketio.emit("messages",Msgs,to=request.sid)
 
@@ -76,7 +89,7 @@ def create(newchannel):
         #    return
     if curr not in session.get("myserver"):
         return
-    new = createChannel(curr,name,id)
+    new = create_channel(curr,name,id)
     socketio.emit("show_this",new,to=curr)
 
 # @socketio.on("search_text")
@@ -131,8 +144,6 @@ def handel_chat(chat):
     if resvrEID:
         resvrSID=socketio.server.manager.rooms['/'][None].inverse.get(resvrEID)
         socketio.emit('dm',[curr,id,enc_msg],to=resvrSID)
-    else:
-        print('friend is offline')
 
 @socketio.on('reaction') # Name is enough.
 def reaction(Data):

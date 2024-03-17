@@ -1,5 +1,6 @@
 from flask import Flask
 import os, pytz
+from bidict import bidict
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.declarative import declarative_base
@@ -29,9 +30,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # Connecting to Main Database.
-engine=create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+Engine=create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
 metadata=MetaData()
-metadata.bind=engine
+metadata.bind=Engine
 Base=declarative_base(metadata=metadata)
 
 # Session management.
@@ -42,24 +43,33 @@ session = Session(app)
 
 
 # Setting up app with Flask.
-socketio = SocketIO(app, async_mode='gevent', transport=['websocket'], manage_session=False)
+socketio = SocketIO(
+    app,
+    async_mode='gevent',
+    transport=['websocket'],
+    manage_session=False)
 
-engine={"app":engine}
+engine={"app":Engine}
 base={"app":Base}
 server={}
-tables = {}
-rooms = {}
+tables = {"app" : {"Name" : "app"}}
+# Manually creating spaces and rooms in socketio. coz I m A-Fish-ant.
+rooms={'app':bidict({})} # Structure is lib specific.
 
 india_timezone = pytz.timezone('Asia/Kolkata')
 
-from .database import load_database
-load_database(Base,engine["app"])
+from .database.database_utils import load_channels
+load_channels("app",base["app"],engine["app"])
+
+from .database.database_utils import get_server_status, create_server_status
+if not get_server_status("app"):
+    create_server_status("app","app","")
 
 socketio.server.manager.rooms['/']=rooms
 #rooms=socketio.server.manager.rooms['/']
 
 from .routes.routes import routes
-from .database.models import models
+from .database.models import models, roles
 from .sockets.sockets_routes import sockets
 from .media.media import medias
 
