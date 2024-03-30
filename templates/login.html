@@ -352,16 +352,16 @@
       <div class="registration form">
         <header>Signup</header>
         <form action="/login" method="post" id="my-form">
-          <input name="username" required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
-          <input name="password" required type="password" placeholder="Create a password" />
+          <input name="username" id="username_signup" required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
+          <input name="password" id="password_signup" required type="password" placeholder="Create a password" />
           <div class="server-container">
             {% for server in servers.keys(): %}
-            <input class="server" type="checkbox" name="server[]" value="{{server}}">{{servers[server]}}
+                            <input class="server" id="{{server}}" type="checkbox" name="server[]" value="{{server}}">{{servers[server]}}
             {% endfor %}
           </div>
           <input type="hidden" name="operation" value="register" />
           <!-- <input type="password" placeholder="Confirm your password" /> -->
-          <input type="submit" class="button" value="Signup" />
+          <input type="submit" id="submit_btn_signup" class="button" value="Signup" />
         </form>
         <div class="signup">
           <span class="signup">Already have an account?
