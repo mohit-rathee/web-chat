@@ -2,7 +2,7 @@ from .. import db, engine, server, tables, rooms, base
 from ..database.models import channel, users, roles, status
 import uuid , bcrypt
 from bidict import bidict
-from sqlalchemy import create_engine, MetaData, Column, false, inspect
+from sqlalchemy import create_engine, MetaData, Column, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 

@@ -308,7 +308,7 @@
     </ul>
     <ul style="margin-top: 50px;">
       <li>
-        <label for="loginBox" class="form-list login">Login</label>
+        <label for="loginBox" id="login_btn" class="form-list login">Login</label>
       </li>
     </ul>
     <h4 style="text-align: center; padding: 0%; margin: 0%;">Wanna Add server? just add the file or create one</h4>
@@ -338,10 +338,10 @@
       <div class="login form">
         <header>Login</header>
         <form action="/login" method="post">
-          <input name="username" required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
-          <input name="password" required type="password" placeholder="Enter your password" />
-          <input type="hidden" name="operation" value="login" />
-          <input type="submit" class="button" value="Login" />
+          <input name="username" id="username" required type="text" placeholder="Enter your username" autocomplete="off" autofocus />
+          <input name="password" id="password" required type="password" placeholder="Enter your password" />
+          <input type="hidden" id="operation" name="operation" value="login" />
+          <input type="submit" id="login_submit" class="button" value="Login" />
         </form>
         <div class="signup">
           <span class="signup">Don't have an account?
