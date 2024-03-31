@@ -2,6 +2,6 @@ send message : 118
 create channel : 121
 react on message : 113
 reply on message : 115
-direct message : 91 92
+direct message : 90
 load messages on signup : 232
 load history (30 messages) : 100
