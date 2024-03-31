@@ -1,3 +1,4 @@
+pip==24.0
 bcrypt==4.1.2
 bidict==0.22.1
 blinker==1.7.0
