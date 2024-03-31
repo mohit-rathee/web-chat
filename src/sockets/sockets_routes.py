@@ -72,6 +72,9 @@ def Load(data):
         total_time = finish_time-start_time
         print("to create serverInfo : "+str(total_time))
         socketio.emit("server",serverInfo,to=request.sid) # send serverInfo
+        finish_time = time.time()
+        total_time = finish_time-start_time
+        print("to create serverInfo : "+str(total_time))
 
         for chnl in channels:
             start_time = time.time()
