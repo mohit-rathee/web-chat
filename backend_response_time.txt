@@ -1,0 +1,6 @@
+to create channel : 0.031474
+to send message : 0.012999
+to react on message : 0.007691
+to get history : 0.012578
+to Load (with cache) : 0.01165
+to Load (without cache) : 0.040991
