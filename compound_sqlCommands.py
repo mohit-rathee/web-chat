@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, text
+from sqlalchemy.orm import sessionmaker
 import time
 
 # Replace 'your_database_uri' with the actual URI of your database
@@ -9,7 +10,8 @@ db_uri = 'sqlite:///testBydevelop.sqlite3'
 
 # Create an SQLAlchemy engine
 engine = create_engine(db_uri)
-
+Session = sessionmaker(bind=engine)
+session=Session()
 # Establish a connection
 connection = engine.connect()
 my_conn = connection.connection
@@ -35,53 +37,19 @@ insert_sql = text("INSERT INTO users (name) VALUES (:name)")
 compound_sql = """
            BEGIN TRANSACTION;
            INSERT INTO users (name) VALUES ('Mohit');
-           INSERT INTO users (name) VALUES ('Mohit');
-           INSERT INTO users (name) VALUES ('Mohit');
-           INSERT INTO users (name) VALUES ('Mohit');
-           INSERT INTO users (name) VALUES ('Mohit');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
-           INSERT INTO users (name) VALUES ('Rohit233333332');
+           CREATE TABLE channel AS SELECT * FROM users WHERE 0;
+           SELECT name FROM users;
            COMMIT;
        """
-
-
-start = time.time()
-connection.execute(insert_sql,{'name':"MOHIT"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"Rohit"})
-connection.execute(insert_sql,{'name':"falsjdflajdf"})
-my_conn.commit()
-final = time.time()
-result1 = final-start
 
 start = time.time()
 result = my_conn.executescript(compound_sql)
 my_conn.commit()
 final = time.time()
-result2 = final-start
+result = final-start
 
 # Close the connection properly
 connection.close()
 
-if result1>result2:
-    print("OKAY")
-else:
-    print("NOT-OKAY")
-print(result1,end=" | ")
-print(result2)
+print(result)
 
