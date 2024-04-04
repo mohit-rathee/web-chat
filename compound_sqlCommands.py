@@ -1,6 +1,6 @@
 from os import walk
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker , registry
 from sqlalchemy.ext.automap import automap_base
 import time, random
 
@@ -65,6 +65,9 @@ Base.prepare(engine)
 
 # NEW_SOLUTION
 
+# create a mapper for final solution
+mapper = registry()
+
 # create a compound_sql command.
 compound_sql = """
                BEGIN TRANSACTION;
@@ -79,8 +82,8 @@ result = my_conn.executescript(compound_sql)
 my_conn.commit()
 
 final = time.time()
-#print("compound_sql execution : "+str((final-start)*1000))
-print((final-start)*1000)
+print("compound_sql execution : "+str((final-start)*1000))
+#print((final-start)*1000)
 
 # un-successfull event : TOOK (~35 to ~45 ms)
     #to get new table into metadata, we have 2 options.
@@ -104,33 +107,40 @@ attrs = {
     'name': Column(String(50)),
 }
 # store this class into a variable or a dictionary.
-channel_class = type("test", (Base,), attrs)
 
-# create the table by just one call
-Base.metadata.create_all(bind=engine)
-Base.prepare(engine)
+# Linear Approach:
+#channel_class = type(new_table_name, (Base,), attrs)
+#Base.metadata.create_all(bind=engine) # create the table by just one call
+#Base.prepare(engine)
+#final = time.time()
+#print((final-start)*1000)
+#print('--------')
 
+# Constant Approach:
+type(new_table_name, (Base,), attrs)
+class channel_class(object):
+    pass
+metadata.tables[new_table_name].metadata.create_all(engine)
+mapper.map_imperatively(channel_class, metadata.tables[new_table_name])
 final = time.time()
-#print("Add class execution time : "+str((final-start)*1000))
-print((final-start)*1000)
+print("update class execution time : "+str((final-start)*1000))
+#print((final-start)*1000)
 print('--------')
 
 # checking the health of class
 
-#start=time.time()
-#Session = sessionmaker(bind=engine)
-#session = Session()
-#test = channel_class(id=1,name="mohit")
-#session.add(test)
-#session.commit()
-#final = time.time()
-#print("Insert query time : "+str((final-start)*1000))
-#
-#start = time.time()
-#result = session.query(channel_class).all()
-#final = time.time()
-#print("read query time : "+str((final-start)*1000))
-#for i in result:
-#    print(i.name)
-#
+start=time.time()
+Session = sessionmaker(bind=engine)
+session = Session()
+test = channel_class(id=1,name="mohit")
+session.add(test)
+session.commit()
+final = time.time()
+print("Insert query time : "+str((final-start)*1000))
+
+start = time.time()
+result = session.query(channel_class).all()
+final = time.time()
+print("read query time : "+str((final-start)*1000))
+
 connection.close()
