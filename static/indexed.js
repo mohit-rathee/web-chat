@@ -211,9 +211,9 @@ socket.on("server", function (data) {
         if (user.name != name) {
             worker.postMessage({
                 operation: 1,
-                id: key,
+                id: id,
                 server: localStorage.getItem("server"),
-                key: live[key],
+                key: live[id],
             });
         }
         if (bool) {
@@ -221,10 +221,10 @@ socket.on("server", function (data) {
         }
         delete users[id];
     }
-    for (const key in users) {
-        const user = { uid: Number(key),
-                       name: users[key].name,
-                       role:users[key].role, key: null };
+    for (const id in users) {
+        const user = { uid: Number(id),
+                       name: users[id].name,
+                       role:users[id].role, key: null };
         userStore.put(user);
     }
     console.log(srvr + " is now up-to-date!!!");
