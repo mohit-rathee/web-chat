@@ -1,19 +1,11 @@
-1. Use async operations to fire multiple tasks with database concurently.
-    HOW:
-         *  we have to use asyncio and other database libraries to write 
-            async code.
-         *  But sqlite3 doesn't provide any libraries so we just need to write 
-            simple async functions.
-    CONS:
-        A lot of hectic tasks to make it work.
-        Prone to errors due to locking mechanism.
+To improve the send message in channel: (12 ms)
 
-2.  With some compound SQL command if we can execute multiple operations with
-    single call to database.
-    PROBLEM:
-         *  Even after successfully completing both tasks we need another call 
-            to database to reflect changes to the ORM in our app's class.
-    TIP:
-         *  If we manually add that class and updated the database with new table
-            then the reflection process should become fast as it only read and 
-            see the changes between orm classes and database metadata.
+why it is what it is?
+    1.  Does 2 sql requests (add message, get the message_id).
+    2.  Sometimes it need to do some more checks for reply.
+
+
+HOW TO UPGRADE?
+    We need to reduse the extra call to database.
+    But then we need to know the id of a message.
+    Maybe we can use the uuid their and a fallback mechanism in case of collision.

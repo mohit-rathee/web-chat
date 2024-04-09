@@ -1,12 +1,10 @@
-from os import walk
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, text
-from sqlalchemy.orm import sessionmaker , registry
+from sqlalchemy.orm import sessionmaker , registry, declarative_base
 from sqlalchemy.ext.automap import automap_base
 import time, random
 
 new_table_name=str(random.randint(1,1000))
-
-Base = automap_base()
+Base = declarative_base()
 
 #db_uri = 'sqlite:///testBydevelop.sqlite3'
 db_uri = 'sqlite:///testBydevelop.sqlite3'
@@ -109,7 +107,7 @@ attrs = {
 # store this class into a variable or a dictionary.
 
 # Linear Approach:
-#channel_class = type(new_table_name, (Base,), attrs)
+#channel_class = type(new_table_name, (Base,), attrs
 #Base.metadata.create_all(bind=engine) # create the table by just one call
 #Base.prepare(engine)
 #final = time.time()
@@ -125,13 +123,13 @@ mapper.map_imperatively(channel_class, metadata.tables[new_table_name])
 final = time.time()
 print("update class execution time : "+str((final-start)*1000))
 #print((final-start)*1000)
-print('--------')
+print('----------')
 
 # checking the health of class
 
-start=time.time()
 Session = sessionmaker(bind=engine)
 session = Session()
+start=time.time()
 test = channel_class(id=1,name="mohit")
 session.add(test)
 session.commit()
@@ -139,8 +137,25 @@ final = time.time()
 print("Insert query time : "+str((final-start)*1000))
 
 start = time.time()
-result = session.query(channel_class).all()
+result = session.query(channel_class).first()
 final = time.time()
-print("read query time : "+str((final-start)*1000))
+print("Read query time : "+str((final-start)*1000))
+
+print('----------')
+
+start = time.time()
+sql_query = text("INSERT INTO users (name) VALUES ('heeeeeeeeha');")
+session.execute(sql_query)
+session.commit()
+final = time.time()
+print("Insert query time with sqlscript : "+str((final-start)*1000))
+
+start = time.time()
+sql_query = text("SELECT last_insert_rowid() AS id;")
+result = session.execute(sql_query).fetchall()
+session.commit()
+final = time.time()
+print("Read query time with sqlscript : "+str((final-start)*1000))
+print("id is "+str(result[0][0]))
 
 connection.close()
