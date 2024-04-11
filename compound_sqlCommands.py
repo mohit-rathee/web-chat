@@ -1,9 +1,11 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, text
+from sqlalchemy import create_engine, MetaData, Column, Integer, String, text , ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker , registry, declarative_base
 from sqlalchemy.ext.automap import automap_base
 import time, random
 
-new_table_name=str(random.randint(1,1000))
+#new_table_name=str(random.randint(1,10000000))
+
 Base = declarative_base()
 
 #db_uri = 'sqlite:///testBydevelop.sqlite3'
@@ -23,14 +25,16 @@ my_conn = connection.connection
 metadata = MetaData()
 
 #manually creating a table.
-Table('users', metadata,
-              Column('id', Integer, primary_key=True),
-              Column('name', String(50)))
+class Users(Base):
+    __tablename__="users"
+    id=Column(Integer,primary_key=True)
+    name=Column(String)
 
-metadata.create_all(bind=engine)
+
+Base.metadata.create_all(bind=engine)
 
 # Fetching the metadata from database to ORM.
-metadata.reflect(bind=engine)
+Base.metadata.reflect(bind=engine)
 
 # creating classes from the metadata
 # After this all the tables will be in Base.classes object
@@ -66,11 +70,17 @@ Base.prepare(engine)
 # create a mapper for final solution
 mapper = registry()
 
+new_table_name = '07032004'
 # create a compound_sql command.
 compound_sql = """
                BEGIN TRANSACTION;
                INSERT INTO users (name) VALUES ('Mohit User');
-               CREATE TABLE '"""+new_table_name+"""' ( id INTEGER PRIMARY KEY, name varchar(50));
+               CREATE TABLE '07032004' (
+                id SERIAL PRIMARY KEY,
+                data VARCHAR NOT NULL,
+                sender_id INTEGER REFERENCES users(id)
+               );
+
                COMMIT; """
 
 start=time.time()
@@ -79,8 +89,8 @@ start=time.time()
 result = my_conn.executescript(compound_sql)
 my_conn.commit()
 
-final = time.time()
-print("compound_sql execution : "+str((final-start)*1000))
+#final = time.time()
+#print("compound_sql execution : "+str((final-start)*1000))
 #print((final-start)*1000)
 
 # un-successfull event : TOOK (~35 to ~45 ms)
@@ -94,15 +104,16 @@ print("compound_sql execution : "+str((final-start)*1000))
         #Base.prepare(engine)
 
 # successfull event:
-start=time.time()
+#start=time.time()
 
 # Manually create the class.
 # Add it will automatically update the metadata.
 
 attrs = {
-    '__tablename__': new_table_name,
+    '__tablename__': str(new_table_name),
     'id': Column(Integer, primary_key=True),
-    'name': Column(String(50)),
+    'data': Column(String, nullable=False),
+    'sender_id': Column(Integer, ForeignKey(Users.id)),
 }
 # store this class into a variable or a dictionary.
 
@@ -118,8 +129,14 @@ attrs = {
 type(new_table_name, (Base,), attrs)
 class channel_class(object):
     pass
-metadata.tables[new_table_name].metadata.create_all(engine)
-mapper.map_imperatively(channel_class, metadata.tables[new_table_name])
+
+# Instead of creating the tables just map the classes
+#metadata.tables[new_table_name].metadata.create_all(engine)
+
+mapper.map_imperatively(channel_class, metadata.tables[new_table_name],properties={
+    'user': relationship(Users)
+})
+
 final = time.time()
 print("update class execution time : "+str((final-start)*1000))
 #print((final-start)*1000)
@@ -129,15 +146,25 @@ print('----------')
 
 Session = sessionmaker(bind=engine)
 session = Session()
+
+user = Users(name="mohit")
+session.add(user)
+session.commit()
+
 start=time.time()
-test = channel_class(id=1,name="mohit")
+test = channel_class(id=1,data="hello world!",sender_id=user.id)
 session.add(test)
 session.commit()
 final = time.time()
 print("Insert query time : "+str((final-start)*1000))
 
 start = time.time()
-result = session.query(channel_class).first()
+
+data = session.query(channel_class).first()
+print(data.data)
+print(data.user.name)
+print(data.sender_id)
+
 final = time.time()
 print("Read query time : "+str((final-start)*1000))
 
@@ -152,10 +179,11 @@ print("Insert query time with sqlscript : "+str((final-start)*1000))
 
 start = time.time()
 sql_query = text("SELECT last_insert_rowid() AS id;")
-result = session.execute(sql_query).fetchall()
+result = session.execute(sql_query).fetchone()
 session.commit()
 final = time.time()
 print("Read query time with sqlscript : "+str((final-start)*1000))
-print("id is "+str(result[0][0]))
+print("id is "+str(result[0]))
+print('--------------------------')
 
 connection.close()
